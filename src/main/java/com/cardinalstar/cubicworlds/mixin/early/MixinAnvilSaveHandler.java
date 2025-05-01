@@ -20,9 +20,9 @@ public class MixinAnvilSaveHandler
         at = @At(
             value = "NEW",
             target = "net/minecraft/world/chunk/storage/AnvilChunkLoader"))
-    private AnvilChunkLoader getChunkLoader(File file, WorldProvider provider)
+    private AnvilChunkLoader getChunkLoader(File file, WorldProvider p_75763_1_)
     {
-        ICubicWorld world = ((ICubicWorld) ((ICubicWorldProvider) provider).getWorld());
+        ICubicWorld world = ((ICubicWorld) ((ICubicWorldProvider) p_75763_1_).getWorld());
         if (world.isCubicWorld()) {
             return new CubicAnvilChunkLoader(file);
         } else {
