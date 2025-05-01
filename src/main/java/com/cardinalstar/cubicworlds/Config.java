@@ -1,4 +1,4 @@
-package com.myname.mymodid;
+package com.cardinalstar.cubicworlds;
 
 import java.io.File;
 
