@@ -47,7 +47,7 @@ public class QueuedCube {
 
     @Override
     public int hashCode() {
-        return (x * 31 + z * 29) ^ world.hashCode();
+        return (x * 31 + y * 37 + z * 29) ^ world.hashCode();
     }
 
     @Override
