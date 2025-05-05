@@ -17,7 +17,19 @@ public enum Mixins implements IMixins {
         .setSide(Side.BOTH)
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)
-        .addMixinClasses("MixinAnvilSaveHandler"));
+        .addMixinClasses("MixinAnvilSaveHandler")),
+    MIXIN_WORLD_PROVIDER(new MixinBuilder("Implementing ICubicWorldProvider")
+        .addTargetedMod(TargetedMod.VANILLA)
+        .setSide(Side.BOTH)
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)
+        .addMixinClasses("MixinWorldProvider")),
+    MIXIN_WORLD(new MixinBuilder("Implementing ICubicWorld")
+        .addTargetedMod(TargetedMod.VANILLA)
+        .setSide(Side.BOTH)
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)
+        .addMixinClasses("MixinWorld"));
 
     private final List<String> mixinClasses;
     private final Supplier<Boolean> applyIf;
