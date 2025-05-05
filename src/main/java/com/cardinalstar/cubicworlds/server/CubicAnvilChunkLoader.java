@@ -18,6 +18,16 @@ public class CubicAnvilChunkLoader extends AnvilChunkLoader {
     @Override
     public Chunk loadChunk(World p_75815_1_, int p_75815_2_, int p_75815_3_) throws IOException
     {
+        Object[] data = this.loadChunk__Async(p_75815_1_, p_75815_2_, p_75815_3_);
+
+        if (data != null)
+        {
+            Chunk chunk = (Chunk) data[0];
+            NBTTagCompound nbttagcompound = (NBTTagCompound) data[1];
+            this.loadEntities(p_75815_1_, nbttagcompound.getCompoundTag("Level"), chunk);
+            return chunk;
+        }
+
         return null;
     }
 
