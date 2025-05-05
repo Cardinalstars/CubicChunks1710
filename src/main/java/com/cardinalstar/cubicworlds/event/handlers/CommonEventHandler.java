@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicworlds.event;
+package com.cardinalstar.cubicworlds.event.handlers;
 
 import com.gtnewhorizon.gtnhlib.eventbus.EventBusSubscriber;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
