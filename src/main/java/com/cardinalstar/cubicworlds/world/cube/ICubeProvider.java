@@ -21,18 +21,4 @@ public interface ICubeProvider
     boolean saveCubes(boolean saveChunksInOneGo, IProgressUpdate progressUpdate);
 
     boolean unloadQueuedCubes();
-
-    boolean canSave();
-
-    String makeString();
-
-    List<BiomeGenBase.SpawnListEntry> getPossibleCreatures(EnumCreatureType p_73155_1_, int x, int y, int z);
-
-    ChunkPosition findClosestStructure(World world, String type, int x, int y, int z);
-
-    int getLoadedCubeCount();
-
-    void recreateStructures(int x, int y, int z);
-
-    void saveExtraData();
 }
