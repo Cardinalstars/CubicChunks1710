@@ -7,6 +7,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -116,5 +117,15 @@ public class Cube
                 }
             }
         }
+    }
+
+    public void onCubeLoad()
+    {
+
+    }
+
+    public void populateCube(IChunkProvider provider1, IChunkProvider provider2, int x, int y, int z)
+    {
+
     }
 }
