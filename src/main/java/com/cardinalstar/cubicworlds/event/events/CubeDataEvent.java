@@ -2,8 +2,6 @@ package com.cardinalstar.cubicworlds.event.events;
 
 import com.cardinalstar.cubicworlds.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.event.world.ChunkDataEvent;
 
 public class CubeDataEvent extends CubeEvent
@@ -16,7 +14,7 @@ public class CubeDataEvent extends CubeEvent
         this.data = data;
     }
 
-    public static class Load extends ChunkDataEvent
+    public static class Load extends CubeDataEvent
     {
         public Load(Cube cube, NBTTagCompound data)
         {
