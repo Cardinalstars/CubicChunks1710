@@ -2,6 +2,7 @@ package com.cardinalstar.cubicworlds.world.storage.io;
 
 import com.cardinalstar.cubicworlds.event.events.CubeDataEvent;
 import com.cardinalstar.cubicworlds.server.CubicAnvilChunkLoader;
+import com.cardinalstar.cubicworlds.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicworlds.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.ChunkCoordIntPair;
@@ -43,18 +44,21 @@ public class CubeIOProvider implements AsynchronousExecutor.CallBackProvider<Que
             return;
         }
 
-        queuedCube.loader.loadEntities(queuedCube.world, queuedCube.compound.getCompoundTag("Level"), cube);
-        MinecraftForge.EVENT_BUS.post(new CubeDataEvent.Load(chunk, queuedChunk.compound)); // Don't call ChunkDataEvent.Load async
-        chunk.lastSaveTime = queuedChunk.provider.worldObj.getTotalWorldTime();
-        queuedChunk.provider.loadedChunkHashMap.add(ChunkCoordIntPair.chunkXZ2Int(queuedChunk.x, queuedChunk.z), chunk);
-        queuedChunk.provider.loadedChunks.add(chunk);
-        chunk.onChunkLoad();
+        // TODO: Needed? Where should this go?
+        // queuedCube.loader.loadEntities(queuedCube.world, queuedCube.compound.getCompoundTag("Level"), cube);
+        MinecraftForge.EVENT_BUS.post(new CubeDataEvent.Load(cube, queuedCube.compound)); // Don't call ChunkDataEvent.Load async
+        cube.lastSaveTime = queuedCube.provider.worldObj.getTotalWorldTime();
+        queuedCube.provider.loadedCubesHashMap.add(CubeCoordIntTriple.cubeXYZToLong(queuedCube.x, queuedCube.y, queuedCube.z), cube);
+        queuedCube.provider.loadedCubes.add(cube);
+        cube.onCubeLoad();
 
-        if (queuedChunk.provider.currentChunkProvider != null) {
-            queuedChunk.provider.currentChunkProvider.recreateStructures(queuedChunk.x, queuedChunk.z);
+        // TODO: Implement a world provider that mimics vanilla
+        if (queuedCube.provider.currentChunkProvider != null) {
+            queuedCube.provider.currentChunkProvider.recreateStructures(queuedCube.x, queuedCube.y, queuedCube.z);
         }
 
-        chunk.populateChunk(queuedChunk.provider, queuedChunk.provider, queuedChunk.x, queuedChunk.z);
+        // TODO: Implement
+        cube.populateCube(queuedCube.provider, queuedCube.provider, queuedCube.x, queuedCube.y, queuedCube.z);
 
     }
 
