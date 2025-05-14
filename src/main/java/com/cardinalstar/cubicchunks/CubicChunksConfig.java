@@ -373,9 +373,9 @@ public class CubicChunksConfig {
 
     static class BaseCubicChunksCommand extends SubCommandBase
     {
-
         public BaseCubicChunksCommand() {
-            addSubcommand(new ConfigCommand());
+            super(CubicCommandBase.PermissionLevel.OP);
+            addSubcommand(new ConfigCommand(CubicCommandBase.PermissionLevel.OP));
         }
 
         @Override public String getCommandName() {
@@ -391,10 +391,11 @@ public class CubicChunksConfig {
     static class ConfigCommand extends SubCommandBase
     {
 
-        public ConfigCommand()
+        public ConfigCommand(PermissionLevel permissionLevel)
         {
-            addSubcommand(new ReloadConfig());
-            addSubcommand(new SetConfigBase());
+            super(permissionLevel);
+            addSubcommand(new ReloadConfig(permissionLevel));
+            addSubcommand(new SetConfigBase(permissionLevel));
         }
 
         @Override
@@ -412,7 +413,8 @@ public class CubicChunksConfig {
 
     static class SetConfigBase extends SubCommandBase {
 
-        public SetConfigBase() {
+        public SetConfigBase(CubicCommandBase.PermissionLevel permissionLevelRequired) {
+            super(permissionLevelRequired);
             Field[] fields = CubicChunksConfig.class.getFields();
             try {
                 registerConfigCommandsFor(null, fields, "");
@@ -436,7 +438,7 @@ public class CubicChunksConfig {
                     registerConfigCommandsFor(field.get(object), type.getFields(), name + ".");
                     continue;
                 }
-                addSubcommand(new SetConfig(name, object, field, requiresWorldRestart, CubicCommandBase.PermissionLevel.OP));
+                addSubcommand(new SetConfig(name, object, field, requiresWorldRestart, this.getRequiredPermissionEnum()));
             }
         }
 
@@ -446,15 +448,6 @@ public class CubicChunksConfig {
 
         @Override public String getCommandUsage(ICommandSender sender) {
             return "cubicchunks.command.usage.config.set";
-        }
-
-        @Override
-        public boolean canCommandSenderUseCommand(ICommandSender sender) {
-            if (sender instanceof EntityPlayer) {
-                return PermissionAPI.hasPermission((EntityPlayer) sender, "cubicchunks.command.set_config");
-            } else {
-                return super.canCommandSenderUseCommand(sender);
-            }
         }
     }
     static class SetConfig extends CubicCommandBase {
@@ -481,27 +474,22 @@ public class CubicChunksConfig {
 
         @SuppressWarnings("deprecation")
         @Override public String getCommandUsage(ICommandSender sender) {
-            if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-                return I18n.format("cubicchunks.command.usage.config.set_option", name);
-            } else {
-                //we have to use this on the dedicated server, as the client I18n class isn't available there...
-                // unfortunately this could result in a client being sent a string in a language other than their configured locale, but i don't
-                // see any alternative other than adding separate translation keys for every single config option
-                return net.minecraft.util.text.translation.I18n.translateToLocalFormatted("cubicchunks.command.usage.config.set_option", name);
-            }
+            return I18n.format("cubicchunks.command.usage.config.set_option", name); // TODO?
+//            if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+//
+//            } else {
+//                //we have to use this on the dedicated server, as the client I18n class isn't available there...
+//                // unfortunately this could result in a client being sent a string in a language other than their configured locale, but i don't
+//                // see any alternative other than adding separate translation keys for every single config option
+//                return net.minecraft.util.text.translation.I18n.translateToLocalFormatted("cubicchunks.command.usage.config.set_option", name);
+//            }
         }
+
+
 
         @Override
-        public boolean canCommandSenderUseCommand(ICommandSender sender) {
-            if (sender instanceof EntityPlayer) {
-                return PermissionAPI.hasPermission((EntityPlayer) sender, "cubicchunks.command.set_config");
-            } else {
-                return super.canCommandSenderUseCommand(sender);
-            }
-        }
-
-        @Override public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-            Object newValue = parseConfigValue(args);
+        public void processCommand(ICommandSender sender, String[] args) throws CommandException {
+            Object newValue = parseConfigValue(args, sender);
             try {
                 field.set(object, newValue);
                 CubicChunksConfig.sync();
@@ -530,7 +518,7 @@ public class CubicChunksConfig {
             throw new IllegalArgumentException(o.toString());
         }
 
-        private Object parseConfigValue(String[] args) throws CommandException {
+        private Object parseConfigValue(String[] args, ICommandSender sender) throws CommandException {
             Class<?> type = field.getType();
             if (type == String.class) {
                 return String.join(" ", args);
@@ -538,14 +526,14 @@ public class CubicChunksConfig {
             if ((type.isPrimitive() || type.isEnum()) && args.length != 1) {
                 throw new WrongUsageException("cubicchunks.command.usage.config.set.primitive", name, type.getSimpleName());
             }
-            Object o = tryParseSimpleType(type, args[0]);
+            Object o = tryParseSimpleType(type, args[0], sender);
             if (o != null) {
                 return o;
             }
             if (type == int[].class) {
                 int[] value = new int[args.length];
                 for (int i = 0; i < args.length; i++) {
-                    value[i] = parseInt(args[i]);
+                    value[i] = parseInt(sender, args[i]);
                 }
                 return value;
             }
@@ -571,8 +559,8 @@ public class CubicChunksConfig {
                 Map<Object, Object> map = new HashMap<>();
                 for (String arg : args) {
                     String[] split = arg.split("=");
-                    Object k = tryParseSimpleType((Class<?>) key, split[0]);
-                    Object v = tryParseSimpleType((Class<?>) value, split[1]);
+                    Object k = tryParseSimpleType((Class<?>) key, split[0], sender);
+                    Object v = tryParseSimpleType((Class<?>) value, split[1], sender);
                     map.put(k, v);
                 }
                 return map;
@@ -581,21 +569,21 @@ public class CubicChunksConfig {
         }
 
         @SuppressWarnings({"rawtypes", "unchecked"}) @Nullable
-        private Object tryParseSimpleType(Class<?> type, String value) throws CommandException {
+        private Object tryParseSimpleType(Class<?> type, String value, ICommandSender sender) throws CommandException {
             if (type == String.class) {
                 return value;
             }
             if (type == int.class) {
-                return parseInt(value);
+                return parseInt(sender, value);
             }
             if (type == boolean.class) {
                 return parseBool(value);
             }
             if (type == float.class) {
-                return (float) parseDouble(value);
+                return (float) parseDouble(sender, value);
             }
             if (type == double.class) {
-                return parseDouble(value);
+                return parseDouble(sender, value);
             }
             if (type.isEnum()) {
                 return Enum.valueOf((Class) type, value);
@@ -615,32 +603,26 @@ public class CubicChunksConfig {
         }
     }
 
-    static class ReloadConfig extends CommandBase {
+    static class ReloadConfig extends CubicCommandBase {
+
+        public ReloadConfig(PermissionLevel permissionLevelRequired) {
+            super(permissionLevelRequired);
+        }
 
         @Override
-        public String getName() {
+        public String getCommandName() {
             return "reload";
         }
 
         @Override
-        public String getUsage(ICommandSender sender) {
+        public String getCommandUsage(ICommandSender sender) {
             return "cubicchunks.command.usage.config.reload";
         }
 
         @Override
-        public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+        public void processCommand(ICommandSender sender, String[] args) throws CommandException {
             CubicChunksConfig.sync();
-            sender.sendMessage(new TextComponentTranslation("cubicchunks.command.config.reload.done"));
-        }
-
-        @Override
-        public boolean checkPermission(MinecraftServer server, ICommandSender sender) {
-            if (sender instanceof EntityPlayer) {
-                return PermissionAPI.hasPermission((EntityPlayer) sender, "cubicchunks.command.reload_config");
-            } else {
-                return super.checkPermission(server, sender);
-            }
+            sender.addChatMessage(new ChatComponentTranslation("cubicchunks.command.config.reload.done"));
         }
     }
-
 }
