@@ -25,14 +25,19 @@
 
 package com.cardinalstar.cubicchunks.core.mixin.api;
 
+import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
+import com.cardinalstar.cubicchunks.api.IntRange;
+import com.cardinalstar.cubicchunks.api.XYZMap;
+import com.cardinalstar.cubicchunks.api.XZMap;
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
+import com.cardinalstar.cubicchunks.lighting.ILightingManager;
+import com.cardinalstar.cubicchunks.server.SpawnCubes;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.column.IColumn;
 import com.cardinalstar.cubicchunks.core.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.core.util.world.CubeSplitTickList;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
-import com.cardinalstar.cubicchunks.core.world.api.ICubicWorldServer;
-import com.cardinalstar.cubicchunks.core.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 
@@ -51,19 +56,19 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
 
     /**
-     * Returns the {@link ICubeProvider} for this world, or throws {@link NotCubicChunksWorldException}
+     * Returns the {@link com.cardinalstar.cubicchunks.core.world.cube.ICubeProvider} for this world, or throws {@link com.cardinalstar.cubicchunks.api.NotCubicChunksWorldException}
      * if this is not a CubicChunks world.
      */
     @Override
     ICubeProviderInternal getCubeCache();
 
-//    /**
-//     * Returns the {@link ILightingManager} for this world, or throws {@link NotCubicChunksWorldException}
-//     * if this is not a CubicChunks world.
-//     *
-//     * @return lighting manager instance for this world
-//     */
-//    ILightingManager getLightingManager();
+    /**
+     * Returns the {@link ILightingManager} for this world, or throws {@link NotCubicChunksWorldException}
+     * if this is not a CubicChunks world.
+     *
+     * @return lighting manager instance for this world
+     */
+    ILightingManager getLightingManager();
 
     @Override
     Cube getCubeFromCubeCoords(int cubeX, int cubeY, int cubeZ);
@@ -124,7 +129,8 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
         boolean isCompatGenerationScope();
 
-        VanillaNetworkHandler getVanillaNetworkHandler();
+        // TODO Do I really need?
+        // VanillaNetworkHandler getVanillaNetworkHandler();
     }
 
     interface Client extends ICubicWorldInternal {
@@ -137,6 +143,7 @@ public interface ICubicWorldInternal extends ICubicWorld {
          */
         void initCubicWorldClient(IntRange heightRange, IntRange generationRange);
 
+        @Override
         CubeProviderClient getCubeCache();
 
         void setHeightBounds(int minHeight, int maxHeight);

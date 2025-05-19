@@ -33,6 +33,7 @@ import com.google.common.collect.TreeRangeSet;
 import com.cardinalstar.cubicchunks.command.SubCommandBase;
 
 import com.gtnewhorizon.gtnhlib.config.Config;
+import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
@@ -241,22 +242,23 @@ public class CubicChunksConfig {
     @Config.Ignore
     private static TreeRangeSet<Integer> excludedDimensionsRanges = null;
 
+    // TODO: Watch this carefully.
     public static void sync() {
-        ConfigManager.sync(CubicChunks.MODID, Config.Type.INSTANCE);
+        ConfigurationManager.save(CubicChunksConfig.class);
         initDimensionRanges();
         validateConfigValues();
-        ConfigManager.sync(CubicChunks.MODID, Config.Type.INSTANCE);
+        ConfigurationManager.save(CubicChunksConfig.class);
     }
 
     private static void validateConfigValues() {
-        if (!VanillaCompatibilityGeneratorProviderBase.REGISTRY.containsKey(new ResourceLocation(compatibilityGeneratorType))) {
-            CubicChunks.LOGGER.error("CubicChunksConfig: Compatibility generator type {} doesn't exist, resetting config to default", compatibilityGeneratorType);
-            compatibilityGeneratorType = VanillaCompatibilityGeneratorProviderBase.DEFAULT.toString();
-        }
-        if (!storageFormat.isEmpty() && !StorageFormatProviderBase.REGISTRY.containsKey(new ResourceLocation(storageFormat))) {
-            CubicChunks.LOGGER.error("CubicChunksConfig: Storage format {} doesn't exist, resetting config to default", storageFormat);
-            storageFormat = "";
-        }
+//        if (!VanillaCompatibilityGeneratorProviderBase.REGISTRY.containsKey(new ResourceLocation(compatibilityGeneratorType))) {
+//            CubicChunks.LOGGER.error("CubicChunksConfig: Compatibility generator type {} doesn't exist, resetting config to default", compatibilityGeneratorType);
+//            compatibilityGeneratorType = VanillaCompatibilityGeneratorProviderBase.DEFAULT.toString();
+//        }
+//        if (!storageFormat.isEmpty() && !StorageFormatProviderBase.REGISTRY.containsKey(new ResourceLocation(storageFormat))) {
+//            CubicChunks.LOGGER.error("CubicChunksConfig: Storage format {} doesn't exist, resetting config to default", storageFormat);
+//            storageFormat = "";
+//        }
         if ((defaultMinHeight & 0xF) != 0) {
             CubicChunks.LOGGER.error("CubicChunksConfig: defaultMinHeight not a multiple of 16, got {}, setting to {}", defaultMinHeight, defaultMinHeight & ~0xF);
             defaultMinHeight &= ~0xF;
