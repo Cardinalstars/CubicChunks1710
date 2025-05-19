@@ -1,7 +1,6 @@
 package com.cardinalstar.cubicchunks;
 
 import com.cardinalstar.cubicchunks.core.CommonProxy;
-import com.cardinalstar.cubicchunks.core.Tags;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
