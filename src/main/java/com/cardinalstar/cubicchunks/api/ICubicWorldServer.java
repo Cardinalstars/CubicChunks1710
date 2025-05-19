@@ -22,13 +22,13 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-
-package com.cardinalstar.cubicchunks.world.api;
+package com.cardinalstar.cubicchunks.api;
 
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.world.ICubeGenerator;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.core.world.api.ICubeProviderServer;
+
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraftforge.common.ForgeChunkManager;
 
@@ -57,7 +57,7 @@ public interface ICubicWorldServer extends ICubicWorld {
     void unloadOldCubes();
 
     /**
-     * CubicChunks equivalent of {@link ForgeChunkManager#forceChunk(ForgeChunkManager.Ticket, ChunkCoordIntPair)}.
+     * CubicChunks equivalent of {@link ForgeChunkManager#forceChunk(ForgeChunkManager.Ticket ticket, ChunkCoordIntPair chunk)}.
      *
      * Can accept tickets from different worlds.
      *
@@ -67,7 +67,7 @@ public interface ICubicWorldServer extends ICubicWorld {
     void forceChunk(ForgeChunkManager.Ticket ticket, CubeCoordIntTriple chunk);
 
     /**
-     * CubicChunks equivalent of {@link ForgeChunkManager#reorderChunk(ForgeChunkManager.Ticket, ChunkCoordIntPair)}.
+     * CubicChunks equivalent of {@link ForgeChunkManager#reorderChunk(ForgeChunkManager.Ticket ticket, ChunkCoordIntPair chunk)}
      *
      * Can accept tickets from different worlds.
      *
@@ -77,13 +77,13 @@ public interface ICubicWorldServer extends ICubicWorld {
     void reorderChunk(ForgeChunkManager.Ticket ticket, CubeCoordIntTriple chunk);
 
     /**
-     * CubicChunks equivalent of {@link ForgeChunkManager#unforceChunk(ForgeChunkManager.Ticket, ChunkCoordIntPair)}.
+     * CubicChunks equivalent of {@link ForgeChunkManager#unforceChunk(ForgeChunkManager.Ticket ticket, ChunkCoordIntPair chunk)}
      *
      * Can accept tickets from different worlds.
      *
      * @param ticket ForgeChunkManager ticket
      * @param chunk position of the cube to unforce
      */
-    void unforceChunk(ForgeChunkManager.Ticket ticket, CubePos chunk);
+    void unforceChunk(ForgeChunkManager.Ticket ticket, CubeCoordIntTriple chunk);
 
 }
