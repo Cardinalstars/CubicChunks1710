@@ -294,6 +294,9 @@ public class Cube implements ICube {
         return null;
     }
 
+    /**
+     * Returns the block corresponding to the given coordinates inside a cube.
+     */
     // TODO
     public Block getBlock(int x, int y, int z)
     {
@@ -301,6 +304,9 @@ public class Cube implements ICube {
     }
 
     // TODO
+    /**
+     * Return the metadata corresponding to the given coordinates inside a cube.
+     */
     public int getBlockMetadata(int x, int y, int z)
     {
         return 0;
