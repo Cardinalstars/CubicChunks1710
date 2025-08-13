@@ -34,6 +34,7 @@ import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.world.column.IColumn;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
 import net.minecraft.world.World;
@@ -43,6 +44,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import static net.minecraft.world.ChunkCoordIntPair.chunkXZ2Int;
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
 //TODO: break off ICubeProviderInternal
@@ -84,12 +86,12 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
     @Override
     public Chunk loadChunk(int cubeX, int cubeZ) {
         Chunk column = new Chunk((World) this.world, cubeX, cubeZ);   // make a new one
-        ((IChunkProviderClient) this).getChunkMapping().add(ChunkPos.asLong(cubeX, cubeZ), column); // add it to the cache
+        ((IChunkProviderClient) this).getChunkMapping().add(chunkXZ2Int(cubeX, cubeZ), column); // add it to the cache
 
         // fire a forge event... make mods happy :)
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Load(column));
 
-        column.markLoaded(true);
+        column.isChunkLoaded = true;
         return column;
     }
 

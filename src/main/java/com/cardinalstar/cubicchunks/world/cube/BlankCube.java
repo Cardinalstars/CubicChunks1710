@@ -25,7 +25,7 @@
 
 package com.cardinalstar.cubicchunks.world.cube;
 
-import com.cardinalstar.cubicchunks.core.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.world.chunk.Chunk;
 
 
@@ -39,7 +39,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public class BlankCube extends Cube {
 
     public BlankCube(Chunk column) {
-        super(column.worldObj, column, 0);
+        super(column, 0);
     }
 
     @Override
@@ -67,13 +67,13 @@ public class BlankCube extends Cube {
 //        return null;
 //    }
 //
-//    @Override
-//    public void onLoad() {
-//    }
-//
-//    @Override
-//    public void onUnload() {
-//    }
+    @Override
+    public void onLoad() {
+    }
+
+    @Override
+    public void onUnload() {
+    }
 //
 //    @Override
 //    public boolean needsSaving() {

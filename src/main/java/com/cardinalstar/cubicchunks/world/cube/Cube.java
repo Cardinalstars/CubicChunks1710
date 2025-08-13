@@ -42,13 +42,9 @@ import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkEvent;
 
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BooleanSupplier;
 
@@ -69,9 +65,6 @@ public class Cube implements ICube {
     @Nullable
     private byte[] blockBiomeArray = null;
 
-    /**
-     * Tickets keep this chunk loaded and ticking. See the docs of {@link TicketList} and {@link ITicket} for additional information.
-     */
     @Nonnull
     private final TicketList tickets; // tickets prevent this Cube from being unloaded
     /**
@@ -116,17 +109,12 @@ public class Cube implements ICube {
      * Entities in this cube
      */
     @Nonnull
-    private final EntityContainer entities;
+    public List[] entities;
     /**
      * The position of tile entities in this cube, and their corresponding tile entity
      */
     @Nonnull
-    private final Map<BlockPos, TileEntity> tileEntityMap;
-    /**
-     * The positions of tile entities queued for creation
-     */
-    @Nonnull
-    private final ConcurrentLinkedQueue<BlockPos> tileEntityPosQueue;
+    public Map<net.minecraft.world.ChunkPosition, net.minecraft.tileentity.TileEntity> cubeTileEntityMap;
 
     private final ICubeLightTrackingInfo cubeLightData;
 
@@ -174,17 +162,12 @@ public class Cube implements ICube {
 
         this.tickets = new TicketList(this);
 
-        this.entities = new EntityContainer();
-        this.tileEntityMap = new HashMap<>();
-        this.tileEntityPosQueue = new ConcurrentLinkedQueue<>();
+        this.entities = new List[16];
+        this.cubeTileEntityMap = new HashMap<>();
 
         this.cubeLightData = ((ICubicWorldInternal) world).getLightingManager().createLightData(this);
 
         this.storage = NULL_STORAGE;
-
-//        AttachCapabilitiesEvent<ICube> event = new AttachCapabilitiesEvent<>(ICube.class, this);
-//        MinecraftForge.EVENT_BUS.post(event);
-//        this.capabilities = event.getCapabilities().size() > 0 ? new CapabilityDispatcher(event.getCapabilities(), null) : null;
     }
 
     /**
@@ -192,101 +175,82 @@ public class Cube implements ICube {
      *
      * @param column column of this cube
      * @param cubeY  cube y position
-     * @param primer primer containing the blocks for this cube
+     * @param blocks primer containing the blocks for this cube
      */
     @SuppressWarnings("deprecation") // when a block is generated, does it really have any extra
     // information it could give us about its opacity by knowing its location?
-    public Cube(Chunk column, int cubeY, CubePrimer primer) {
+    public Cube(Chunk column, int cubeY, Block[] blocks) {
         this(column, cubeY);
+
+        boolean flag = !world.provider.hasNoSky;
 
         for (int y = Cube.SIZE - 1; y >= 0; y--) {
             for (int z = 0; z < Cube.SIZE; z++) {
                 for (int x = 0; x < Cube.SIZE; x++) {
-                    IBlockState newstate = primer.getBlockState(x, y, z);
+                    Block block = blocks[x << 11 | z << 7 | y];
 
-                    if (newstate.getMaterial() != Material.AIR) {
-                        if (storage == NULL_STORAGE) {
-                            newStorage();
+                    if (block != null && block.getMaterial() != Material.air)
+                    {
+                        if (this.storage == null)
+                        {
+                            this.storage = new ExtendedBlockStorage(cubeY, flag);
                         }
-                        storage.set(x, y, z, newstate);
+                        this.storage.func_150818_a(x, y & 15, z, block);
                     }
                 }
             }
         }
-        if (primer.hasBiomes()) {
-            for (int biomeX = 0; biomeX < 4; biomeX++) {
-                for (int biomeY = 0; biomeY < 4; biomeY++) {
-                    for (int biomeZ = 0; biomeZ < 4; biomeZ++) {
-                        Biome biome = primer.getBiome(biomeX, biomeY, biomeZ);
-                        if (biome != null) {
-                            setBiome(biomeX, biomeY, biomeZ, biome);
-                        }
-                    }
-                }
-            }
-        }
-        isModified = true;
     }
 
 
     /**
      * Constructor to be used from subclasses to provide all field values
      *
-     * @param tickets cube ticket list
-     * @param world the world instance
-     * @param column the column this cube belongs to
-     * @param coords position of this cube
-     * @param storage block storage
-     * @param entities entity container
-     * @param tileEntityMap tile entity storage
-     * @param tileEntityPosQueue queue for updating tile entities
-     * @param cubeLightData cube light tracking data
      */
-    protected Cube(TicketList tickets, World world, Chunk column, CubeCoordIntTriple coords, ExtendedBlockStorage storage,
-                   EntityContainer entities, Map<BlockPos, TileEntity> tileEntityMap,
-                   ConcurrentLinkedQueue<BlockPos> tileEntityPosQueue, ICubeLightTrackingInfo cubeLightData) {
-        this.tickets = tickets;
-        this.world = world;
-        this.column = column;
-        this.coords = coords;
-        this.storage = storage;
-        this.entities = entities;
-        this.tileEntityMap = tileEntityMap;
-        this.tileEntityPosQueue = tileEntityPosQueue;
-        this.cubeLightData = cubeLightData;
+    protected Cube(Chunk column, int cubeY, Block[] blocks, byte[] meta)
+    {
+        this(column, cubeY);
+        boolean flag = !world.provider.hasNoSky;
+        for (int y = Cube.SIZE - 1; y >= 0; y--)
+        {
+            for (int z = 0; z < Cube.SIZE; z++)
+            {
+                for (int x = 0; x < Cube.SIZE; x++)
+                {
+                    int blockIter = x << 11 | z << 7 | y;
+                    Block block = blocks[blockIter];
 
-//        AttachCapabilitiesEvent<ICube> event = new AttachCapabilitiesEvent<>(ICube.class, this);
-//        MinecraftForge.EVENT_BUS.post(event);
-//        this.capabilities = event.getCapabilities().size() > 0 ? new CapabilityDispatcher(event.getCapabilities(), null) : null;
+                    if (block != null && block != Blocks.air)
+                    {
 
+                        if (this.storage == null)
+                        {
+                            this.storage = new ExtendedBlockStorage(cubeY, flag);
+                        }
+
+                        this.storage.func_150818_a(x, y & 15, z, block);
+                        this.storage.setExtBlockMetadata(x, y & 15, z, meta[blockIter]);
+                    }
+                }
+            }
+        }
     }
 
     //======================================
     //========Chunk vanilla methods=========
     //======================================
 
-//    @Override
-//    public IBlockState getBlockState(BlockPos pos) {
-//        return this.getBlockState(pos.getX(), pos.getY(), pos.getZ());
-//    }
-//
-//    @Override
-//    @Nullable
-//    public IBlockState setBlockState(BlockPos pos, IBlockState newstate) {
-//        return column.setBlockState(pos, newstate);
-//    }
-//
-//    @Override
-//    public IBlockState getBlockState(int blockX, int localOrBlockY, int blockZ) {
-//        if (storage == NULL_STORAGE) {
-//            return Blocks.AIR.getDefaultState();
-//        }
-//        return storage.get(blockToLocal(blockX), blockToLocal(localOrBlockY), blockToLocal(blockZ));
-//    }
+    /**
+     * Returns the ExtendedBlockStorage array for this Chunk.
+     */
+    public ExtendedBlockStorage getBlockStorageArray()
+    {
+        return this.storage;
+    }
 
     @Override
-    public int getLightFor(EnumSkyBlock lightType, int x, int y, int z) {
-        ((ICubicWorldInternal) world).getLightingManager().onGetLight(type, pos);
+    public int getSavedLightValue(EnumSkyBlock lightType, int x, int y, int z) {
+        ((ICubicWorldInternal) world).getLightingManager().onGetLight(lightType, x, y, z);
         return getCachedLightFor(lightType, x, y, z);
     }
 
@@ -313,19 +277,33 @@ public class Cube implements ICube {
     /**
      * Create a tile entity at the given position if the block is able to hold one
      *
-     * @param pos position where the tile entity should be placed
+     * @param x x position where the tile entity should be placed
+     * @param y y position where the tile entity should be placed
+     * @param z z position where the tile entity should be placed
      * @return the created tile entity, or <code>null</code> if the block at that position does not provide tile
      * entities
      */
     @Nullable
     private TileEntity createTileEntity(int x, int y, int z) {
-        IBlockState blockState = getBlockState(pos);
-        Block block = blockState.getBlock();
+        Block block = this.getBlock(x, y, z);
+        int meta = this.getBlockMetadata(x, y, z);
 
-        if (block.hasTileEntity(blockState)) {
-            return block.createTileEntity((World) this.world, blockState);
+        if (block.hasTileEntity(meta)) {
+            return block.createTileEntity(this.world, meta);
         }
         return null;
+    }
+
+    // TODO
+    public Block getBlock(int x, int y, int z)
+    {
+        return new Block();
+    }
+
+    // TODO
+    public int getBlockMetadata(int x, int y, int z)
+    {
+        return 0;
     }
 
     @Override
@@ -479,7 +457,7 @@ public class Cube implements ICube {
     }
 
     @Override
-    public CubePos getCoords() {
+    public CubeCoordIntTriple getCoords() {
         return this.coords;
     }
 
