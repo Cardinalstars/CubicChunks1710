@@ -23,7 +23,7 @@
  *  THE SOFTWARE.
  */
 
-package com.cardinalstar.cubicchunks.core.world.cube;
+package com.cardinalstar.cubicchunks.world.cube;
 
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.world.cube.ICube;

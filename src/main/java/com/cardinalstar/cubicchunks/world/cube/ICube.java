@@ -91,11 +91,13 @@ public interface ICube extends XYZAddressable {
      * Retrieve the raw light level at the specified location
      *
      * @param lightType The type of light (sky or block light)
-     * @param pos The position at which light should be checked
+     * @param x The x position at which light should be checked
+     * @param y The y position at which light should be checked
+     * @param z The z position at which light should be checked
      *
      * @return the light level
      */
-    int getLightFor(EnumSkyBlock lightType, int x, int y, int z);
+    int getSavedLightValue(EnumSkyBlock lightType, int x, int y, int z);
 
     /**
      * Set the raw light level at the specified location
