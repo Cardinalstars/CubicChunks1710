@@ -1,14 +1,17 @@
 package com.cardinalstar.cubicchunks.world.gen;
 
+import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.core.world.cube.Cube;
-import com.cardinalstar.cubicchunks.core.world.cube.ICubeProvider;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
+import com.cardinalstar.cubicchunks.world.cube.ICube;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 
+import javax.annotation.Nullable;
 import java.util.Random;
 
 public class CubeGenerator implements ICubeProvider
@@ -47,5 +50,38 @@ public class CubeGenerator implements ICubeProvider
         for (int i = 0; i < abyte.length; ++i) {
             abyte[i] = (byte) biomesForGeneration[i].biomeID;
         }
+    }
+
+    @Nullable
+    @Override
+    public ICube getLoadedCube(int cubeX, int cubeY, int cubeZ) {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public ICube getLoadedCube(CubeCoordIntTriple coords) {
+        return null;
+    }
+
+    @Override
+    public ICube getCube(int cubeX, int cubeY, int cubeZ) {
+        return null;
+    }
+
+    @Override
+    public ICube getCube(CubeCoordIntTriple coords) {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Chunk getLoadedColumn(int x, int z) {
+        return null;
+    }
+
+    @Override
+    public Chunk provideColumn(int x, int z) {
+        return null;
     }
 }

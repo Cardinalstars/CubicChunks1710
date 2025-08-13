@@ -1,2 +1,6 @@
-package com.cardinalstar.cubicchunks.core.util;public class TicketList {
+package com.cardinalstar.cubicchunks.core.util;
+
+public class TicketList
+{
+
 }
