@@ -1,9 +1,9 @@
-package com.cardinalstar.cubicchunks.core.mixin.early;
+package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import com.cardinalstar.cubicchunks.world.column.IColumn;
-import com.cardinalstar.cubicchunks.util.IHeightMap;
+import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.core.world.core.StagingHeightMap;
-import com.cardinalstar.cubicchunks.world.cube.ICube;
+import com.cardinalstar.cubicchunks.api.ICube;
 
 import javax.annotation.Nullable;
 import java.util.Collection;

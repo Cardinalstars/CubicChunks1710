@@ -22,37 +22,58 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-
 package com.cardinalstar.cubicchunks.world.core;
 
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.core.world.cube.Cube;
-import net.minecraft.network.PacketBuffer;
+import com.cardinalstar.cubicchunks.util.ITicket;
+import it.unimi.dsi.fastutil.ints.IntSet;
+import net.minecraft.nbt.NBTTagCompound;
 
-public interface IColumnInternal extends IColumn {
-    // ChunkPrimer getCompatGenerationPrimer(); TODO?
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
-    void removeFromStagingHeightmap(ICube cube);
+import javax.annotation.ParametersAreNonnullByDefault;
 
-    void addToStagingHeightmap(ICube cube);
+// this is internal interface, most of it shouldn't be in API
+@ParametersAreNonnullByDefault
+@MethodsReturnNonnullByDefault
+public interface ICubicTicketInternal extends ICubicTicket, ITicket {
 
-    /**
-     * Returns Y coordinate of the top non-transparent block
-     *
-     * @param localX column-local X coordinate
-     * @param localZ column-local Z coordinate
-     * @return the Y coordinate of the top non-transparent block
-     */
-    int getTopYWithStaging(int localX, int localZ);
+    void addRequestedCube(CubePos pos);
 
-    default void writeHeightmapDataForClient(PacketBuffer out) {
-        for (int i = 0; i < Cube.SIZE * Cube.SIZE; i++) {
-            out.writeInt(getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
-        }
+    void removeRequestedCube(CubePos pos);
+
+    // handling of forge forced chunks
+
+    void setForcedChunkCubes(ChunkPos location, IntSet yCoords);
+
+    void clearForcedChunkCubes(ChunkPos location);
+
+    void setAllForcedChunkCubes(Map<ChunkPos, IntSet> cubePosMap);
+
+    // setters and getters for private data, because no ATs for forge classes
+    void setModData(NBTTagCompound modData);
+
+    void setPlayer(String player);
+
+    void setEntityChunkX(int chunkX);
+
+    void setEntityChunkY(int cubeY);
+
+    void setEntityChunkZ(int chunkZ);
+
+    int getEntityChunkX();
+
+    int getEntityChunkY();
+
+    int getEntityChunkZ();
+
+    int getMaxCubeDepth();
+
+    @Override default boolean shouldTick() {
+        return true;
     }
 
-    default void loadClientHeightmapData(PacketBuffer in) {
-        ((ClientHeightMap) getOpacityIndex()).loadData(in);
-    }
+    Set<CubePos> requestedCubes();
 }

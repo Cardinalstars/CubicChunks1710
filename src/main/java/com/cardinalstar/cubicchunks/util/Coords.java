@@ -25,7 +25,7 @@
 
 package com.cardinalstar.cubicchunks.util;
 
-import com.cardinalstar.cubicchunks.world.cube.ICube;
+import com.cardinalstar.cubicchunks.api.ICube;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
 
@@ -143,8 +143,8 @@ public class Coords {
      * @param seed the world seed
      * @param x the x coordinate
      * @param y the y coordinate
-     * @param z the z coordinate
-     * @return A seed value based on world seed, x, y and z coordinates
+     * @param z the zPosition coordinate
+     * @return A seed value based on world seed, x, y and zPosition coordinates
      */
     public static long coordsSeedHash(long seed, int x, int y, int z) {
         long hash = 3;

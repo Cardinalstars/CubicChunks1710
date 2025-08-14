@@ -23,11 +23,11 @@
  *  THE SOFTWARE.
  */
 
-package com.cardinalstar.cubicchunks.core.world.core;
+package com.cardinalstar.cubicchunks.world.core;
 
 import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.util.IHeightMap;
-import com.cardinalstar.cubicchunks.world.cube.ICube;
+import com.cardinalstar.cubicchunks.api.IHeightMap;
+import com.cardinalstar.cubicchunks.api.ICube;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import java.util.ArrayList;

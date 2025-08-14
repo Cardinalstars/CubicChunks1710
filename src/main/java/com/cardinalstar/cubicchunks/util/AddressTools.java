@@ -42,7 +42,7 @@ public class AddressTools {
     }
 
     /**
-     * Unpacks localX from packed address. Works for both, x/y/z and x/z version
+     * Unpacks localX from packed address. Works for both, x/y/zPosition and x/zPosition version
      *
      * @param localAddress local address to unpack
      * @return x coordinate from that local address
@@ -62,10 +62,10 @@ public class AddressTools {
     }
 
     /**
-     * Unpacks localZ from packed address. Works for both, x/y/z and x/z version
+     * Unpacks localZ from packed address. Works for both, x/y/zPosition and x/zPosition version
      *
      * @param localAddress local address to unpack
-     * @return z coordinate from that local address
+     * @return zPosition coordinate from that local address
      */
     public static int getLocalZ(int localAddress) {
         return Bits.unpackUnsigned(localAddress, 4, 4);

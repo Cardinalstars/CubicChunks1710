@@ -1,13 +1,14 @@
-package com.cardinalstar.cubicchunks.core.server;
+package com.cardinalstar.cubicchunks.server;
 
+import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
-import com.cardinalstar.cubicchunks.world.column.IColumn;
-import com.cardinalstar.cubicchunks.world.cube.ICube;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.world.ICubeGenerator;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
-import com.cardinalstar.cubicchunks.core.world.api.ICubeProviderServer;
-import com.cardinalstar.cubicchunks.core.world.cube.Cube;
-import com.cardinalstar.cubicchunks.core.world.cube.ICubeProvider;
 import com.cardinalstar.cubicchunks.core.server.chunkio.async.forge.CubicIOExecutor;
 import net.minecraft.util.LongHashMap;
 import net.minecraft.world.ChunkCoordIntPair;
