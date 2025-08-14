@@ -1,5 +1,7 @@
 package com.cardinalstar.cubicchunks.util;
 
+import com.cardinalstar.cubicchunks.api.XYZAddressable;
+
 import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
 
 public class CubeCoordIntTriple
@@ -42,9 +44,9 @@ public class CubeCoordIntTriple
     }
 
     /**
-     * Gets the z position of the cube in the world.
+     * Gets the zPosition position of the cube in the world.
      *
-     * @return The z position.
+     * @return The zPosition position.
      */
     public int getZ() {
         return this.cubeZ;
@@ -54,4 +56,46 @@ public class CubeCoordIntTriple
         return new CubeCoordIntTriple(blockToCube(x), blockToCube(y), blockToCube(z));
     }
 
+    public int getMinBlockX()
+    {
+        return Coords.cubeToMinBlock(cubeX);
+    }
+
+    public int getMinBlockY() {
+        return Coords.cubeToMinBlock(cubeY);
+    }
+
+    public int getMinBlockZ()
+    {
+        return Coords.cubeToMinBlock(cubeZ);
+    }
+    public CubeCoordIntTriple getMinBlockPos()
+    {
+        return new CubeCoordIntTriple(getMinBlockX(), getMinBlockY(), getMinBlockZ());
+    }
+
+    public int getMaxBlockX()
+    {
+        return Coords.cubeToMaxBlock(cubeX);
+    }
+
+    public int getMaxBlockY()
+    {
+        return Coords.cubeToMaxBlock(cubeY);
+    }
+
+    public int getMaxBlockZ()
+    {
+        return Coords.cubeToMaxBlock(cubeZ);
+    }
+
+    public CubeCoordIntTriple getMaxBlockPos()
+    {
+        return new CubeCoordIntTriple(getMaxBlockX(), getMaxBlockY(), getMaxBlockZ());
+    }
+
+    public CubeCoordIntTriple add(int x, int y, int z)
+    {
+        return x == 0 && y == 0 && z == 0 ? this : new CubeCoordIntTriple(this.getX() + x, this.getY() + y, this.getZ() + z);
+    }
 }

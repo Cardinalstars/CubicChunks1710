@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.core.server;
+package com.cardinalstar.cubicchunks.server;
 
 import com.cardinalstar.cubicchunks.core.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;

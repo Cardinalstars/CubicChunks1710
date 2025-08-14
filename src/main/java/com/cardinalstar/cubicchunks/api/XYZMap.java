@@ -136,7 +136,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
      *
      * @param x the x-coordinate
      * @param y the y-coordinate
-     * @param z the z-coordinate
+     * @param z the zPosition-coordinate
      *
      * @return a 32b hash based on the given coordinates
      */
@@ -157,7 +157,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
      *
      * @param x the x-coordinate
      * @param y the y-coordinate
-     * @param z the z-coordinate
+     * @param z the zPosition-coordinate
      *
      * @return the desired pointer index for the given coordinates
      */
@@ -233,7 +233,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
      *
      * @param x the x-coordinate
      * @param y the y-coordinate
-     * @param z the z-coordinate
+     * @param z the zPosition-coordinate
      *
      * @return the entry associated with the specified coordinates or null if no
      *         such entry exists
@@ -285,7 +285,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
      *
      * @param x the x-coordinate
      * @param y the y-coordinate
-     * @param z the z-coordinate
+     * @param z the zPosition-coordinate
      *
      * @return the entry associated with the specified coordinates or null if no
      *         such value exists
@@ -315,7 +315,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
      * xyz-coordinates in this map.
      *
      * @param x the x-coordinate
-     * @param y the z-coordinate
+     * @param y the zPosition-coordinate
      * @param z the y-coordinate
      *
      * @return true if there exists an entry associated with the given

@@ -27,8 +27,8 @@ package com.cardinalstar.cubicchunks.world;
 
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
-import com.cardinalstar.cubicchunks.world.cube.ICube;
-import com.cardinalstar.cubicchunks.core.world.cube.ICubeProvider;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
 
@@ -58,7 +58,7 @@ public interface ICubicWorld extends IMinMaxHeight {
      *
      * @param cubePos cube position to find surface for
      * @param xOffset x coordinate of population area offset relative to cube origin
-     * @param zOffset z coordinate of population area offset relative to cube origin
+     * @param zOffset zPosition coordinate of population area offset relative to cube origin
      * @param forcedAdditionalCubes amount of additional cubes above to scan
      * @param type surface type
      * @return position of the block above the top block matching criteria specified by surface type, or null if it doesn't exist
@@ -168,10 +168,10 @@ public interface ICubicWorld extends IMinMaxHeight {
      *
      * @param minBlockX minimum block x coordinate
      * @param minBlockY minimum block y coordinate
-     * @param minBlockZ minimum block z coordinate
+     * @param minBlockZ minimum block zPosition coordinate
      * @param maxBlockX maximum block x coordinate
      * @param maxBlockY maximum block y coordinate
-     * @param maxBlockZ maximum block z coordinate
+     * @param maxBlockZ maximum block zPosition coordinate
      * @param test the test to apply
      * @return false if any invokation of the given predicate returns false, true otherwise
      */

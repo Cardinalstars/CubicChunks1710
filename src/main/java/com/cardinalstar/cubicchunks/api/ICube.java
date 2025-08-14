@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.world.cube;/*
+package com.cardinalstar.cubicchunks.api;/*
  *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
  *
  *  Copyright (c) 2015-2021 OpenCubicChunks
@@ -26,10 +26,11 @@ package com.cardinalstar.cubicchunks.world.cube;/*
 
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.world.column.IColumn;
-import com.cardinalstar.cubicchunks.util.XYZAddressable;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
@@ -38,6 +39,7 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -52,48 +54,12 @@ public interface ICube extends XYZAddressable {
     double SIZE_D = 16.0D;
 
     /**
-     * Retrieve the block state at the specified location
-     *
-     * @param pos target location
-     *
-     * @return The block state
-     *
-     * @see #getBlockState(int, int, int)
-     */
-//    IBlockState getBlockState(BlockPos pos);
-
-    /**
-     * Set the block state at the specified location
-     *
-     * @param pos target location
-     * @param newstate target state of the block at that position
-     *
-     * @return The the old state of the block at the position, or null if there was no change
-     *
-     * @see Chunk#setBlockState(BlockPos, IBlockState)
-     */
-//    @Nullable IBlockState setBlockState(BlockPos pos, IBlockState newstate);
-
-    /**
-     * Retrieve the block state at the specified location
-     *
-     * @param blockX block x position
-     * @param localOrBlockY block or local y position
-     * @param blockZ block z position
-     *
-     * @return The block state
-     *
-     * @see #getBlockState(BlockPos)
-     */
-//    IBlockState getBlockState(int blockX, int localOrBlockY, int blockZ);
-
-    /**
      * Retrieve the raw light level at the specified location
      *
      * @param lightType The type of light (sky or block light)
      * @param x The x position at which light should be checked
      * @param y The y position at which light should be checked
-     * @param z The z position at which light should be checked
+     * @param z The zPosition position at which light should be checked
      *
      * @return the light level
      */
@@ -103,21 +69,42 @@ public interface ICube extends XYZAddressable {
      * Set the raw light level at the specified location
      *
      * @param lightType The type of light (sky or block light)
-     * @param pos The position at which light should be updated
+     * @param x The x position at which light should be updated
+     * @param y The y position at which light should be updated
+     * @param z The zPosition position at which light should be updated
      * @param light the light level
      */
     void setLightFor(EnumSkyBlock lightType, int x, int y, int z, int light);
 
+
+    Block getBlock(int x, int y, int z);
+
+    int getBlockMetadata(int x, int y, int z);
+
     /**
      * Retrieve the tile entity at the specified location
      *
-     * @param pos target location
-     * @param createType how fast the tile entity is needed
+     * @param x target x location
+     * @param y target y location
+     * @param z target zPosition location
      *
-     * @return the tile entity at the specified location, or {@code null} if there is no entity and
-     * {@code createType} was not {@link Chunk.EnumCreateEntityType#IMMEDIATE}
+     * @return the tile entity at the specified location, or {@code null} if there is no entity.
+     * This will not create the tile entity
      */
-    @Nullable TileEntity getTileEntity(int x, int y, int z);
+    @Nullable TileEntity getTileEntityUnsafe(int x, int y, int z);
+
+    /**
+     * Retrieves the tile entity at the specified location if there is one. If not, it creates
+     * the tile entity if there isn't one at the location and the block at the specified location can
+     * hold a tile entity.
+     *
+     * @param x target x location
+     * @param y target y location
+     * @param z target zPosition location
+     * @return Returns a tile entity if the block at the location can create one.
+     * Will always create the tile entity if it can.
+     */
+    TileEntity getBlockTileEntityInChunk(int x, int y, int z);
 
     /**
      * Add a tile entity to this cube
@@ -125,6 +112,8 @@ public interface ICube extends XYZAddressable {
      * @param tileEntity The tile entity to add
      */
     void addTileEntity(TileEntity tileEntity);
+
+    void setBlockTileEntityInChunk(int x, int y, int z, TileEntity tileEntityIn);
 
     /**
      * Check if there are any non-air blocks in this cube
@@ -170,9 +159,9 @@ public interface ICube extends XYZAddressable {
     int getY();
 
     /**
-     * Retrieve this cube's z coordinate in cube space
+     * Retrieve this cube's zPosition coordinate in cube space
      *
-     * @return cube z position
+     * @return cube zPosition position
      */
     int getZ();
 
@@ -184,20 +173,23 @@ public interface ICube extends XYZAddressable {
     /**
      * Check whether a given global block position is contained in this cube
      *
-     * @param blockPos the position of the block
+     * @param x the x position of the block
+     * @param y the y position of the block
+     * @param z the zPosition position of the block
      *
      * @return {@code true} if the position is within this cube, {@code false} otherwise
      */
-    boolean containsPosition(int x, int y, int z);
+    boolean containsCoordinate(int x, int y, int z);
+
 
     @Nullable ExtendedBlockStorage getStorage();
 
-//    /**
-//     * Retrieve a map of positions to their respective tile entities
-//     *
-//     * @return a map containing all tile entities in this cube
-//     */
-//    Map<BlockPos, TileEntity> getTileEntityMap();
+    /**
+     * Retrieve a map of positions to their respective tile entities
+     *
+     * @return a map containing all tile entities in this cube
+     */
+        Map<ChunkPosition, TileEntity> getTileEntityMap();
 
     /**
      * Returns the internal entity container.
@@ -215,7 +207,7 @@ public interface ICube extends XYZAddressable {
      *
      * @return {@code true} if this cube should be written back to disk
      */
-    boolean needsSaving();
+    public boolean needsSaving(boolean saveAll);
 
     /**
      * Check whether this cube was populated, i.e. if this cube was passed as argument to
@@ -280,6 +272,8 @@ public interface ICube extends XYZAddressable {
             setBiome(localBiomeX >> 1, biomeY, localBiomeZ >> 1, biome);
         }
     }
+
+    public BlockPos localAddressToBlockPos(int localAddress);
 
     /**
      * Returns a set of reasons this cube is forced to remain loaded if it's forced to remain loaded,

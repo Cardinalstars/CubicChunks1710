@@ -22,7 +22,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.util;
+package com.cardinalstar.cubicchunks.api;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -34,7 +34,7 @@ public interface IHeightMap {
      *
      * @param localX local block x-coordinate (0..15)
      * @param blockY global block y-coordinate
-     * @param localZ local block z-coordinate (0..15)
+     * @param localZ local block zPosition-coordinate (0..15)
      * @param opacity new opacity (0..255)
      */
     void onOpacityChange(int localX, int blockY, int localZ, int opacity);
@@ -44,7 +44,7 @@ public interface IHeightMap {
      *
      * @param localX local block x-coordinate (0..15)
      * @param blockY global block y-coordinate
-     * @param localZ local block z-coordinate (0..15)
+     * @param localZ local block zPosition-coordinate (0..15)
      *
      * @return true if there exists a known non-opaque block above the given y-coordinate
      */
@@ -56,7 +56,7 @@ public interface IHeightMap {
      * Returns the y-coordinate of the highest non-transparent block in the specified block-column.
      *
      * @param localX local block x-coordinate (0..15)
-     * @param localZ local block z-coordinate (0..15)
+     * @param localZ local block zPosition-coordinate (0..15)
      *
      * @return Y position of the top non-transparent block, or very low (far below the min world height) if one doesn't
      * exist
@@ -67,7 +67,7 @@ public interface IHeightMap {
      * Returns the y-coordinate of the highest non-transparent block that is below the given blockY.
      *
      * @param localX local block x-coordinate (0..15)
-     * @param localZ local block z-coordinate (0..15)
+     * @param localZ local block zPosition-coordinate (0..15)
      * @param blockY only positions below or at this Y coordinate will be retuirned
      *
      * @return Y position of the top non-transparent block below blockY, or very low (far below the min world height) if

@@ -23,10 +23,10 @@
  *  THE SOFTWARE.
  */
 
-package com.cardinalstar.cubicchunks.core.world.api;
+package com.cardinalstar.cubicchunks.world.api;
 
-import com.cardinalstar.cubicchunks.world.cube.ICube;
-import com.cardinalstar.cubicchunks.core.world.cube.ICubeProvider;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import net.minecraft.world.chunk.Chunk;
 
 import javax.annotation.Nullable;
@@ -39,7 +39,7 @@ public interface ICubeProviderServer extends ICubeProvider {
      * Retrieve a column. The work done to retrieve the column is specified by the {@link Requirement} {@code req}
      *
      * @param columnX Column x position
-     * @param columnZ Column z position
+     * @param columnZ Column zPosition position
      * @param req Work done to retrieve the column
      *
      * @return the column, or {@code null} if no column could be created with the specified requirement level
@@ -52,7 +52,7 @@ public interface ICubeProviderServer extends ICubeProvider {
      *
      * @param cubeX the cube's x coordinate
      * @param cubeY the cube's y coordinate
-     * @param cubeZ the cube's z coordinate
+     * @param cubeZ the cube's zPosition coordinate
      * @param req what the requirments are before you get the Cube
      *
      * @return the Cube or null if no Cube could be found or created
@@ -69,7 +69,7 @@ public interface ICubeProviderServer extends ICubeProvider {
      *
      * @param cubeX x coordinate of the cube
      * @param cubeY y coordinate of the cube
-     * @param cubeZ z coordinate of the cube
+     * @param cubeZ zPosition coordinate of the cube
      * @return true iff, for this position, {@link #getCube(int, int, int, Requirement)} with {@link Requirement#LOAD}
      * would return a non-null value. The result is guaranteed to be true only if the world save is not corrupted
      * and can otherwise be correctly read.

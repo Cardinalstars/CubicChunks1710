@@ -1,2 +1,6 @@
-package com.cardinalstar.cubicchunks.lighting;public class PhosphorLightEngine {
+package com.cardinalstar.cubicchunks.lighting.phosphor;
+
+public class PhosphorLightEngine
+{
+
 }
