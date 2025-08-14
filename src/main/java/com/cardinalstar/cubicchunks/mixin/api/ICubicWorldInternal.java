@@ -23,22 +23,17 @@
  *  THE SOFTWARE.
  */
 
-package com.cardinalstar.cubicchunks.core.mixin.api;
+package com.cardinalstar.cubicchunks.mixin.api;
 
-import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
-import com.cardinalstar.cubicchunks.api.IntRange;
-import com.cardinalstar.cubicchunks.api.XYZMap;
-import com.cardinalstar.cubicchunks.api.XZMap;
+import com.cardinalstar.cubicchunks.api.*;
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
+import com.cardinalstar.cubicchunks.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.world.column.IColumn;
-import com.cardinalstar.cubicchunks.core.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.core.util.world.CubeSplitTickList;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.cardinalstar.cubicchunks.world.cube.ICube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 
 
@@ -56,7 +51,7 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
 
     /**
-     * Returns the {@link com.cardinalstar.cubicchunks.core.world.cube.ICubeProvider} for this world, or throws {@link com.cardinalstar.cubicchunks.api.NotCubicChunksWorldException}
+     * Returns the {@link com.cardinalstar.cubicchunks.world.cube.ICubeProvider} for this world, or throws {@link com.cardinalstar.cubicchunks.api.NotCubicChunksWorldException}
      * if this is not a CubicChunks world.
      */
     @Override

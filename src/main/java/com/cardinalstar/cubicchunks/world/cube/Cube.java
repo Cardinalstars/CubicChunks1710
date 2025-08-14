@@ -24,29 +24,45 @@
  */
 package com.cardinalstar.cubicchunks.world.cube;
 
-import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
+import static com.cardinalstar.cubicchunks.util.Coords.*;
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
-import com.cardinalstar.cubicchunks.core.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.core.util.TicketList;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.ICube;
 
+import com.cardinalstar.cubicchunks.api.IHeightMap;
+import com.cardinalstar.cubicchunks.event.events.CubeEvent;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.server.CubeWatcher;
+import com.cardinalstar.cubicchunks.server.SpawnCubes;
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.util.TicketList;
+import com.cardinalstar.cubicchunks.util.AddressTools;
+import com.cardinalstar.cubicchunks.util.CompatHandler;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.world.ICubeGenerator;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
+import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.crash.CrashReport;
+import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.ReportedException;
+import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.event.world.ChunkEvent;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BooleanSupplier;
+import java.util.concurrent.Callable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -62,6 +78,9 @@ public class Cube implements ICube {
     @Nullable
     protected static final ExtendedBlockStorage NULL_STORAGE = null;
 
+    /**
+     * A 16x16x16 mapping of the block biome array.
+     */
     @Nullable
     private byte[] blockBiomeArray = null;
 
@@ -91,6 +110,14 @@ public class Cube implements ICube {
     @Nonnull
     private final World world;
     /**
+     * Whether the cube has entities in it
+     */
+    public boolean hasEntities;
+    /**
+     * Last time the cube was saved.
+     */
+    protected long lastSaveTime;
+    /**
      * The column of this cube
      */
     @Nonnull
@@ -109,7 +136,7 @@ public class Cube implements ICube {
      * Entities in this cube
      */
     @Nonnull
-    public List[] entities;
+    public List<Entity> entities;
     /**
      * The position of tile entities in this cube, and their corresponding tile entity
      */
@@ -160,9 +187,10 @@ public class Cube implements ICube {
         this.column = column;
         this.coords = new CubeCoordIntTriple(column.xPosition, cubeY, column.zPosition);
 
-        this.tickets = new TicketList(this);
+        this.tickets = new TicketList(this); // TODO
 
-        this.entities = new List[16];
+        this.entities = new ArrayList<Entity>();
+
         this.cubeTileEntityMap = new HashMap<>();
 
         this.cubeLightData = ((ICubicWorldInternal) world).getLightingManager().createLightData(this);
@@ -195,7 +223,7 @@ public class Cube implements ICube {
                         {
                             this.storage = new ExtendedBlockStorage(cubeY, flag);
                         }
-                        this.storage.func_150818_a(x, y & 15, z, block);
+                        this.storage.func_150818_a(x, y, z, block);
                     }
                 }
             }
@@ -228,8 +256,8 @@ public class Cube implements ICube {
                             this.storage = new ExtendedBlockStorage(cubeY, flag);
                         }
 
-                        this.storage.func_150818_a(x, y & 15, z, block);
-                        this.storage.setExtBlockMetadata(x, y & 15, z, meta[blockIter]);
+                        this.storage.func_150818_a(x, y, z, block);
+                        this.storage.setExtBlockMetadata(x, y, z, meta[blockIter]);
                     }
                 }
             }
@@ -279,12 +307,13 @@ public class Cube implements ICube {
      *
      * @param x x position where the tile entity should be placed
      * @param y y position where the tile entity should be placed
-     * @param z z position where the tile entity should be placed
+     * @param z zPosition position where the tile entity should be placed
      * @return the created tile entity, or <code>null</code> if the block at that position does not provide tile
      * entities
      */
+    @Override
     @Nullable
-    private TileEntity createTileEntity(int x, int y, int z) {
+    public TileEntity getBlockTileEntityInChunk(int x, int y, int z) {
         Block block = this.getBlock(x, y, z);
         int meta = this.getBlockMetadata(x, y, z);
 
@@ -297,24 +326,47 @@ public class Cube implements ICube {
     /**
      * Returns the block corresponding to the given coordinates inside a cube.
      */
-    // TODO
+    @Override
     public Block getBlock(int x, int y, int z)
     {
-        return new Block();
+        Block block = Blocks.air;
+
+        if (storage != null)
+        {
+            try
+            {
+                block = storage.getBlockByExtId(x, y, z);
+            }
+            catch (Throwable throwable)
+            {
+                CrashReport crashreport = CrashReport.makeCrashReport(throwable, "Getting block");
+                CrashReportCategory crashreportcategory = crashreport.makeCategory("Block being got");
+                crashreportcategory.addCrashSectionCallable("Location", new Callable()
+                {
+                    private static final String __OBFID = "CL_00000374";
+                    public String call()
+                    {
+                        return CrashReportCategory.getLocationInfo(x, y, z);
+                    }
+                });
+                throw new ReportedException(crashreport);
+            }
+        }
+        return block;
     }
 
-    // TODO
     /**
      * Return the metadata corresponding to the given coordinates inside a cube.
      */
+    @Override
     public int getBlockMetadata(int x, int y, int z)
     {
-        return 0;
+        return storage != null ? storage.getExtBlockMetadata(x, y, z) : 0;
     }
 
     @Override
     @Nullable
-    public TileEntity getTileEntity(int x, int y, int z) { // TODO WATCH
+    public TileEntity getTileEntityUnsafe(int x, int y, int z) { // TODO WATCH
         return column.getTileEntityUnsafe(x, y, z);
     }
 
@@ -323,25 +375,33 @@ public class Cube implements ICube {
     // the start of loading TEs in column gets changed.
     @Override
     public void addTileEntity(TileEntity tileEntityIn) {
-        this.addTileEntity(tileEntityIn.xCoord, tileEntityIn.yCoord, tileEntityIn.zCoord, tileEntityIn);
+        int i = tileEntityIn.xCoord - this.coords.getX() * 16;
+        int j = tileEntityIn.yCoord;
+        int k = tileEntityIn.zCoord - this.coords.getZ() * 16;
+        this.setBlockTileEntityInChunk(i, j, k, tileEntityIn);
         if (this.isCubeLoaded) {
             this.world.addTileEntity(tileEntityIn);
         }
     }
 
-    private void addTileEntity(int x, int y, int z, TileEntity tileEntityIn) {
-        if (tileEntityIn.getWorld() != this.world) { //Forge don't call unless it's changed, could screw up bad mods.
-            tileEntityIn.setWorld(this.world);
-        }
-        tileEntityIn.setPos(pos);
+    public void setBlockTileEntityInChunk(int x, int y, int z, TileEntity tileEntityIn)
+    {
+        ChunkPosition chunkposition = new ChunkPosition(x, y, z);
+        tileEntityIn.setWorldObj(this.world);
+        tileEntityIn.xCoord = this.coords.getX() * 16 + x;
+        tileEntityIn.yCoord = y;
+        tileEntityIn.zCoord = this.coords.getZ() * 16 + z;
 
-        if (this.getBlockState(pos).getBlock().hasTileEntity(this.getBlockState(pos))) {
-            if (this.tileEntityMap.containsKey(pos)) {
-                this.tileEntityMap.get(pos).invalidate();
+        int metadata = getBlockMetadata(x, y, z);
+        if (this.getBlock(x, y, z).hasTileEntity(metadata))
+        {
+            if (this.cubeTileEntityMap.containsKey(chunkposition))
+            {
+                ((TileEntity)this.cubeTileEntityMap.get(chunkposition)).invalidate();
             }
 
             tileEntityIn.validate();
-            this.tileEntityMap.put(pos, tileEntityIn);
+            this.cubeTileEntityMap.put(chunkposition, tileEntityIn);
         }
     }
 
@@ -350,58 +410,55 @@ public class Cube implements ICube {
      *
      * @param tryToTickFaster Whether costly calculations should be skipped in order to catch up with ticks
      */
-    public void tickCubeCommon(BooleanSupplier tryToTickFaster) {
-        this.ticked = true;
-        while (!this.tileEntityPosQueue.isEmpty()) {
-            BlockPos blockpos = this.tileEntityPosQueue.poll();
-
-            IBlockState state = this.getBlockState(blockpos);
-            Block block = state.getBlock();
-
-            if (this.getTileEntity(blockpos, Chunk.EnumCreateEntityType.CHECK) == null &&
-                block.hasTileEntity(state)) {
-                TileEntity tileentity = this.createTileEntity(blockpos);
-                this.world.setTileEntity(blockpos, tileentity);
-                this.world.markBlockRangeForRenderUpdate(blockpos, blockpos);
-            }
-        }
-    }
-
-    /**
-     * Tick this cube on server side. Block tick updates launched here.
-     *
-     * @param tryToTickFaster - returns true when running out of reserved tick time
-     * @param rand            - World specific Random
-     */
-    public void tickCubeServer(BooleanSupplier tryToTickFaster, Random rand) {
-        if (!isFullyPopulated) {
-            return;
-        }
-
-        tickCubeCommon(tryToTickFaster);
-    }
+//    public void tickCubeCommon(BooleanSupplier tryToTickFaster) {
+//        this.ticked = true;
+//        while (!this.tileEntityPosQueue.isEmpty()) {
+//            BlockPos blockpos = this.tileEntityPosQueue.poll();
+//
+//            IBlockState state = this.getBlockState(blockpos);
+//            Block block = state.getBlock();
+//
+//            if (this.getTileEntity(blockpos, Chunk.EnumCreateEntityType.CHECK) == null &&
+//                block.hasTileEntity(state)) {
+//                TileEntity tileentity = this.createTileEntity(blockpos);
+//                this.world.setTileEntity(blockpos, tileentity);
+//                this.world.markBlockRangeForRenderUpdate(blockpos, blockpos);
+//            }
+//        }
+//    }
+//
+//    /**
+//     * Tick this cube on server side. Block tick updates launched here.
+//     *
+//     * @param tryToTickFaster - returns true when running out of reserved tick time
+//     * @param rand            - World specific Random
+//     */
+//    public void tickCubeServer(BooleanSupplier tryToTickFaster, Random rand) {
+//        if (!isFullyPopulated) {
+//            return;
+//        }
+//
+//        tickCubeCommon(tryToTickFaster);
+//    }
 
     /**
      * @return biome or null if {@link #blockBiomeArray} is not generated by
-     * cube generator
+     * cube generator. Input coordinates are in cube coordinate space.
      */
     @Override
-    public Biome getBiome(BlockPos pos) {
+    public BiomeGenBase getBiome(int biomeX, int biomeY, int biomeZ) {
         if (this.blockBiomeArray == null)
-            return this.getColumn().getBiome(pos, world.getBiomeProvider());
-        int biomeX = Coords.blockToLocalBiome3d(pos.getX());
-        int biomeY = Coords.blockToLocalBiome3d(pos.getY());
-        int biomeZ = Coords.blockToLocalBiome3d(pos.getZ());
+            return this.getColumn().getBiomeGenForWorldCoords(biomeX, biomeY, world.provider.worldChunkMgr); // TODO
         int biomeId = this.blockBiomeArray[AddressTools.getBiomeAddress3d(biomeX, biomeY, biomeZ)] & 255;
-        return Biome.getBiome(biomeId);
+        return BiomeGenBase.getBiome(biomeId);
     }
 
     @Override
-    public void setBiome(int localBiomeX, int localBiomeY, int localBiomeZ, Biome biome) {
+    public void setBiome(int localBiomeX, int localBiomeY, int localBiomeZ, BiomeGenBase biome) {
         if (this.blockBiomeArray == null)
-            this.blockBiomeArray = new byte[4 * 4 * 4];
+            this.blockBiomeArray = new byte[16 * 16 * 16];
 
-        this.blockBiomeArray[AddressTools.getBiomeAddress3d(localBiomeX, localBiomeY, localBiomeZ)] = (byte) Biome.REGISTRY.getIDForObject(biome);
+        this.blockBiomeArray[AddressTools.getBiomeAddress3d(localBiomeX, localBiomeY, localBiomeZ)] = (byte) biome.biomeID;
     }
 
     @Nullable
@@ -429,7 +486,8 @@ public class Cube implements ICube {
     }
 
     @Override
-    public BlockPos localAddressToBlockPos(int localAddress) {
+    public BlockPos localAddressToBlockPos(int localAddress)
+    {
         int x = localToBlock(this.coords.getX(), AddressTools.getLocalX(localAddress));
         int y = localToBlock(this.coords.getY(), AddressTools.getLocalY(localAddress));
         int z = localToBlock(this.coords.getZ(), AddressTools.getLocalZ(localAddress));
@@ -468,10 +526,10 @@ public class Cube implements ICube {
     }
 
     @Override
-    public boolean containsBlockPos(BlockPos blockPos) {
-        return this.coords.getX() == blockToCube(blockPos.getX())
-            && this.coords.getY() == blockToCube(blockPos.getY())
-            && this.coords.getZ() == blockToCube(blockPos.getZ());
+    public boolean containsCoordinate(int x, int y, int z) {
+        return this.coords.getX() == blockToCube(x)
+            && this.coords.getY() == blockToCube(y)
+            && this.coords.getZ() == blockToCube(z);
     }
 
     @Override
@@ -495,22 +553,23 @@ public class Cube implements ICube {
     }
 
     private void newStorage() {
-        storage = new ExtendedBlockStorage(cubeToMinBlock(getY()), world.provider.hasSkyLight());
+        storage = new ExtendedBlockStorage(cubeToMinBlock(getY()), !world.provider.hasNoSky);
     }
 
     @Override
-    public Map<BlockPos, TileEntity> getTileEntityMap() {
-        return this.tileEntityMap;
+    public Map<ChunkPosition, TileEntity> getTileEntityMap() {
+        return this.cubeTileEntityMap;
     }
 
     @Override
-    public ClassInheritanceMultiMap<Entity> getEntitySet() {
-        return this.entities.getEntitySet();
+    public List<Entity> getEntitySet() {
+        return this.entities;
     }
 
     @Override
     public void addEntity(Entity entity) {
-        this.entities.addEntity(entity);
+        this.hasEntities = true;
+        this.entities.add(entity);
     }
 
     @Override
@@ -518,7 +577,7 @@ public class Cube implements ICube {
         return this.entities.remove(entity);
     }
 
-    public EntityContainer getEntityContainer() {
+    public List<Entity> getEntityContainer() {
         return this.entities;
     }
 
@@ -537,15 +596,16 @@ public class Cube implements ICube {
     /**
      * Finish the cube loading process
      */
-    public void onLoad() {
+    public void onCubeLoad() {
         if (isCubeLoaded) {
             CubicChunks.LOGGER.error("Attempting to load already loaded cube at " + this.getCoords());
             return;
         }
         // tell the world about tile entities
-        this.world.addTileEntities(this.tileEntityMap.values());
-        this.world.loadEntities(this.entities.getEntities());
         this.isCubeLoaded = true;
+        this.world.func_147448_a(this.cubeTileEntityMap.values());
+        this.world.addLoadedEntities(this.entities);
+
         if (!isSurfaceTracked) {
             ((IColumnInternal) getColumn()).addToStagingHeightmap(this);
         }
@@ -563,10 +623,10 @@ public class Cube implements ICube {
             for (int z = 0; z < Cube.SIZE; z++) {
 
                 for (int y = Cube.SIZE - 1; y >= 0; y--) {
-                    IBlockState newstate = this.getBlockState(x, y, z);
+                    Block newBlock = this.getBlock(x, y, z);
 
-                    column.setModified(true); //TODO: maybe ServerHeightMap needs its own isModified?
-                    opindex.onOpacityChange(x, miny + y, z, newstate.getLightOpacity());
+                    column.setChunkModified(); //TODO: maybe ServerHeightMap needs its own isModified?
+                    opindex.onOpacityChange(x, miny + y, z, newBlock.getLightOpacity());
                 }
             }
         }
@@ -578,7 +638,7 @@ public class Cube implements ICube {
     /**
      * Mark this cube as no longer part of this world
      */
-    public void onUnload() {
+    public void onCubeUnload() {
         ((ICubicWorldInternal) this.world).getLightingManager().onCubeUnload(this);
 
         if (!isCubeLoaded) {
@@ -590,9 +650,9 @@ public class Cube implements ICube {
         this.isCubeLoaded = false;
 
         // tell the world to forget about entities
-        this.world.unloadEntities(this.entities.getEntities());
+        this.world.unloadEntities(this.entities);
 
-        for (Entity entity : this.entities.getEntities()) {
+        for (Entity entity : this.entities) {
             //CHECKED: 1.10.2-12.18.1.2092
             entity.addedToChunk = false; // World tries to remove entities from Cubes
             // if (addedToCube || Column is loaded)
@@ -601,26 +661,40 @@ public class Cube implements ICube {
         }
 
         // tell the world to forget about tile entities
-        for (TileEntity blockEntity : this.tileEntityMap.values()) {
-            this.world.markTileEntityForRemoval(blockEntity);
+        for (TileEntity tileEntity : this.cubeTileEntityMap.values()) {
+            this.world.func_147457_a(tileEntity);
         }
         ((IColumnInternal) getColumn()).removeFromStagingHeightmap(this);
         EVENT_BUS.post(new CubeEvent.Unload(this));
     }
 
     @Override
-    public boolean needsSaving() {
-        return this.entities.needsSaving(true, this.world.getTotalWorldTime(), this.isModified) || cubeLightData.needsSaving(this);
+    public boolean needsSaving(boolean saveAll)
+    {
+        if (saveAll)
+        {
+            if (this.hasEntities && this.world.getTotalWorldTime() != this.lastSaveTime || this.isModified)
+            {
+                return true;
+            }
+        }
+        else if (this.hasEntities && this.world.getTotalWorldTime() >= this.lastSaveTime + 600L)
+        {
+            return true;
+        }
+
+        return this.isModified || cubeLightData.needsSaving(this);
     }
 
-    /**
-     * Mark this cube as saved to disk
-     */
-    public void markSaved() {
-        this.entities.markSaved(this.world.getTotalWorldTime());
-        this.isModified = false;
-        this.cubeLightData.markSaved(this);
-    }
+    // TODO Check that is this is updated correctly in the CubeProviderServer
+//    /**
+//     * Mark this cube as saved to disk
+//     */
+//    public void markSaved() {
+//        this.entities.markSaved(this.world.getTotalWorldTime());
+//        this.isModified = false;
+//        this.cubeLightData.markSaved(this);
+//    }
 
     /**
      * Mark this cube as one, who need to be saved to disk
@@ -742,11 +816,6 @@ public class Cube implements ICube {
         return ticked;
     }
 
-    @Override
-    @Nullable
-    public CapabilityDispatcher getCapabilities() {
-        return this.capabilities;
-    }
 
     @Override
     public EnumSet<ForcedLoadReason> getForceLoadStatus() {
@@ -770,16 +839,6 @@ public class Cube implements ICube {
         return forcedLoadReasons;
     }
 
-    @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
-        return this.capabilities != null && this.capabilities.hasCapability(capability, facing);
-    }
-
-    @Override
-    @Nullable
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
-        return this.capabilities == null ? null : this.capabilities.getCapability(capability, facing);
-    }
 
     public interface ICubeLightTrackingInfo {
         boolean needsSaving(ICube cube);

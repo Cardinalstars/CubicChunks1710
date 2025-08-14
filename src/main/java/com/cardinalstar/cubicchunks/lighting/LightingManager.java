@@ -23,9 +23,13 @@
  *  THE SOFTWARE.
  */
 
-package com.cardinalstar.cubicchunks.core.lighting;
+package com.cardinalstar.cubicchunks.lighting;
 
-import com.cardinalstar.cubicchunks.world.cube.ICube;
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.lighting.phosphor.PhosphorLightEngine;
+import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
@@ -80,11 +84,12 @@ public class LightingManager implements ILightingManager {
         LightingHooks.initSkylightForSection(world, cube.getColumn(), storage);
     }
 
-    @Override public boolean checkLightFor(EnumSkyBlock lightType, BlockPos pos) {
+    @Override public boolean checkLightFor(EnumSkyBlock lightType, int x, int y, int z)
+    {
         if (CubicChunksConfig.disableLighting) {
             return true;
         }
-        lightEngine.scheduleLightUpdate(lightType, pos);
+        lightEngine.scheduleLightUpdate(lightType, x, y, z);
         return true;
     }
 
@@ -107,7 +112,7 @@ public class LightingManager implements ILightingManager {
     }
 
     @Override public void writeToNbt(ICube cube, NBTTagCompound lightingInfo) {
-        int[] lastHeightmap = cube.getColumn().getHeightMap();
+        int[] lastHeightmap = cube.getColumn().heightMap;
         lightingInfo.setIntArray("LastHeightMap", lastHeightmap);
         LightingHooks.writeNeighborLightChecksToNBT(cube, lightingInfo);
     }
@@ -155,8 +160,8 @@ public class LightingManager implements ILightingManager {
 
     @Override public void onTrackCubeSurface(ICube cube) {
         if (!world.isRemote) {
-            BlockPos min = cube.getCoords().getMinBlockPos();
-            BlockPos max = cube.getCoords().getMaxBlockPos();
+            CubeCoordIntTriple min = cube.getCoords().getMinBlockPos();
+            CubeCoordIntTriple max = cube.getCoords().getMaxBlockPos();
             for (BlockPos.MutableBlockPos pos : BlockPos.getAllInBoxMutable(min, max.add(1, 1, 1))) {
                 ((PlayerCubeMap) ((WorldServer) world).getPlayerChunkMap()).heightUpdated(pos.getX(), pos.getZ());
             }

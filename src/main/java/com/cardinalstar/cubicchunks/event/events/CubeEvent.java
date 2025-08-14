@@ -22,9 +22,9 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.core.event.events;
+package com.cardinalstar.cubicchunks.event.events;
 
-import com.cardinalstar.cubicchunks.world.cube.ICube;
+import com.cardinalstar.cubicchunks.api.ICube;
 import net.minecraftforge.event.world.WorldEvent;
 
 /**

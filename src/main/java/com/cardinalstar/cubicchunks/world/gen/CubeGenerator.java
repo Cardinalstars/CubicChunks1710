@@ -4,7 +4,7 @@ import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
-import com.cardinalstar.cubicchunks.world.cube.ICube;
+import com.cardinalstar.cubicchunks.api.ICube;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;

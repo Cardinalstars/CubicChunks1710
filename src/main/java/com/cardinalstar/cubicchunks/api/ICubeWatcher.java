@@ -22,37 +22,28 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+package com.cardinalstar.cubicchunks.api;
 
-package com.cardinalstar.cubicchunks.world.core;
 
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.core.world.cube.Cube;
-import net.minecraft.network.PacketBuffer;
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
 
-public interface IColumnInternal extends IColumn {
-    // ChunkPrimer getCompatGenerationPrimer(); TODO?
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 
-    void removeFromStagingHeightmap(ICube cube);
+@ParametersAreNonnullByDefault
+public interface ICubeWatcher extends XYZAddressable {
 
-    void addToStagingHeightmap(ICube cube);
+    boolean isSentToPlayers();
 
-    /**
-     * Returns Y coordinate of the top non-transparent block
-     *
-     * @param localX column-local X coordinate
-     * @param localZ column-local Z coordinate
-     * @return the Y coordinate of the top non-transparent block
-     */
-    int getTopYWithStaging(int localX, int localZ);
+    @Nullable ICube getCube();
 
-    default void writeHeightmapDataForClient(PacketBuffer out) {
-        for (int i = 0; i < Cube.SIZE * Cube.SIZE; i++) {
-            out.writeInt(getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
-        }
-    }
+    void sendPacketToAllPlayers(IMessage packet);
 
-    default void loadClientHeightmapData(PacketBuffer in) {
-        ((ClientHeightMap) getOpacityIndex()).loadData(in);
-    }
+    @Override int getX();
+
+    @Override int getY();
+
+    @Override int getZ();
+
+    boolean shouldTick();
 }

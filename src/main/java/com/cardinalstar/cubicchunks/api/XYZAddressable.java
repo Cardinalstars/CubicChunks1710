@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.util;/*
+package com.cardinalstar.cubicchunks.api;/*
  *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
  *
  *  Copyright (c) 2015-2021 OpenCubicChunks

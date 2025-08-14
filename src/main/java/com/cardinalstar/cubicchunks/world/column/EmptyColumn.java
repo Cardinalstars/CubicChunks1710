@@ -31,7 +31,7 @@ import java.util.Random;
 import javax.annotation.Nullable;
 
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
-import com.cardinalstar.cubicchunks.world.cube.ICube;
+import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.util.IHeightMap;
 
 
@@ -57,7 +57,7 @@ public class EmptyColumn extends Chunk implements IColumn {
     }
 
     /**
-     * Returns the value in the height map at this x, z coordinate in the chunk
+     * Returns the value in the height map at this x, zPosition coordinate in the chunk
      */
     @Override
     public int getHeightValue(int x, int z) {
@@ -188,7 +188,7 @@ public class EmptyColumn extends Chunk implements IColumn {
     }
 
 //    @Override
-//    public int getLightSubtracted(int x, int y, int z, int amount) {
+//    public int getLightSubtracted(int x, int y, int zPosition, int amount) {
 //        return 0;
 //    }
 
