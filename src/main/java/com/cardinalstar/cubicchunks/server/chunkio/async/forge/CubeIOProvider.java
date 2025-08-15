@@ -1,8 +1,7 @@
-package com.cardinalstar.cubicchunks.core.server.chunkio.async.forge;
+package com.cardinalstar.cubicchunks.server.chunkio.async.forge;
 
 import com.cardinalstar.cubicchunks.event.events.CubeDataEvent;
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
-import com.cardinalstar.cubicchunks.core.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
