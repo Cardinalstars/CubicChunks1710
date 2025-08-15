@@ -25,7 +25,7 @@
 
 package com.cardinalstar.cubicchunks.util.world;
 
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import net.minecraft.world.NextTickListEntry;
 
 import java.util.AbstractSet;
@@ -54,10 +54,10 @@ import java.util.Set;
  */
 public class CubeSplitTickSet implements Set<NextTickListEntry> {
 
-    private final Map<CubeCoordIntTriple, NextTickListEntryHashSet> byCube = new HashMap<>();
+    private final Map<CubePos, NextTickListEntryHashSet> byCube = new HashMap<>();
     private final NextTickListEntryHashSet all = new NextTickListEntryHashSet();
 
-    public Set<NextTickListEntry> getForCube(CubeCoordIntTriple pos) {
+    public Set<NextTickListEntry> getForCube(CubePos pos) {
         Set<NextTickListEntry> val = byCube.get(pos);
         return val == null ? Collections.emptySet() : val;
     }
@@ -95,7 +95,7 @@ public class CubeSplitTickSet implements Set<NextTickListEntry> {
     }
 
     private void removeByCube(NextTickListEntry e) {
-        CubeCoordIntTriple pos = CubeCoordIntTriple.fromBlockCoords(e.xCoord, e.yCoord, e.zCoord);
+        CubePos pos = CubePos.fromBlockCoords(e.xCoord, e.yCoord, e.zCoord);
         Set<NextTickListEntry> set = byCube.get(pos);
         set.remove(e);
         if (set.isEmpty()) {
@@ -113,7 +113,7 @@ public class CubeSplitTickSet implements Set<NextTickListEntry> {
 
     @Override public boolean add(NextTickListEntry e) {
         boolean ret = all.add(e);
-        byCube.computeIfAbsent(CubeCoordIntTriple.fromBlockCoords(e.xCoord, e.yCoord, e.zCoord), x -> new NextTickListEntryHashSet()).add(e);
+        byCube.computeIfAbsent(CubePos.fromBlockCoords(e.xCoord, e.yCoord, e.zCoord), x -> new NextTickListEntryHashSet()).add(e);
         return ret;
     }
 

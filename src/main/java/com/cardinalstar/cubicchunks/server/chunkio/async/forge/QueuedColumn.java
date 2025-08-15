@@ -17,11 +17,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
- package com.cardinalstar.cubicchunks.core.server.chunkio.async.forge;
+ package com.cardinalstar.cubicchunks.server.chunkio.async.forge;
 
 
- import com.cardinalstar.cubicchunks.core.server.CubeProviderServer;
- import com.cardinalstar.cubicchunks.core.server.CubicAnvilChunkLoader;
+ import com.cardinalstar.cubicchunks.server.CubeProviderServer;
+ import com.cardinalstar.cubicchunks.server.CubicAnvilChunkLoader;
  import net.minecraft.world.World;
 
  class QueuedColumn {
