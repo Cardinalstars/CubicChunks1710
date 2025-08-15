@@ -22,19 +22,24 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-
 package com.cardinalstar.cubicchunks.world;
 
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
-import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
 
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
 
 @ParametersAreNonnullByDefault
 public interface ICubicWorld extends IMinMaxHeight {
@@ -58,33 +63,33 @@ public interface ICubicWorld extends IMinMaxHeight {
      *
      * @param cubePos cube position to find surface for
      * @param xOffset x coordinate of population area offset relative to cube origin
-     * @param zOffset zPosition coordinate of population area offset relative to cube origin
+     * @param zOffset z coordinate of population area offset relative to cube origin
      * @param forcedAdditionalCubes amount of additional cubes above to scan
      * @param type surface type
      * @return position of the block above the top block matching criteria specified by surface type, or null if it doesn't exist
      */
-//    public default BlockPos getSurfaceForCube(CubePos cubePos, int xOffset, int zOffset, int forcedAdditionalCubes, SurfaceType type) {
-//        return getSurfaceForCube(cubePos, xOffset, zOffset, forcedAdditionalCubes, (pos, state) -> canBeTopBlock(pos, state, type));
-//    }
+    public default BlockPos getSurfaceForCube(CubePos cubePos, int xOffset, int zOffset, int forcedAdditionalCubes, SurfaceType type) {
+        return getSurfaceForCube(cubePos, xOffset, zOffset, forcedAdditionalCubes, (pos, block) -> canBeTopBlock(pos, block, type));
+    }
 
-//    @Nullable
-//    public default BlockPos getSurfaceForCube(CubePos pos, int xOffset, int zOffset, int forcedAdditionalCubes, BiPredicate<BlockPos, IBlockState> canBeTopBlock) {
-//        int maxFreeY = pos.getMaxBlockY() + ICube.SIZE / 2;
-//        int minFreeY = pos.getMinBlockY() + ICube.SIZE / 2;
-//        int startY = pos.above().getMaxBlockY() + forcedAdditionalCubes * ICube.SIZE;
-//
-//        BlockPos start = new BlockPos(
-//            pos.getMinBlockX() + xOffset,
-//            startY,
-//            pos.getMinBlockZ() + zOffset
-//        );
-//        return findTopBlock(start, minFreeY, maxFreeY, canBeTopBlock);
-//    }
+    @Nullable
+    public default BlockPos getSurfaceForCube(CubePos pos, int xOffset, int zOffset, int forcedAdditionalCubes, BiPredicate<BlockPos, Block> canBeTopBlock) {
+        int maxFreeY = pos.getMaxBlockY() + ICube.SIZE / 2;
+        int minFreeY = pos.getMinBlockY() + ICube.SIZE / 2;
+        int startY = pos.above().getMaxBlockY() + forcedAdditionalCubes * ICube.SIZE;
 
-//    @Nullable
-//    default BlockPos findTopBlock(BlockPos start, int minTopY, int maxTopY, SurfaceType type) {
-//        return findTopBlock(start, minTopY, maxTopY, (pos, state) -> canBeTopBlock(pos, state, type));
-//    }
+        BlockPos start = new BlockPos(
+            pos.getMinBlockX() + xOffset,
+            startY,
+            pos.getMinBlockZ() + zOffset
+        );
+        return findTopBlock(start, minFreeY, maxFreeY, canBeTopBlock);
+    }
+
+    @Nullable
+    default BlockPos findTopBlock(BlockPos start, int minTopY, int maxTopY, SurfaceType type) {
+        return findTopBlock(start, minTopY, maxTopY, (pos, state) -> canBeTopBlock(pos, state, type));
+    }
 
     /**
      * Finds the top block between minTopY and maxTopY, startiung the search at start.
@@ -99,43 +104,43 @@ public interface ICubicWorld extends IMinMaxHeight {
      * @param canBeTopBlock checks whether a block at given position should be considered "surface".
      * @return the top found position
      */
-//    @Nullable
-//    default BlockPos findTopBlock(BlockPos start, int minTopY, int maxTopY, BiPredicate<BlockPos, IBlockState> canBeTopBlock) {
-//        BlockPos pos = start;
-//        IBlockState startState = ((World) this).getBlockState(start);
-//        if (canBeTopBlock.test(start, startState)) {
-//            // the top tested block is "top", don't use that one because we don't know what is above
-//            return null;
-//        }
-//        ICube cube = getCubeFromBlockCoords(pos.down());
-//        while (pos.getY() >= minTopY) {
-//            BlockPos next = pos.down();
-//            if (blockToCube(next.getY()) != cube.getY()) {
-//                cube = getCubeFromBlockCoords(next);
-//            }
-//            if (!cube.isEmpty()) {
-//                IBlockState state = cube.getBlockState(next);
-//                if (canBeTopBlock.test(next, state)) {
-//                    break;
-//                }
-//            }
-//            pos = next;
-//        }
-//        if (pos.getY() < minTopY || pos.getY() > maxTopY) {
-//            return null;
-//        }
-//        return pos;
-//    }
+    @Nullable
+    default BlockPos findTopBlock(BlockPos start, int minTopY, int maxTopY, BiPredicate<BlockPos, Block> canBeTopBlock) {
+        BlockPos pos = start;
+        Block startState = ((World) this).getBlock(start.getX(), start.getY(), start.getZ());
+        if (canBeTopBlock.test(start, startState)) {
+            // the top tested block is "top", don't use that one because we don't know what is above
+            return null;
+        }
+        ICube cube = getCubeFromBlockCoords(pos.down());
+        while (pos.getY() >= minTopY) {
+            BlockPos next = pos.down();
+            if (blockToCube(next.getY()) != cube.getY()) {
+                cube = getCubeFromBlockCoords(next);
+            }
+            if (!cube.isEmpty()) {
+                Block state = cube.getBlock(next.getX(), next.getY(), next.getZ());
+                if (canBeTopBlock.test(next, state)) {
+                    break;
+                }
+            }
+            pos = next;
+        }
+        if (pos.getY() < minTopY || pos.getY() > maxTopY) {
+            return null;
+        }
+        return pos;
+    }
 
-    public default boolean canBeTopBlock(int x, int y, int z, Block block, SurfaceType type) {
+    public default boolean canBeTopBlock(BlockPos pos, Block block, SurfaceType type) {
         switch (type) {
             case SOLID: {
                 return block.getMaterial().blocksMovement()
-                    && !block.isLeaves((World) this, x, y, z)
-                    && !block.isFoliage((World) this, x, y, z);
+                    && !block.isLeaves((World) this, pos.getX(), pos.getY(), pos.getZ())
+                    && !block.isFoliage((World) this, pos.getX(), pos.getY(), pos.getZ());
             }
             case OPAQUE: {
-                return block.getLightOpacity((World) this, x, y, z) != 0;
+                return block.getLightOpacity((World) this, pos.getX(), pos.getY(), pos.getZ()) != 0;
             }
             case BLOCKING_MOVEMENT: {
                 return block.getMaterial().blocksMovement() || block.getMaterial().isLiquid();
@@ -149,14 +154,15 @@ public interface ICubicWorld extends IMinMaxHeight {
      * Returns true iff the given Predicate evaluates to true for all cubes for block positions within blockRadius from
      * centerPos. Only cubes that exist are tested. If some cubes within that range aren't loaded - returns false.
      *
+     * @param centerPos position to start at
      * @param blockRadius radius in block to test, starting from centerPos
      * @param test the test to apply
      * @return false if any invokation of the given predicate returns false, true otherwise
      */
-    default boolean testForCubes(int x, int y, int z, int blockRadius, Predicate<ICube> test) {
+    default boolean testForCubes(BlockPos centerPos, int blockRadius, Predicate<ICube> test) {
         return testForCubes(
-            x - blockRadius, y - blockRadius, z - blockRadius,
-            x + blockRadius, y + blockRadius, z + blockRadius,
+            centerPos.getX() - blockRadius, centerPos.getY() - blockRadius, centerPos.getZ() - blockRadius,
+            centerPos.getX() + blockRadius, centerPos.getY() + blockRadius, centerPos.getZ() + blockRadius,
             test
         );
     }
@@ -168,17 +174,17 @@ public interface ICubicWorld extends IMinMaxHeight {
      *
      * @param minBlockX minimum block x coordinate
      * @param minBlockY minimum block y coordinate
-     * @param minBlockZ minimum block zPosition coordinate
+     * @param minBlockZ minimum block z coordinate
      * @param maxBlockX maximum block x coordinate
      * @param maxBlockY maximum block y coordinate
-     * @param maxBlockZ maximum block zPosition coordinate
+     * @param maxBlockZ maximum block z coordinate
      * @param test the test to apply
      * @return false if any invokation of the given predicate returns false, true otherwise
      */
     default boolean testForCubes(int minBlockX, int minBlockY, int minBlockZ, int maxBlockX, int maxBlockY, int maxBlockZ, Predicate<ICube> test) {
         return testForCubes(
-            CubeCoordIntTriple.fromBlockCoords(minBlockX, minBlockY, minBlockZ),
-            CubeCoordIntTriple.fromBlockCoords(maxBlockX, maxBlockY, maxBlockZ),
+            CubePos.fromBlockCoords(minBlockX, minBlockY, minBlockZ),
+            CubePos.fromBlockCoords(maxBlockX, maxBlockY, maxBlockZ),
             test
         );
     }
@@ -193,7 +199,7 @@ public interface ICubicWorld extends IMinMaxHeight {
      * @return false if any invokation of the given predicate returns false, true otherwise
 
      */
-    boolean testForCubes(CubeCoordIntTriple start, CubeCoordIntTriple end, Predicate<? super ICube> test);
+    boolean testForCubes(CubePos start, CubePos end, Predicate<? super ICube> test);
 
     /**
      * Return the actual world height for this world. Typically this is 256 for worlds with a sky, and 128 for worlds
@@ -205,12 +211,13 @@ public interface ICubicWorld extends IMinMaxHeight {
 
     ICube getCubeFromCubeCoords(int cubeX, int cubeY, int cubeZ);
 
-    default ICube getCubeFromCubeCoords(CubeCoordIntTriple pos) {
+    default ICube getCubeFromCubeCoords(CubePos pos) {
         return getCubeFromCubeCoords(pos.getX(), pos.getY(), pos.getZ());
     }
 
 
     ICube getCubeFromBlockCoords(int x, int y, int z);
+    ICube getCubeFromBlockCoords(BlockPos pos);
 
     int getEffectiveHeight(int blockX, int blockZ);
 
