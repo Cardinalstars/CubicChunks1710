@@ -24,70 +24,70 @@
  */
 package com.cardinalstar.cubicchunks.server.chunkio;
 
-import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
-import io.github.opencubicchunks.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
-import io.github.opencubicchunks.cubicchunks.api.worldgen.LoadingData;
-import io.github.opencubicchunks.cubicchunks.core.world.cube.Cube;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.storage.IThreadedFileIO;
-
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
+import com.cardinalstar.cubicchunks.api.worldgen.LoadingData;
+import com.cardinalstar.cubicchunks.util.ChunkPos;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.storage.IThreadedFileIO;
+
 public interface ICubeIO extends Flushable, AutoCloseable, IThreadedFileIO {
-	@Override
-	void flush() throws IOException;
+    @Override
+    void flush() throws IOException;
 
-	@Override
-	void close() throws IOException;
+    @Override
+    void close() throws IOException;
 
-	default PartialData<Chunk> loadColumnAsyncPart(World world, int chunkX, int chunkZ) throws IOException {
-		PartialData<Chunk> data = loadColumnNbt(chunkX, chunkZ);
-		Collection<BiConsumer<? super World, ? super LoadingData<ChunkPos>>> asyncCallbacks = CubeGeneratorsRegistry.getColumnAsyncLoadingCallbacks();
-		if (!asyncCallbacks.isEmpty()) {
-			ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
-			LoadingData<ChunkPos> chunkLoadingData = new LoadingData<>(chunkPos, data.getNbt());
-			asyncCallbacks.forEach(cons -> cons.accept(world, chunkLoadingData));
-			data.setNbt(chunkLoadingData.getNbt());
-		}
-		loadColumnAsyncPart(data, chunkX, chunkZ);
-		return data;
-	}
+    default PartialData<Chunk> loadColumnAsyncPart(World world, int chunkX, int chunkZ) throws IOException {
+        PartialData<Chunk> data = loadColumnNbt(chunkX, chunkZ);
+            Collection<BiConsumer<? super World, ? super LoadingData<ChunkPos>>> asyncCallbacks = CubeGeneratorsRegistry.getColumnAsyncLoadingCallbacks();
+        if (!asyncCallbacks.isEmpty()) {
+            ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
+            LoadingData<ChunkPos> chunkLoadingData = new LoadingData<>(chunkPos, data.getNbt());
+            asyncCallbacks.forEach(cons -> cons.accept(world, chunkLoadingData));
+            data.setNbt(chunkLoadingData.getNbt());
+        }
+        loadColumnAsyncPart(data, chunkX, chunkZ);
+        return data;
+    }
 
-	PartialData<Chunk> loadColumnNbt(int chunkX, int chunkZ) throws IOException;
+    PartialData<Chunk> loadColumnNbt(int chunkX, int chunkZ) throws IOException;
 
-	void loadColumnAsyncPart(PartialData<Chunk> info, int chunkX, int chunkZ);
+    void loadColumnAsyncPart(PartialData<Chunk> info, int chunkX, int chunkZ);
 
-	void loadColumnSyncPart(PartialData<Chunk> info);
+    void loadColumnSyncPart(PartialData<Chunk> info);
 
-	default PartialData<ICube> loadCubeAsyncPart(Chunk column, int cubeY) throws IOException {
-		PartialData<ICube> data = loadCubeNbt(column, cubeY);
-		Collection<BiConsumer<? super World, ? super LoadingData<CubePos>>> asyncCallbacks = CubeGeneratorsRegistry.getCubeAsyncLoadingCallbacks();
-		if (!asyncCallbacks.isEmpty()) {
-			CubePos cubePos = new CubePos(column.x, cubeY, column.z);
-			LoadingData<CubePos> chunkLoadingData = new LoadingData<>(cubePos, data.getNbt());
-			asyncCallbacks.forEach(cons -> cons.accept(column.getWorld(), chunkLoadingData));
-			data.setNbt(chunkLoadingData.getNbt());
-		}
-		loadCubeAsyncPart(data, column, cubeY);
-		return data;
-	}
+    default PartialData<ICube> loadCubeAsyncPart(Chunk column, int cubeY) throws IOException {
+        PartialData<ICube> data = loadCubeNbt(column, cubeY);
+        Collection<BiConsumer<? super World, ? super LoadingData<CubePos>>> asyncCallbacks = CubeGeneratorsRegistry.getCubeAsyncLoadingCallbacks();
+        if (!asyncCallbacks.isEmpty()) {
+            CubePos cubePos = new CubePos(column.xPosition, cubeY, column.zPosition);
+            LoadingData<CubePos> chunkLoadingData = new LoadingData<>(cubePos, data.getNbt());
+            asyncCallbacks.forEach(cons -> cons.accept(column.worldObj, chunkLoadingData));
+            data.setNbt(chunkLoadingData.getNbt());
+        }
+        loadCubeAsyncPart(data, column, cubeY);
+        return data;
+    }
 
-	PartialData<ICube> loadCubeNbt(Chunk column, int cubeY) throws IOException;
+    PartialData<ICube> loadCubeNbt(Chunk column, int cubeY) throws IOException;
 
-	void loadCubeAsyncPart(PartialData<ICube> info, Chunk column, int cubeY);
+    void loadCubeAsyncPart(PartialData<ICube> info, Chunk column, int cubeY);
 
-	void loadCubeSyncPart(PartialData<ICube> info);
+    void loadCubeSyncPart(PartialData<ICube> info);
 
-	void saveColumn(Chunk column);
+    void saveColumn(Chunk column);
 
-	void saveCube(Cube cube);
+    void saveCube(Cube cube);
 
     boolean cubeExists(int cubeX, int cubeY, int cubeZ);
 
@@ -98,31 +98,31 @@ public interface ICubeIO extends Flushable, AutoCloseable, IThreadedFileIO {
     int getPendingCubeCount();
 
     /**
-	 * Stores partially read cube, before sync read but after async read
-	 */
-	class PartialData<T> {
-		NBTTagCompound nbt;
-		T object;
+     * Stores partially read cube, before sync read but after async read
+     */
+    class PartialData<T> {
+        NBTTagCompound nbt;
+        T object;
 
-		public PartialData(T object, NBTTagCompound nbt) {
-			this.object = object;
-			this.nbt = nbt;
-		}
+        public PartialData(T object, NBTTagCompound nbt) {
+            this.object = object;
+            this.nbt = nbt;
+        }
 
-		public T getObject() {
-			return object;
-		}
+        public T getObject() {
+            return object;
+        }
 
-	    public void setObject(T obj) {
-		    this.object = obj;
-	    }
+        public void setObject(T obj) {
+            this.object = obj;
+        }
 
-		public NBTTagCompound getNbt() {
-			return nbt;
-		}
+        public NBTTagCompound getNbt() {
+            return nbt;
+        }
 
-	    public void setNbt(NBTTagCompound nbt) {
-		    this.nbt = nbt;
-	    }
+        public void setNbt(NBTTagCompound nbt) {
+            this.nbt = nbt;
+        }
     }
 }
