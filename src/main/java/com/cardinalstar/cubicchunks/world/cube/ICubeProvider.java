@@ -27,6 +27,7 @@ package com.cardinalstar.cubicchunks.world.cube;
 
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import net.minecraft.world.chunk.Chunk;
 
 import javax.annotation.Nullable;
@@ -39,11 +40,11 @@ public interface ICubeProvider {
     ICube getLoadedCube(int cubeX, int cubeY, int cubeZ);
 
     @Nullable
-    ICube getLoadedCube(CubeCoordIntTriple coords);
+    ICube getLoadedCube(CubePos coords);
 
     ICube getCube(int cubeX, int cubeY, int cubeZ);
 
-    ICube getCube(CubeCoordIntTriple coords);
+    ICube getCube(CubePos coords);
 
     /**
      * Retrieve a column, if it exists and is loaded

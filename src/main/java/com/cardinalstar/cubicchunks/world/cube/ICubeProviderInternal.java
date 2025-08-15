@@ -25,8 +25,8 @@
 
 package com.cardinalstar.cubicchunks.world.cube;
 
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
+import com.cardinalstar.cubicchunks.util.CubePos;
 
 
 import javax.annotation.Nullable;
@@ -44,13 +44,13 @@ public interface ICubeProviderInternal extends ICubeProvider {
 
     @Override
     @Nullable
-    Cube getLoadedCube(CubeCoordIntTriple coords);
+    Cube getLoadedCube(CubePos coords);
 
     @Override
     Cube getCube(int cubeX, int cubeY, int cubeZ);
 
     @Override
-    Cube getCube(CubeCoordIntTriple coords);
+    Cube getCube(CubePos coords);
 
     interface Server extends ICubeProviderInternal {
         ICubeIO getCubeIO();

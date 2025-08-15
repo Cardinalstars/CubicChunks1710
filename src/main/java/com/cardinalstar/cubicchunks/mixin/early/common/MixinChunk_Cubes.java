@@ -30,7 +30,7 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
@@ -239,7 +239,7 @@ public abstract class MixinChunk_Cubes {
             args = "array=set",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"
         ))
-    private void getBlockState_getMaxHeight(ExtendedBlockStorage[] ebs, int y, ExtendedBlockStorage val) {
+    private void init_getMaxHeight(ExtendedBlockStorage[] ebs, int y, ExtendedBlockStorage val) {
         ebs[y - (this.isColumn ? 0 : blockToCube(((IMinMaxHeight) worldObj).getMinHeight()))] = val;
     }
 
@@ -526,7 +526,7 @@ public abstract class MixinChunk_Cubes {
         args = "array=set"
     ), cancellable = true)
     private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta, CallbackInfoReturnable<Boolean> cir) {
-        if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubeCoordIntTriple.fromBlockCoords(x, y, z)) == null) {
+        if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
             cir.setReturnValue(null);
         }
     }
@@ -584,7 +584,7 @@ public abstract class MixinChunk_Cubes {
         args = "array=set"
     ), cancellable = true)
     private void setBlockMetadata_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta, CallbackInfoReturnable<Boolean> cir) {
-        if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubeCoordIntTriple.fromBlockCoords(x, y, z)) == null) {
+        if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
             cir.setReturnValue(null);
         }
     }
@@ -1058,6 +1058,7 @@ public abstract class MixinChunk_Cubes {
     private void enqueueRelightChecks_CubicChunks(CallbackInfo cbi) {
         if (!isColumn) {
             return;
+
         }
         cbi.cancel();
         if (CubicChunksConfig.relightChecksPerTickPerColumn > 0 && (!worldObj.isRemote || CubicChunksConfig.doClientLightFixes)) {

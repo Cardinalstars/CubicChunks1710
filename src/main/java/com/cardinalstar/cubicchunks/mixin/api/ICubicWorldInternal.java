@@ -22,7 +22,6 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-
 package com.cardinalstar.cubicchunks.mixin.api;
 
 import com.cardinalstar.cubicchunks.api.*;
@@ -30,12 +29,20 @@ import com.cardinalstar.cubicchunks.client.CubeProviderClient;
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.core.util.world.CubeSplitTickList;
+import com.cardinalstar.cubicchunks.server.VanillaNetworkHandler;
+import com.cardinalstar.cubicchunks.util.world.CubeSplitTickList;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
+import net.minecraft.block.Block;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -51,7 +58,7 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
 
     /**
-     * Returns the {@link com.cardinalstar.cubicchunks.world.cube.ICubeProvider} for this world, or throws {@link com.cardinalstar.cubicchunks.api.NotCubicChunksWorldException}
+     * Returns the {@link ICubeProvider} for this world, or throws {@link NotCubicChunksWorldException}
      * if this is not a CubicChunks world.
      */
     @Override
@@ -73,22 +80,22 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
     void fakeWorldHeight(int height);
 
-//    default BlockPos getTopSolidOrLiquidBlockVanilla(BlockPos pos) {
-//        Chunk chunk = ((World) this).getChunk(pos);
-//
-//        BlockPos current = new BlockPos(pos.getX(), chunk.getTopFilledSegment() + 16, pos.getZ());
-//        while (current.getY() >= 0) {
-//            BlockPos next = current.down();
-//            IBlockState state = chunk.getBlockState(next);
-//
-//            if (state.getMaterial().blocksMovement() && !state.getBlock().isLeaves(state, (World) this, next) && !state.getBlock().isFoliage((World) this, next)) {
-//                break;
-//            }
-//            current = next;
-//        }
-//
-//        return current;
-//    }
+    default BlockPos getTopSolidOrLiquidBlockVanilla(int x, int y, int z) {
+        Chunk chunk = ((World) this).getChunkFromBlockCoords(x, y);
+
+        BlockPos current = new BlockPos(x, chunk.getTopFilledSegment() + 16, z);
+        while (current.getY() >= 0) {
+            BlockPos next = current.down();
+            Block block = chunk.getBlock(next.getX(), next.getY(), next.getZ());
+
+            if (block.getMaterial().blocksMovement() && !block.isLeaves((World) this, next.getX(), next.getY(), next.getZ()) && !block.isFoliage((World) this, next.getX(), next.getY(), next.getZ())) {
+                break;
+            }
+            current = next;
+        }
+
+        return current;
+    }
 
     interface Server extends ICubicWorldInternal, ICubicWorldServer {
 
@@ -124,8 +131,7 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
         boolean isCompatGenerationScope();
 
-        // TODO Do I really need?
-        // VanillaNetworkHandler getVanillaNetworkHandler();
+        VanillaNetworkHandler getVanillaNetworkHandler();
     }
 
     interface Client extends ICubicWorldInternal {
@@ -138,7 +144,6 @@ public interface ICubicWorldInternal extends ICubicWorld {
          */
         void initCubicWorldClient(IntRange heightRange, IntRange generationRange);
 
-        @Override
         CubeProviderClient getCubeCache();
 
         void setHeightBounds(int minHeight, int maxHeight);
