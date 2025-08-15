@@ -9,7 +9,6 @@ import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
-import com.cardinalstar.cubicchunks.core.server.chunkio.async.forge.CubicIOExecutor;
 import net.minecraft.util.LongHashMap;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.WorldServer;
@@ -72,7 +71,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
         }
 
         if (cube == null) {
-            CubicIOExecutor.queueCubeLoad(worldObj, cubeIO, this, cubeX, cubeY, cubeZ, loaded -> {
+            com.cardinalstar.cubicchunks.core.server.chunkio.async.forge.CubeIOExecutor.queueCubeLoad(worldObj, cubeIO, this, cubeX, cubeY, cubeZ, loaded -> {
                 Chunk col = getLoadedColumn(cubeX, cubeZ);
                 if (col != null) {
                     assert !col.isEmpty();
@@ -103,7 +102,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
             return;
         }
 
-        CubicIOExecutor.queueChunkLoad(worldObj, cubeIO, this, columnX, columnZ, callback);
+        com.cardinalstar.cubicchunks.core.server.chunkio.async.forge.CubeIOExecutor.queueChunkLoad(worldObj, cubeIO, this, columnX, columnZ, callback);
     }
 
     @Nullable

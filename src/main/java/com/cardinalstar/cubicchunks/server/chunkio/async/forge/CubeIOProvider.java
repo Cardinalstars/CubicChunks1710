@@ -1,6 +1,8 @@
 package com.cardinalstar.cubicchunks.server.chunkio.async.forge;
 
 import com.cardinalstar.cubicchunks.event.events.CubeDataEvent;
+import com.cardinalstar.cubicchunks.server.CubicAnvilChunkLoader;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.chunk.Chunk;
@@ -17,11 +19,10 @@ public class CubeIOProvider implements AsynchronousExecutor.CallBackProvider<Que
     @Override
     public Cube callStage1(QueuedCube queuedCube) throws RuntimeException // In 1.12 this is something like run
     {
-        Chunk column =
-        CubicAnvilChunkLoader loader = queuedCube.loader;
+        ICubeIO loader = queuedCube.loader;
         Object[] data = null;
         try {
-            data = loader.loadCube_async(queuedCube.world, queuedCube.x, queuedCube.z);
+            data = loader.loadCubeAsyncPart();
         } catch (IOException e) {
             e.printStackTrace();
         }

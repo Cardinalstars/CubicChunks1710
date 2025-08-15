@@ -1,10 +1,10 @@
-package com.cardinalstar.cubicchunks.core.server.chunkio.async.forge;
+package com.cardinalstar.cubicchunks.server.chunkio.async.forge;
 
-import com.cardinalstar.cubicchunks.core.server.CubeProviderServer;
-import com.cardinalstar.cubicchunks.core.server.CubicAnvilChunkLoader;
-import com.cardinalstar.cubicchunks.core.world.cube.Cube;
-import com.cardinalstar.cubicchunks.server.chunkio.async.forge.ColumnIOProvider;
-import com.cardinalstar.cubicworlds.core.server.Requirement;
+
+import com.cardinalstar.cubicchunks.server.CubeProviderServer;
+import com.cardinalstar.cubicchunks.server.CubicAnvilChunkLoader;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
@@ -13,7 +13,7 @@ import net.minecraftforge.common.util.AsynchronousExecutor;
 import java.util.function.Consumer;
 
 
-public class CubicIOExecutor
+public class CubeIOExecutor
 {
     private static final int BASE_THREADS = 1;
     private static final int PLAYERS_PER_THREAD = 50;
@@ -53,7 +53,7 @@ public class CubicIOExecutor
         Chunk loadedIColumn = provider.getLoadedColumn(x, z);
         if (loadedIColumn  == null)
         {
-            provider.asyncGetColumn(x, z, Requirement.LIGHT, cube::setColumn);
+            provider.asyncGetColumn(x, z, ICubeProviderServer.Requirement.LIGHT, cube::setColumn);
         }
         else
         {
@@ -75,7 +75,4 @@ public class CubicIOExecutor
         columnInstance.finishActive();
         cubeInstance.finishActive();
     }
-
-
-
 }

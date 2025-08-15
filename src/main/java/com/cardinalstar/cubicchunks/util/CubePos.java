@@ -280,4 +280,9 @@ public class CubePos {
     public boolean containsBlock(BlockPos pos) {
         return this.cubeX == blockToCube(pos.getX()) && this.cubeY == blockToCube(pos.getY()) && this.cubeZ == blockToCube(pos.getZ());
     }
+
+    public boolean containsBlock(int x, int y, int z)
+    {
+        return this.cubeX == blockToCube(x) && this.cubeY == blockToCube(y) && this.cubeZ == blockToCube(z);
+    }
 }
