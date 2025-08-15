@@ -23,9 +23,10 @@
  *  THE SOFTWARE.
  */
 
-package com.cardinalstar.cubicchunks.core.util.world;
+package com.cardinalstar.cubicchunks.util.world;
 
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
 import net.minecraft.world.NextTickListEntry;
 
@@ -44,10 +45,10 @@ import java.util.Map;
 public class CubeSplitTickList extends AbstractList<NextTickListEntry> {
 
     // byCube Lists are not ordered, it's only a list to allow the unlikely case of duplicates
-    private final Map<CubeCoordIntTriple, List<NextTickListEntry>> byCube = new HashMap<>();
+    private final Map<CubePos, List<NextTickListEntry>> byCube = new HashMap<>();
     private final List<NextTickListEntry> all = new ArrayList<>();
 
-    public List<NextTickListEntry> getForCube(CubeCoordIntTriple pos) {
+    public List<NextTickListEntry> getForCube(CubePos pos) {
         List<NextTickListEntry> val = byCube.get(pos);
         return val == null ? Collections.emptyList() : val;
     }
@@ -85,7 +86,7 @@ public class CubeSplitTickList extends AbstractList<NextTickListEntry> {
     }
 
     private void removeByCube(NextTickListEntry e) {
-        CubeCoordIntTriple pos = CubeCoordIntTriple.fromBlockCoords(e.xCoord, e.yCoord, e.zCoord);
+        CubePos pos = CubePos.fromBlockCoords(e.xCoord, e.yCoord, e.zCoord);
         List<NextTickListEntry> list = byCube.get(pos);
         list.remove(e);
         if (list.isEmpty()) {
@@ -94,7 +95,7 @@ public class CubeSplitTickList extends AbstractList<NextTickListEntry> {
     }
 
     private void addByCube(NextTickListEntry e) {
-        byCube.computeIfAbsent(CubeCoordIntTriple.fromBlockCoords(e.xCoord, e.yCoord, e.zCoord), x -> new ArrayList<>()).add(e);
+        byCube.computeIfAbsent(CubePos.fromBlockCoords(e.xCoord, e.yCoord, e.zCoord), x -> new ArrayList<>()).add(e);
     }
 
     @Override public Object[] toArray() {

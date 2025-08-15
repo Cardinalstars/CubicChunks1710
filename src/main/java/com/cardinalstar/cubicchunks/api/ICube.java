@@ -24,7 +24,7 @@ package com.cardinalstar.cubicchunks.api;/*
  */
 
 
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import net.minecraft.block.Block;
@@ -168,7 +168,7 @@ public interface ICube extends XYZAddressable {
     /**
      * @return this cube's position
      */
-    CubeCoordIntTriple getCoords();
+    CubePos getCoords();
 
     /**
      * Check whether a given global block position is contained in this cube

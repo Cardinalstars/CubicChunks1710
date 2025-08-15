@@ -24,7 +24,6 @@
  */
 package com.cardinalstar.cubicchunks.api;
 
-import com.cardinalstar.cubicchunks.util.XYZAddressable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

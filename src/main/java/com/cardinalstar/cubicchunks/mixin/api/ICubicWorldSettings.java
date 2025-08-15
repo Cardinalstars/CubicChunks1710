@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.core.mixin.api;
+package com.cardinalstar.cubicchunks.mixin.api;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
