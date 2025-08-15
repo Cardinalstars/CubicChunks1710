@@ -19,8 +19,9 @@
 
 package com.cardinalstar.cubicchunks.server.chunkio.async.forge;
 
-import com.cardinalstar.cubicchunks.core.server.CubeProviderServer;
-import com.cardinalstar.cubicchunks.core.server.CubicAnvilChunkLoader;
+import com.cardinalstar.cubicchunks.server.CubeProviderServer;
+import com.cardinalstar.cubicchunks.server.CubicAnvilChunkLoader;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
@@ -36,7 +37,7 @@ public class QueuedCube {
     final int x;
     final int y;
     final int z;
-    final CubicAnvilChunkLoader loader;
+    final ICubeIO loader;
     final World world;
     final CubeProviderServer provider;
 
@@ -45,7 +46,7 @@ public class QueuedCube {
 
     net.minecraft.nbt.NBTTagCompound compound;
 
-    public QueuedCube(int x, int y, int z, CubicAnvilChunkLoader loader, World world, CubeProviderServer provider) {
+    public QueuedCube(int x, int y, int z, ICubeIO loader, World world, CubeProviderServer provider) {
         this.x = x;
         this.y = y;
         this.z = z;

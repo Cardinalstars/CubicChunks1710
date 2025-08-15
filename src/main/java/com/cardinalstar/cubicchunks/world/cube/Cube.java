@@ -35,7 +35,7 @@ import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubeWatcher;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.TicketList;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
@@ -126,7 +126,7 @@ public class Cube implements ICube {
      * The position of this cube, in cube space
      */
     @Nonnull
-    private final CubeCoordIntTriple coords;
+    private final CubePos coords;
     /**
      * Blocks in this cube
      */
@@ -185,7 +185,7 @@ public class Cube implements ICube {
     public Cube(Chunk column, int cubeY) {
         this.world = column.worldObj;
         this.column = column;
-        this.coords = new CubeCoordIntTriple(column.xPosition, cubeY, column.zPosition);
+        this.coords = new CubePos(column.xPosition, cubeY, column.zPosition);
 
         this.tickets = new TicketList(this); // TODO
 
@@ -521,7 +521,7 @@ public class Cube implements ICube {
     }
 
     @Override
-    public CubeCoordIntTriple getCoords() {
+    public CubePos getCoords() {
         return this.coords;
     }
 
