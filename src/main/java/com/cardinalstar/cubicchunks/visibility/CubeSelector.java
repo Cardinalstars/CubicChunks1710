@@ -22,38 +22,25 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+package com.cardinalstar.cubicchunks.visibility;
 
-package com.cardinalstar.cubicchunks.world.core;
 
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import net.minecraft.network.PacketBuffer;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import net.minecraft.world.ChunkCoordIntPair;
 
-public interface IColumnInternal extends IColumn {
-    // ChunkPrimer getCompatGenerationPrimer(); TODO?
+import java.util.Set;
+import java.util.function.Consumer;
 
-    void removeFromStagingHeightmap(ICube cube);
+import javax.annotation.ParametersAreNonnullByDefault;
 
-    void addToStagingHeightmap(ICube cube);
+@ParametersAreNonnullByDefault
+public abstract class CubeSelector {
 
-    /**
-     * Returns Y coordinate of the top non-transparent block
-     *
-     * @param localX column-local X coordinate
-     * @param localZ column-local Z coordinate
-     * @return the Y coordinate of the top non-transparent block
-     */
-    int getTopYWithStaging(int localX, int localZ);
+    public abstract void forAllVisibleFrom(CubePos cubePos, int horizontalViewDistance, int verticalViewDistance, Consumer<CubePos> consumer);
 
-    default void writeHeightmapDataForClient(PacketBuffer out) {
-        for (int i = 0; i < Cube.SIZE * Cube.SIZE; i++) {
-            out.writeInt(getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
-        }
-    }
+    public abstract void findChanged(CubePos oldAddress, CubePos newAddress, int horizontalViewDistance, int verticalViewDistance,
+                                     Set<CubePos> cubesToRemove, Set<CubePos> cubesToLoad, Set<ChunkCoordIntPair> columnsToRemove, Set<ChunkCoordIntPair> columnsToLoad);
 
-    default void loadClientHeightmapData(PacketBuffer in) {
-        ((ClientHeightMap) getOpacityIndex()).loadData(in);
-    }
+    public abstract void findAllUnloadedOnViewDistanceDecrease(CubePos playerAddress, int oldHorizontalViewDistance, int newHorizontalViewDistance,
+                                                               int oldVerticalViewDistance, int newVerticalViewDistance, Set<CubePos> cubesToUnload, Set<ChunkCoordIntPair> columnsToUnload);
 }

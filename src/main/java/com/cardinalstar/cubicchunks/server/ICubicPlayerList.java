@@ -22,28 +22,12 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.api;
+package com.cardinalstar.cubicchunks.server;
 
+public interface ICubicPlayerList {
+    int getVerticalViewDistance();
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
+    int getRawVerticalViewDistance();
 
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-
-@ParametersAreNonnullByDefault
-public interface ICubeWatcher extends XYZAddressable {
-
-    boolean isSentToPlayers();
-
-    @Nullable ICube getCube();
-
-    void sendPacketToAllPlayers(IMessage packet);
-
-    @Override int getX();
-
-    @Override int getY();
-
-    @Override int getZ();
-
-    boolean shouldTick();
+    void setVerticalViewDistance(int dist);
 }

@@ -1,71 +1,73 @@
 package com.cardinalstar.cubicchunks.server.chunkio.async.forge;
 
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.event.events.CubeDataEvent;
-import com.cardinalstar.cubicchunks.server.CubicAnvilChunkLoader;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.AsynchronousExecutor;
 
-import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class CubeIOProvider implements AsynchronousExecutor.CallBackProvider<QueuedCube, Cube, Consumer<Cube>, RuntimeException>
+public class CubeIOProvider implements AsynchronousExecutor.CallBackProvider<QueuedCube, ICubeIO.PartialData<ICube>, Consumer<Cube>, RuntimeException>
 {
     private final AtomicInteger threadNumber = new AtomicInteger(1);
     @Override
-    public Cube callStage1(QueuedCube queuedCube) throws RuntimeException // In 1.12 this is something like run
+    public ICubeIO.PartialData<ICube> callStage1(QueuedCube queuedCube) throws RuntimeException // In 1.12 this is something like run
     {
-        ICubeIO loader = queuedCube.loader;
-        Object[] data = null;
+        ICubeIO.PartialData<ICube> cubeData = null;
         try {
-            data = loader.loadCubeAsyncPart();
-        } catch (IOException e) {
-            e.printStackTrace();
+            Chunk column = queuedCube.futureColumn.get();
+            if (column.isEmpty())
+            {
+                cubeData = new ICubeIO.PartialData<>(null, null);
+            }
+            else
+            {
+                cubeData = queuedCube.loader.loadCubeAsyncPart(column, queuedCube.y);
+            }
+        }  catch (InterruptedException e) {
+            throw new Error(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            if (CubicChunksConfig.ignoreCorruptedChunks) {
+                cubeData = new ICubeIO.PartialData<>(null, null);
+            }
+            CubicChunks.LOGGER.error("Could not load cube in {} @ ({}, {}, {})", queuedCube.world, queuedCube.x, queuedCube.y, queuedCube.z, e);
         }
 
-        if (data != null) {
-            queuedCube.compound = (NBTTagCompound) data[1];
-            return (Cube) data[0];
+        if (cubeData != null) {
+            queuedCube.compound = cubeData.getNbt();
+            return cubeData;
         }
-
         return null;
     }
 
+    // TODO WATCH THIS
     @Override
-    public void callStage2(QueuedCube queuedCube, Cube cube) throws RuntimeException // In 1.12 this is something like runSychronousPart
+    public void callStage2(QueuedCube queuedCube, ICubeIO.PartialData<ICube> cubeData) throws RuntimeException // In 1.12 this is something like runSychronousPart
     {
-        if(cube == null) {
-            // If the chunk loading failed just do it synchronously (may generate)
+        if (cubeData == null)
+        {
             queuedCube.provider.originalLoadCube(queuedCube.x, queuedCube.y, queuedCube.z);
             return;
         }
-
-        // TODO: Needed? Where should this go?
-        // queuedCube.loader.loadEntities(queuedCube.world, queuedCube.compound.getCompoundTag("Level"), cube);
-        MinecraftForge.EVENT_BUS.post(new CubeDataEvent.Load(cube, queuedCube.compound)); // Don't call ChunkDataEvent.Load async
-        cube.lastSaveTime = queuedCube.provider.worldObj.getTotalWorldTime();
-        queuedCube.provider.loadedCubesHashMap.add(CubeCoordIntTriple.cubeXYZToLong(queuedCube.x, queuedCube.y, queuedCube.z), cube);
-        queuedCube.provider.loadedCubes.add(cube);
-        cube.onCubeLoad();
-
-        // TODO: Implement a world provider that mimics vanilla
-        if (queuedCube.provider.currentChunkProvider != null) {
-            queuedCube.provider.currentChunkProvider.recreateStructures(queuedCube.x, queuedCube.y, queuedCube.z);
-        }
-
-        // TODO: Implement
-        cube.populateCube(queuedCube.provider, queuedCube.provider, queuedCube.x, queuedCube.y, queuedCube.z);
-
+        queuedCube.loader.loadCubeSyncPart(cubeData);
+        ICube cube = cubeData.getObject();
+        assert cube != null;
+        MinecraftForge.EVENT_BUS.post(new CubeDataEvent.Load(cube, cubeData.getNbt()));
     }
 
     @Override
-    public void callStage3(QueuedCube parameter, Cube object, Consumer<Cube> callback) throws RuntimeException // This is also part of runSynchronousPart, but at the end
+    public void callStage3(QueuedCube parameter, ICubeIO.PartialData<ICube> object, Consumer<Cube> callback) throws RuntimeException // This is also part of runSynchronousPart, but at the end
     {
-        callback.accept(object);
+        callback.accept((Cube) object.getObject());
     }
 
     @Override

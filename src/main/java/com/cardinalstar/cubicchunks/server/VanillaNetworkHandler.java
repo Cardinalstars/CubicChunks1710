@@ -27,7 +27,6 @@ package com.cardinalstar.cubicchunks.server;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.util.ChunkPos;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
@@ -47,6 +46,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.INetHandlerPlayServer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
@@ -199,7 +199,7 @@ public class VanillaNetworkHandler {
         player.connection.sendPacket(constructChunkData(chunk, getPlayerOffsetS2C(player)));
     }
 
-    public void sendColumnUnloadPacket(ChunkPos pos, EntityPlayerMP player) {
+    public void sendColumnUnloadPacket(ChunkCoordIntPair pos, EntityPlayerMP player) {
         if (!CubicChunksConfig.allowVanillaClients) {
             return;
         }
