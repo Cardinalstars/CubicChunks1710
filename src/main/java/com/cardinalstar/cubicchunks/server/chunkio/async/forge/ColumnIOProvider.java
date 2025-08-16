@@ -1,32 +1,33 @@
 package com.cardinalstar.cubicchunks.server.chunkio.async.forge;
 
-import com.cardinalstar.cubicchunks.core.server.chunkio.async.forge.QueuedColumn;
+import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.util.AsynchronousExecutor;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class ColumnIOProvider implements AsynchronousExecutor.CallBackProvider<QueuedColumn, Chunk, Consumer<Chunk>, RuntimeException>
+public class ColumnIOProvider implements AsynchronousExecutor.CallBackProvider<QueuedColumn, ICubeIO.PartialData<IColumn>, Consumer<Chunk>, RuntimeException>
 {
     private final AtomicInteger threadNumber = new AtomicInteger(1);
 
     @Override
-    public Chunk callStage1(QueuedColumn parameter) throws RuntimeException
+    public ICubeIO.PartialData<IColumn> callStage1(QueuedColumn queuedColumn) throws RuntimeException
     {
         return null;
     }
 
     @Override
-    public void callStage2(QueuedColumn parameter, Chunk object) throws RuntimeException
+    public void callStage2(QueuedColumn queuedColumn, ICubeIO.PartialData<IColumn> object) throws RuntimeException
     {
 
     }
 
     @Override
-    public void callStage3(QueuedColumn parameter, Chunk object, Consumer<Chunk> callback) throws RuntimeException
+    public void callStage3(QueuedColumn queuedColumn, ICubeIO.PartialData<IColumn> columnData, Consumer<Chunk> callback) throws RuntimeException
     {
-        callback.accept(object);
+        callback.accept((Chunk) columnData.getObject());
     }
 
     @Override

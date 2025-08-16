@@ -32,7 +32,6 @@ import java.util.function.BiConsumer;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
 import com.cardinalstar.cubicchunks.api.worldgen.LoadingData;
-import com.cardinalstar.cubicchunks.util.ChunkPos;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;

@@ -34,7 +34,6 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
-import com.cardinalstar.cubicchunks.util.ChunkPos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import net.minecraft.nbt.NBTTagCompound;

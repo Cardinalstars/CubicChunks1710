@@ -21,18 +21,18 @@
 
 
  import com.cardinalstar.cubicchunks.server.CubeProviderServer;
- import com.cardinalstar.cubicchunks.server.CubicAnvilChunkLoader;
+ import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
  import net.minecraft.world.World;
 
- class QueuedColumn {
+ public class QueuedColumn {
      final int x;
      final int z;
-     final CubicAnvilChunkLoader loader;
+     final ICubeIO loader;
      final World world;
      final CubeProviderServer provider;
      net.minecraft.nbt.NBTTagCompound compound;
 
-     public QueuedColumn(int x, int z, CubicAnvilChunkLoader loader, World world, CubeProviderServer provider) {
+     public QueuedColumn(int x, int z, ICubeIO loader, World world, CubeProviderServer provider) {
          this.x = x;
          this.z = z;
          this.loader = loader;
