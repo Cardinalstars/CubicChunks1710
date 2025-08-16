@@ -42,7 +42,7 @@ public class QueuedCube {
     final CubeProviderServer provider;
 
     @Nonnull
-    private final CompletableFuture<Chunk> futureColumn = new CompletableFuture<>();
+    public final CompletableFuture<Chunk> futureColumn = new CompletableFuture<>();
 
     net.minecraft.nbt.NBTTagCompound compound;
 

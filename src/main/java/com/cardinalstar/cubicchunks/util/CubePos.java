@@ -285,4 +285,9 @@ public class CubePos {
     {
         return this.cubeX == blockToCube(x) && this.cubeY == blockToCube(y) && this.cubeZ == blockToCube(z);
     }
+
+    public static long cubeXYZToLong(int x, int y, int z)
+    {
+        return (long)x & 4294967295L | ((long)y & 4294967295L) | ((long)x & 4294967295L) << 32;
+    }
 }

@@ -34,7 +34,6 @@ import java.util.function.BiConsumer;
 
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubicPopulator;
-import com.cardinalstar.cubicchunks.util.ChunkPos;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.google.common.base.Preconditions;

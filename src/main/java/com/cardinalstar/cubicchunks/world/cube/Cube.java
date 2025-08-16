@@ -116,7 +116,7 @@ public class Cube implements ICube {
     /**
      * Last time the cube was saved.
      */
-    protected long lastSaveTime;
+    public long lastSaveTime;
     /**
      * The column of this cube
      */

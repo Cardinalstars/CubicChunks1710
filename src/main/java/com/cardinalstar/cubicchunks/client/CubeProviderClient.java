@@ -24,17 +24,18 @@
  */
 package com.cardinalstar.cubicchunks.client;
 
-
 import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.XYZMap;
-import com.cardinalstar.cubicchunks.core.event.events.CubeEvent;
-import com.cardinalstar.cubicchunks.core.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.core.mixin.early.client.IChunkProviderClient;
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.event.events.CubeEvent;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.mixin.early.client.IChunkProviderClient;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import net.minecraft.client.multiplayer.ChunkProviderClient;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
@@ -42,7 +43,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import static net.minecraft.world.ChunkCoordIntPair.chunkXZ2Int;
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
 //TODO: break off ICubeProviderInternal
@@ -75,21 +75,20 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
         return super.provideChunk(x, z);
     }
 
-    @Nullable
+    @Nullable @Override
     public Chunk getLoadedChunk(int x, int z) {
-        Chunk chunk = super.provideChunk(x, z);
-        return (chunk.isEmpty() ? null : chunk);
+        return super.getLoadedChunk(x, z);
     }
 
     @Override
     public Chunk loadChunk(int cubeX, int cubeZ) {
         Chunk column = new Chunk((World) this.world, cubeX, cubeZ);   // make a new one
-        ((IChunkProviderClient) this).getChunkMapping().add(chunkXZ2Int(cubeX, cubeZ), column); // add it to the cache
+        ((IChunkProviderClient) this).getLoadedChunks().put(ChunkCoordIntPair.chunkXZ2Int(cubeX, cubeZ), column); // add it to the cache
 
         // fire a forge event... make mods happy :)
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Load(column));
 
-        column.isChunkLoaded = true;
+        column.markLoaded(true);
         return column;
     }
 
@@ -120,7 +119,7 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
      * @return a newly created or cached cube
      */
     @Nullable
-    public Cube loadCube(CubeCoordIntTriple pos) {
+    public Cube loadCube(CubePos pos) {
         Cube cube = getLoadedCube(pos);
         if (cube != null) {
             return cube;
@@ -144,7 +143,7 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
      *
      * @param pos position to unload
      */
-    public void unloadCube(CubeCoordIntTriple pos) {
+    public void unloadCube(CubePos pos) {
         Cube cube = getLoadedCube(pos);
         if (cube == null) {
             return;
@@ -164,7 +163,7 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
     }
 
     @Override
-    public Cube getCube(CubeCoordIntTriple coords) {
+    public Cube getCube(CubePos coords) {
         return getCube(coords.getX(), coords.getY(), coords.getZ());
     }
 
@@ -174,7 +173,7 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
     }
 
     @Nullable @Override
-    public Cube getLoadedCube(CubeCoordIntTriple coords) {
+    public Cube getLoadedCube(CubePos coords) {
         return getLoadedCube(coords.getX(), coords.getY(), coords.getZ());
     }
 

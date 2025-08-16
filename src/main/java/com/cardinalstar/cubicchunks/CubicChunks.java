@@ -13,9 +13,10 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
 @Mod(modid = CubicChunks.MODID, version = Tags.VERSION, name = "Cubic Worlds", acceptedMinecraftVersions = "[1.7.10]")
 public class CubicChunks {
-
+    public static final int MAX_RENDER_DISTANCE = 64;
     public static final int MIN_SUPPORTED_BLOCK_Y = Integer.MIN_VALUE + 4096;
     public static final int MAX_SUPPORTED_BLOCK_Y = Integer.MAX_VALUE - 4095;
+    public static final boolean DEBUG_ENABLED = System.getProperty("cubicchunks.debug", "false").equalsIgnoreCase("true");
 
     public static final String MODID = "cubicworlds";
     public static final Logger LOGGER = LogManager.getLogger(MODID);

@@ -25,10 +25,11 @@
 package com.cardinalstar.cubicchunks.server;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.api.ICubeWatcher;
+import com.cardinalstar.cubicchunks.api.world.ICubeWatcher;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ITicket;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
@@ -57,24 +58,24 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     private final Consumer<Cube> consumer;
 
     private final CubeProviderServer cubeCache;
-    private PlayerCubeMap playerCubeMap;
+    private CubicPlayerManager cubicPlayerManager;
     @Nullable private Cube cube;
     // Note: using wrap() so that the internal array is not Object[], and can be safely cast to EntityPlayerMP[]
     private final ObjectArrayList<EntityPlayerMP> players = ObjectArrayList.wrap(new EntityPlayerMP[0]);
     private final ObjectArrayList<EntityPlayerMP> playersToAdd = ObjectArrayList.wrap(new EntityPlayerMP[1], 0);
 
     private final TShortList dirtyBlocks = new TShortArrayList(64);
-    private final CubeCoordIntTriple cubePos;
+    private final CubePos cubePos;
     private long previousWorldTime = 0;
     private boolean sentToPlayers = false;
     private boolean loading = true;
     private boolean invalid = false;
 
     // CHECKED: 1.10.2-12.18.1.2092
-    CubeWatcher(PlayerCubeMap playerCubeMap, CubeCoordIntTriple cubePos) {
+    CubeWatcher(CubicPlayerManager cubicPlayerManager, CubePos cubePos) {
         this.cubePos = cubePos;
-        this.playerCubeMap = playerCubeMap;
-        this.cubeCache = ((ICubicWorldInternal.Server) playerCubeMap.getWorldServer()).getCubeCache();
+        this.cubicPlayerManager = cubicPlayerManager;
+        this.cubeCache = ((ICubicWorldInternal.Server) cubicPlayerManager.getWorldServer()).getCubeCache();
         this.consumer = (c) -> {
             if (this.invalid) {
                 return;
