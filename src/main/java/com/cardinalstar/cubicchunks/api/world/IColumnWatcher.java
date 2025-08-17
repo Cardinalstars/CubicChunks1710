@@ -1,4 +1,15 @@
 package com.cardinalstar.cubicchunks.api.world;
 
-public interface IColumnWatcher {
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.chunk.Chunk;
+
+public interface IColumnWatcher
+{
+    void addPlayer(final EntityPlayerMP playerMP);
+    void removePlayer(EntityPlayerMP playerMP);
+    boolean containsPlayer(EntityPlayerMP playerMP);
+    Chunk getChunk();
+    ChunkCoordIntPair getPos();
+    void UpdateChunkInhabitedTime();
 }

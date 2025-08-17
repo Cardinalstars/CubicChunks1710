@@ -28,6 +28,7 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.XYZAddressable;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import net.minecraft.entity.Entity;
+import net.minecraft.world.ChunkCoordIntPair;
 
 import java.util.Random;
 import java.util.function.Consumer;
@@ -225,8 +226,8 @@ public class CubePos {
         return new CubePos(getX() + dx, getY() + dy, getZ() + dz);
     }
 
-    public ChunkPos chunkPos() {
-        return new ChunkPos(getX(), getZ());
+    public ChunkCoordIntPair chunkPos() {
+        return new ChunkCoordIntPair(getX(), getZ());
     }
 
     public int distSquared(CubePos coords) {
