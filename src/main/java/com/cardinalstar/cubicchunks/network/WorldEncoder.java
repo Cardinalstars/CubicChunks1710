@@ -43,7 +43,7 @@ import java.util.Objects;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-// TODO write packet io functions for block data arrays and serialization length
+// TODO Watch implementation packet io functions for block data arrays and serialization length
 @ParametersAreNonnullByDefault
 class WorldEncoder {
 
@@ -66,7 +66,8 @@ class WorldEncoder {
         cubes.forEach(cube -> {
             if (!cube.isEmpty()) {
                 //noinspection ConstantConditions
-                cube.getStorage().write(out);
+                out.writeBytes(cube.getStorage().getBlockLSBArray());
+                out.writeBytes(cube.getStorage().getBlockMSBArray().data);
             }
         });
 
@@ -143,7 +144,14 @@ class WorldEncoder {
         for (int i = 0; i < cubes.size(); i++) {
             if (!isEmpty[i]) {
                 //noinspection ConstantConditions
-                cubes.get(i).getStorage().read(in);
+                if (cubes.get(i).getStorage() != null)
+                {
+                    byte[] lsbData = cubes.get(i).getStorage().getBlockLSBArray();
+                    in.readBytes(lsbData);
+
+                    byte[] msbData = cubes.get(i).getStorage().getBlockMSBArray().data;
+                    in.readBytes(msbData);
+                }
             }
         }
 
@@ -218,7 +226,8 @@ class WorldEncoder {
         for (Cube cube : cubes) {
             if (!cube.isEmpty()) {
                 //noinspection ConstantConditions
-                size += cube.getStorage().getSerializedSize();
+                size += cube.getStorage().getBlockLSBArray().length;
+                size += cube.getStorage().getBlockMSBArray().data.length;
             }
             if (cube.getStorage() != null) {
                 size += cube.getStorage().getBlocklightArray().data.length;

@@ -5,12 +5,15 @@ import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
+import org.spongepowered.asm.mixin.gen.Invoker;
+
+import java.util.List;
 
 
 @Mixin(targets = "net.minecraft.server.management.PlayerManager$PlayerInstance")
 public interface IPlayerInstance {
-    @Accessor("players")
-    java.util.HashMap<EntityPlayerMP, Runnable> getPlayersMap();
+    @Accessor("playersWatchingChunk")
+    List<EntityPlayerMP> getPlayers();
 
     @Accessor("chunkLocation")
     ChunkCoordIntPair getPos();
@@ -29,4 +32,13 @@ public interface IPlayerInstance {
 
     @Accessor("sentToPlayers")
     void setSentToPlayers(boolean sent);
+
+    @Accessor("sentToPlayers")
+    boolean getSentToPlayers();
+
+    @Accessor("loadedRunnable")
+    Runnable getLoadedRunnable();
+
+    @Invoker("increaseInhabitedTime")
+    void increaseInhabitedTime(Chunk chunk);
 }

@@ -45,6 +45,7 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.INetHandlerPlayServer;
+import net.minecraft.network.play.server.S21PacketChunkData;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.WorldServer;
@@ -92,14 +93,14 @@ public class VanillaNetworkHandler {
     }
 
     // TODO: more efficient way?
-    public static Packet<?> copyPacket(Packet<?> packetIn) {
+    public static Packet copyPacket(Packet packetIn) {
         if (!CubicChunksConfig.allowVanillaClients) {
             return packetIn;
         }
         try {
             Field[] fields = packetFields.computeIfAbsent(packetIn.getClass(), VanillaNetworkHandler::collectFields);
             Constructor<?> constructor = packetIn.getClass().getConstructor();
-            Packet<?> newPacket = (Packet<?>) constructor.newInstance();
+            Packet newPacket = (Packet) constructor.newInstance();
             for (Field field : fields) {
                 Object v = field.get(packetIn);
                 field.set(newPacket, v);
@@ -143,16 +144,16 @@ public class VanillaNetworkHandler {
             return;
         }
         CubePos offset = getPlayerOffsetS2C(player);
-        Map<ChunkPos, List<ICube>> columns = cubes.stream().collect(Collectors.groupingBy(c -> c.getCoords().chunkPos()));
-        for (Map.Entry<ChunkPos, List<ICube>> chunkPosListEntry : columns.entrySet()) {
-            ChunkPos pos = chunkPosListEntry.getKey();
+        Map<ChunkCoordIntPair, List<ICube>> columns = cubes.stream().collect(Collectors.groupingBy(c -> c.getCoords().chunkPos()));
+        for (Map.Entry<ChunkCoordIntPair, List<ICube>> chunkPosListEntry : columns.entrySet()) {
+            ChunkCoordIntPair pos = chunkPosListEntry.getKey();
             List<ICube> column = chunkPosListEntry.getValue();
-            SPacketChunkData chunkData = constructChunkData(pos, column, offset, world.provider.hasSkyLight());
-            player.connection.sendPacket(chunkData);
+            S21PacketChunkData chunkData = constructChunkData(pos, column, offset, !world.provider.hasNoSky);
+            player.playerNetServerHandler.sendPacket(chunkData);
         }
     }
 
-    private void sendFullCubeLoadPackets(Collection<? extends ICube> cubes, EntityPlayerMP player, CubePos offset, Set<ChunkPos> sentAsFullChunks) {
+    private void sendFullCubeLoadPackets(Collection<? extends ICube> cubes, EntityPlayerMP player, CubePos offset, Set<ChunkCoordIntPair> sentAsFullChunks) {
         if (!CubicChunksConfig.allowVanillaClients) {
             return;
         }
@@ -160,30 +161,30 @@ public class VanillaNetworkHandler {
         for (Map.Entry<Chunk, List<ICube>> chunkPosListEntry : columns.entrySet()) {
             Chunk chunk = chunkPosListEntry.getKey();
             List<ICube> column = chunkPosListEntry.getValue();
-            ChunkPos pos = chunk.getPos();
-            SPacketChunkData chunkData = sentAsFullChunks.contains(pos)
-                ? constructChunkData(pos, column, offset, world.provider.hasSkyLight())
-                : constructFullChunkData(chunk, column, offset, world.provider.hasSkyLight());
-            player.connection.sendPacket(chunkData);
+            ChunkCoordIntPair pos = chunk.getChunkCoordIntPair();
+            S21PacketChunkData chunkData = sentAsFullChunks.contains(pos)
+                ? constructChunkData(pos, column, offset, !world.provider.hasNoSky)
+                : constructFullChunkData(chunk, column, offset, !world.provider.hasNoSky);
+            player.playerNetServerHandler.sendPacket(chunkData);
         }
     }
 
-    private Set<ChunkPos> sendFullCubeLoadPacketsWhereNecessary(Collection<? extends ICube> cubes, EntityPlayerMP player, CubePos offset, Set<ChunkPos> clientLoadedChunks) {
+    private Set<ChunkCoordIntPair> sendFullCubeLoadPacketsWhereNecessary(Collection<? extends ICube> cubes, EntityPlayerMP player, CubePos offset, Set<ChunkPos> clientLoadedChunks) {
         if (!CubicChunksConfig.allowVanillaClients) {
             return Collections.emptySet();
         }
         Map<Chunk, List<ICube>> columns = cubes.stream().collect(Collectors.groupingBy(ICube::getColumn));
-        Set<ChunkPos> sentAsFullChunks = Collections.emptySet();
+        Set<ChunkCoordIntPair> sentAsFullChunks = Collections.emptySet();
         for (Map.Entry<Chunk, List<ICube>> chunkPosListEntry : columns.entrySet()) {
             Chunk chunk = chunkPosListEntry.getKey();
-            ChunkPos offsetPos = new ChunkPos(chunk.x + offset.getX(), chunk.z + offset.getZ());
+            ChunkCoordIntPair offsetPos = new ChunkCoordIntPair(chunk.xPosition + offset.getX(), chunk.zPosition + offset.getZ());
             List<ICube> column = chunkPosListEntry.getValue();
             if (clientLoadedChunks.contains(offsetPos)) {
                 //chunk is loaded on client, send partial chunk update
-                player.connection.sendPacket(constructChunkData(chunk.getPos(), column, offset, world.provider.hasSkyLight()));
+                player.playerNetServerHandler.sendPacket(constructChunkData(chunk.getChunkCoordIntPair(), column, offset, !world.provider.hasNoSky));
             } else {
                 //chunk is *not* loaded on client, send full chunk update
-                player.connection.sendPacket(constructFullChunkData(chunk, column, offset, world.provider.hasSkyLight()));
+                player.playerNetServerHandler.sendPacket(constructFullChunkData(chunk, column, offset, !world.provider.hasNoSky));
                 //inform caller that a full chunk update was sent for the given chunk, as a second full chunk update for the same column
                 //will be sent after the relative teleport and we don't want to send the same full chunk twice
                 (sentAsFullChunks.isEmpty() ? sentAsFullChunks = new HashSet<>() : sentAsFullChunks).add(offsetPos);
@@ -196,7 +197,7 @@ public class VanillaNetworkHandler {
         if (!CubicChunksConfig.allowVanillaClients) {
             return;
         }
-        player.connection.sendPacket(constructChunkData(chunk, getPlayerOffsetS2C(player)));
+        player.playerNetServerHandler.sendPacket(constructChunkData(chunk, getPlayerOffsetS2C(player)));
     }
 
     public void sendColumnUnloadPacket(ChunkCoordIntPair pos, EntityPlayerMP player) {
@@ -204,7 +205,7 @@ public class VanillaNetworkHandler {
             return;
         }
         CubePos offset = getPlayerOffsetS2C(player);
-        player.connection.sendPacket(new SPacketUnloadChunk(pos.x + offset.getX(), pos.z + offset.getZ()));
+        player.playerNetServerHandler.sendPacket(new SPacketUnloadChunk(pos.x + offset.getX(), pos.z + offset.getZ()));
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -244,12 +245,12 @@ public class VanillaNetworkHandler {
                     localToBlock(cube.getZ(), z)));
         }
         ((ISPacketMultiBlockChange) packet).setChangedBlocks(updates);
-        ((ISPacketMultiBlockChange) packet).setChunkPos(new ChunkPos(posX, posZ));
+        ((ISPacketMultiBlockChange) packet).setChunkPos(new ChunkCoordIntPair(posX, posZ));
 
-        player.connection.sendPacket(packet);
+        player.playerNetServerHandler.sendPacket(packet);
     }
 
-    public void updatePlayerPosition(PlayerCubeMap cubeMap, EntityPlayerMP player, CubePos managedPos) {
+    public void updatePlayerPosition(CubicPlayerManager cubeMap, EntityPlayerMP player, CubePos managedPos) {
         if (!CubicChunksConfig.allowVanillaClients) {
             return;
         }
@@ -306,22 +307,22 @@ public class VanillaNetworkHandler {
         expectedTeleportId.remove(player);
     }
 
-    private void switchPlayerOffset(PlayerCubeMap cubeMap, EntityPlayerMP player, CubePos oldOffset, CubePos newOffset) {
+    private void switchPlayerOffset(CubicPlayerManager cubeMap, EntityPlayerMP player, CubePos oldOffset, CubePos newOffset) {
         if (!CubicChunksConfig.allowVanillaClients) {
             return;
         }
 
         //all columns that are loaded on the client
-        Set<ChunkPos> clientLoadedChunks = new HashSet<>();
+        Set<ChunkCoordIntPair> clientLoadedChunks = new HashSet<>();
         for (ColumnWatcher columnWatcher : cubeMap.columnWatchers) {
-            if (!columnWatcher.isSentToPlayers() || !columnWatcher.containsPlayer(player)) {
+            if (!columnWatcher.isSentToPlayers || !columnWatcher.containsPlayer(player)) {
                 continue;
             }
-            clientLoadedChunks.add(new ChunkPos(columnWatcher.getX() + oldOffset.getX(), columnWatcher.getZ() + oldOffset.getZ()));
+            clientLoadedChunks.add(new ChunkCoordIntPair(columnWatcher.getX() + oldOffset.getX(), columnWatcher.getZ() + oldOffset.getZ()));
         }
 
         //all columns that are loaded on the client and contain at least one section
-        Set<ChunkPos> clientLoadedNonEmptyChunks = new HashSet<>();
+        Set<ChunkCoordIntPair> clientLoadedNonEmptyChunks = new HashSet<>();
         List<ICube> firstSendCubes = new ArrayList<>();
         List<ICube> secondSendCubes = new ArrayList<>();
         List<ICube> lastSendCubes = new ArrayList<>();
@@ -342,16 +343,16 @@ public class VanillaNetworkHandler {
                 lastSendCubes.add(cubeWatcher.getCube());
             }
 
-            clientLoadedNonEmptyChunks.add(new ChunkPos(cubeWatcher.getX() + oldOffset.getX(), cubeWatcher.getZ() + oldOffset.getZ()));
+            clientLoadedNonEmptyChunks.add(new ChunkCoordIntPair(cubeWatcher.getX() + oldOffset.getX(), cubeWatcher.getZ() + oldOffset.getZ()));
         }
 
-        Set<ChunkPos> sentAsFullChunks = sendFullCubeLoadPacketsWhereNecessary(firstSendCubes, player, newOffset, clientLoadedChunks);
+        Set<ChunkCoordIntPair> sentAsFullChunks = sendFullCubeLoadPacketsWhereNecessary(firstSendCubes, player, newOffset, clientLoadedChunks);
 
-        int teleportId = ((INetHandlerPlayServer) player.connection).getTeleportId();
+        int teleportId = ((INetHandlerPlayServer) player.playerNetServerHandler).getTeleportId();
         if (++teleportId == Integer.MAX_VALUE) {
             teleportId = 0;
         }
-        ((INetHandlerPlayServer) player.connection).setTeleportId(teleportId);
+        ((INetHandlerPlayServer) player.playerNetServerHandler).setTeleportId(teleportId);
         int dx = Coords.cubeToMinBlock(newOffset.getX() - oldOffset.getX());
         int dy = Coords.cubeToMinBlock(newOffset.getY() - oldOffset.getY());
         int dz = Coords.cubeToMinBlock(newOffset.getZ() - oldOffset.getZ());
@@ -380,11 +381,11 @@ public class VanillaNetworkHandler {
         world.getEntityTracker().updateVisibility(player);
     }
 
-    private static SPacketChunkData constructChunkData(ChunkPos pos, Iterable<ICube> cubes, CubePos offset, boolean hasSkyLight) {
+    private static S21PacketChunkData constructChunkData(ChunkCoordIntPair pos, Iterable<ICube> cubes, CubePos offset, boolean hasSkyLight) {
         ICube[] cubesToSend = new ICube[16];
         int mask = getCubesToSend(cubes, offset, cubesToSend);
 
-        SPacketChunkData chunkData = new SPacketChunkData();
+        S21PacketChunkData chunkData = new S21PacketChunkData();
         @SuppressWarnings("ConstantConditions")
         ISPacketChunkData dataAccess = (ISPacketChunkData) chunkData;
         dataAccess.setChunkX(pos.x + offset.getX());
@@ -403,8 +404,8 @@ public class VanillaNetworkHandler {
     }
 
 
-    private SPacketChunkData constructChunkData(Chunk chunk, CubePos offset) {
-        SPacketChunkData chunkData = new SPacketChunkData();
+    private S21PacketChunkData constructChunkData(Chunk chunk, CubePos offset) {
+        S21PacketChunkData chunkData = new S21PacketChunkData();
         @SuppressWarnings("ConstantConditions")
         ISPacketChunkData dataAccess = (ISPacketChunkData) chunkData;
         dataAccess.setChunkX(chunk.x + offset.getX());
@@ -420,11 +421,11 @@ public class VanillaNetworkHandler {
         return chunkData;
     }
 
-    private static SPacketChunkData constructFullChunkData(Chunk chunk, Iterable<ICube> cubes, CubePos offset, boolean hasSkyLight) {
+    private static S21PacketChunkData constructFullChunkData(Chunk chunk, Iterable<ICube> cubes, CubePos offset, boolean hasSkyLight) {
         ICube[] cubesToSend = new ICube[16];
         int mask = getCubesToSend(cubes, offset, cubesToSend);
 
-        SPacketChunkData chunkData = new SPacketChunkData();
+        S21PacketChunkData chunkData = new S21PacketChunkData();
         @SuppressWarnings("ConstantConditions")
         ISPacketChunkData dataAccess = (ISPacketChunkData) chunkData;
         dataAccess.setChunkX(chunk.x + offset.getX());
@@ -492,7 +493,7 @@ public class VanillaNetworkHandler {
                 total += storage.getBlockLight().getData().length;
 
                 if (hasSkyLight) {
-                    total += storage.getSkyLight().getData().length;
+                    total += storage.getSkylightArray().data.length;
                 }
             }
         }

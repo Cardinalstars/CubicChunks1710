@@ -26,19 +26,27 @@ package com.cardinalstar.cubicchunks.server;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.world.ICubeWatcher;
+import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.network.PacketCubeBlockChange;
+import com.cardinalstar.cubicchunks.network.PacketDispatcher;
+import com.cardinalstar.cubicchunks.network.PacketUnloadCube;
+import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ITicket;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
+import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.base.Predicate;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import gnu.trove.list.TShortList;
 import gnu.trove.list.array.TShortArrayList;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.Packet;
@@ -99,7 +107,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     void removeScheduledAddPlayer(EntityPlayerMP player) {
-        playersToAdd.rem(player); // TODO: why does rem() and remove() exist separately?
+        playersToAdd.remove(player); // TODO: why does rem() and remove() exist separately?
     }
 
     void addScheduledPlayers() {
@@ -127,7 +135,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
         if (this.sentToPlayers) {
             this.sendToPlayer(player);
-            ((ICubicEntityTracker) playerCubeMap.getWorldServer().getEntityTracker())
+            ((ICubicEntityTracker) cubicPlayerManager.getWorldServer().getEntityTracker())
                 .sendLeashedEntitiesInCube(player, this.getCube());
         }
     }
@@ -137,7 +145,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         if (!this.players.contains(player)) {
             removeScheduledAddPlayer(player);
             if (this.players.isEmpty()) {
-                playerCubeMap.removeEntry(this);
+                cubicPlayerManager.removeEntry(this);
             }
             return;
         }
@@ -146,27 +154,27 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             this.players.remove(player);
 
             if (this.players.isEmpty()) {
-                playerCubeMap.removeEntry(this);
+                cubicPlayerManager.removeEntry(this);
             }
             return;
         }
 
         if (this.sentToPlayers) {
             PacketDispatcher.sendTo(new PacketUnloadCube(this.cubePos), player);
-            playerCubeMap.removeSchedulesSendCubeToPlayer(cube, player);
+            cubicPlayerManager.removeSchedulesSendCubeToPlayer(cube, player);
         }
 
         this.players.remove(player);
         MinecraftForge.EVENT_BUS.post(new CubeUnWatchEvent(cube, cubePos, this, player));
 
         if (this.players.isEmpty()) {
-            playerCubeMap.removeEntry(this);
+            cubicPlayerManager.removeEntry(this);
         }
     }
 
     void invalidate() {
         if (loading) {
-            AsyncWorldIOExecutor.dropQueuedCubeLoad(this.playerCubeMap.getWorldServer(),
+            AsyncWorldIOExecutor.dropQueuedCubeLoad(this.cubicPlayerManager.getWorldServer(),
                 cubePos.getX(), cubePos.getY(), cubePos.getZ(),
                 c -> this.cube = c);
         }
@@ -189,7 +197,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         int cubeY = cubePos.getY();
         int cubeZ = cubePos.getZ();
 
-        playerCubeMap.getWorldServer().profiler.startSection("getCube");
+        cubicPlayerManager.getWorldServer().theProfiler.startSection("getCube");
         if (canGenerate) {
             this.cube = this.cubeCache.getCube(cubeX, cubeY, cubeZ, ICubeProviderServer.Requirement.LIGHT);
             assert this.cube != null;
@@ -206,8 +214,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         if (this.cube != null) {
             this.cube.getTickets().add(this);
         }
-        playerCubeMap.getWorldServer().profiler.endStartSection("light");
-        playerCubeMap.getWorldServer().profiler.endSection();
+        cubicPlayerManager.getWorldServer().theProfiler.endStartSection("light");
+        cubicPlayerManager.getWorldServer().theProfiler.endSection();
 
         return this.cube != null;
     }
@@ -221,7 +229,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     boolean isWaitingForColumn() {
-        ColumnWatcher columnEntry = playerCubeMap.getColumnWatcher(this.cubePos.chunkPos());
+        ColumnWatcher columnEntry = cubicPlayerManager.getColumnWatcher(this.cubePos.chunkPos());
         return columnEntry == null || !columnEntry.isSentToPlayers();
     }
 
@@ -237,7 +245,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         if (isWaitingForColumn()) {
             return SendToPlayersResult.WAITING;
         }
-        if (!playerCubeMap.getColumnWatcher(cubePos.chunkPos()).isSentToPlayers()) {
+        if (!cubicPlayerManager.getColumnWatcher(cubePos.chunkPos()).isSentToPlayers) {
             return SendToPlayersResult.WAITING;
         }
         this.dirtyBlocks.clear();
@@ -257,7 +265,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             return;
         }
         assert cube != null;
-        playerCubeMap.scheduleSendCubeToPlayer(cube, player);
+        cubicPlayerManager.scheduleSendCubeToPlayer(cube, player);
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
@@ -268,10 +276,10 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             return;
         }
 
-        long inhabitedTime = this.cube.getColumn().getInhabitedTime();
+        long inhabitedTime = this.cube.getColumn().inhabitedTime;
         inhabitedTime += now - this.previousWorldTime;
 
-        this.cube.getColumn().setInhabitedTime(inhabitedTime);
+        this.cube.getColumn().inhabitedTime = inhabitedTime;
         this.previousWorldTime = now;
     }
 
@@ -279,7 +287,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     void blockChanged(int localX, int localY, int localZ) {
         //if we are adding the first one, add it to update list
         if (this.dirtyBlocks.isEmpty()) {
-            playerCubeMap.addToUpdateEntry(this);
+            cubicPlayerManager.addToUpdateEntry(this);
         }
         // If the number of changes is above clumpingThreshold
         // we send the whole cube, but to decrease network usage
@@ -304,27 +312,28 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
         if (this.dirtyBlocks.size() >= ForgeModContainer.clumpingThreshold) {
             // send whole cube
-            this.players.forEach(entry -> playerCubeMap.scheduleSendCubeToPlayer(cube, entry));
+            this.players.forEach(entry -> cubicPlayerManager.scheduleSendCubeToPlayer(cube, entry));
         } else {
             // send all the dirty blocks
             PacketCubeBlockChange packet = null;
             for (EntityPlayerMP player : this.players) {
-                if (playerCubeMap.vanillaNetworkHandler.hasCubicChunks(player)) {
+                if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
                     if (packet == null) { // create packet lazily
                         packet = new PacketCubeBlockChange(this.cube, this.dirtyBlocks);
                     }
                     PacketDispatcher.sendTo(packet, player);
                 } else {
-                    playerCubeMap.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
+                    cubicPlayerManager.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
                 }
             }
             // send the block entites on those blocks too
             this.dirtyBlocks.forEach(localAddress -> {
                 BlockPos pos = cube.localAddressToBlockPos(localAddress);
 
-                IBlockState state = this.cube.getBlockState(pos);
-                if (state.getBlock().hasTileEntity(state)) {
-                    sendBlockEntityToAllPlayers(world.getTileEntity(pos));
+                Block block = this.cube.getBlock(pos.getX(), pos.getY(), pos.getZ());
+                int meta = this.cube.getBlockMetadata(pos.getX(), pos.getY(), pos.getZ())
+                if (block.hasTileEntity(meta)) {
+                    sendBlockEntityToAllPlayers(world.getTileEntity(pos.getX(), pos.getY(), pos.getZ()));
                 }
                 return true;
             });
@@ -336,7 +345,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         if (blockEntity == null) {
             return;
         }
-        Packet<?> packet = blockEntity.getUpdatePacket();
+        Packet packet = blockEntity.getDescriptionPacket();
         if (packet == null) {
             return;
         }
@@ -422,12 +431,12 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     private long getWorldTime() {
-        return playerCubeMap.getWorldServer().getWorldTime();
+        return cubicPlayerManager.getWorldServer().getWorldTime();
     }
 
-    private void sendPacketToAllPlayers(Packet<?> packet) {
+    private void sendPacketToAllPlayers(Packet packet) {
         for (EntityPlayerMP entry : this.players) {
-            entry.connection.sendPacket(packet);
+            entry.playerNetServerHandler.sendPacket(packet);
         }
     }
 

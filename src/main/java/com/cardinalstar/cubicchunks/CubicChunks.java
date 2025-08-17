@@ -1,6 +1,7 @@
 package com.cardinalstar.cubicchunks;
 
 import com.cardinalstar.cubicchunks.core.CommonProxy;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -47,5 +48,18 @@ public class CubicChunks {
     // register server commands in this event handler (Remove if not needed)
     public void serverStarting(FMLServerStartingEvent event) {
         proxy.serverStarting(event);
+    }
+
+    // essentially a copy of FMLLog.bigWarning, with more lines of stacktrace
+    public static void bigWarning(String format, Object... data)
+    {
+        StackTraceElement[] trace = Thread.currentThread().getStackTrace();
+        LOGGER.log(Level.WARN, "****************************************");
+        LOGGER.log(Level.WARN, "* "+format, data);
+        for (int i = 2; i < 10 && i < trace.length; i++)
+        {
+            LOGGER.log(Level.WARN, "*  at {}{}", trace[i].toString(), i == 9 ? "..." : "");
+        }
+        LOGGER.log(Level.WARN, "****************************************");
     }
 }
