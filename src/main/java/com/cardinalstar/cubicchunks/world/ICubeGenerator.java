@@ -260,7 +260,7 @@ public interface ICubeGenerator {
      * @return a list of creature classes that can spawn here. Example: Calling this method inside a nether fortress
      * returns EntityBlaze, EntityPigZombie, EntitySkeleton, and EntityMagmaCube
      */
-    List<Biome.SpawnListEntry> getPossibleCreatures(EnumCreatureType type, BlockPos pos);
+    List<net.minecraft.world.biome.BiomeGenBase.SpawnListEntry> getPossibleCreatures(EnumCreatureType type, int x, int y, int z);
 
     /**
      * Gets the closest structure with name {@code name}. This is primarily used when an eye of ender is trying to find

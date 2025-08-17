@@ -264,7 +264,7 @@ public class CubicPlayerManager extends PlayerManager {
     private void addTickableColumns(TickableChunkContainer tickableChunksCubes) {
         for (ColumnWatcher watcher : columnWatchers) {
             Chunk chunk = watcher.getChunk();
-            if (chunk == null || !watcher.hasPlayerMatchingInRange(128.0D, NOT_SPECTATOR)) {
+            if (chunk == null) { // TODO WATCH IF YOU NEED TO CHECK RANGE
                 continue;
             }
             tickableChunksCubes.addColumn(chunk);
@@ -277,9 +277,8 @@ public class CubicPlayerManager extends PlayerManager {
      */
     // CHECKED: 1.10.2-12.18.1.2092
     @Override
-    public void tick() {
-        getWorldServer().theProfiler.startSection("playerCubeMapTick");
-        Predicate<EntityPlayerMP> canGenerateChunkPredicate = Objects::nonNull;
+    public void updatePlayerInstances() {
+        getWorldServer().theProfiler.startSection("playerCubeMapUpdatePlayerInstances");
 
         long currentTime = this.getWorldServer().getTotalWorldTime();
 
@@ -335,7 +334,7 @@ public class CubicPlayerManager extends PlayerManager {
 
                 boolean success = entry.getChunk() != null;
                 if (!success) {
-                    boolean canGenerate = entry.hasPlayerMatching(canGenerateChunkPredicate);
+                    boolean canGenerate = entry.hasPlayer();
                     getWorldServer().theProfiler.startSection("generate");
                     success = entry.providePlayerChunk(canGenerate);
                     getWorldServer().theProfiler.endSection(); // generate
@@ -367,7 +366,7 @@ public class CubicPlayerManager extends PlayerManager {
                 boolean success = !watcher.isWaitingForCube();
                 boolean alreadyLoaded = success;
                 if (!success) {
-                    boolean canGenerate = watcher.hasPlayerMatching(canGenerateChunkPredicate);
+                    boolean canGenerate = watcher.hasPlayer();
                     getWorldServer().theProfiler.startSection("generate");
                     success = watcher.providePlayerCube(canGenerate);
                     getWorldServer().theProfiler.endSection();
@@ -487,20 +486,21 @@ public class CubicPlayerManager extends PlayerManager {
             cubesToSend.clear();
         }
         getWorldServer().theProfiler.endSection();//sendCubes
-        getWorldServer().theProfiler.endSection();//playerCubeMapTick
+        getWorldServer().theProfiler.endSection();//playerCubeMapUpdatePlayerInstances
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
-    @Override
-    public boolean contains(int cubeX, int cubeZ) {
+    // contains(int cubeX, int cubeZ)
+    public boolean func_152621_a(int cubeX, int cubeZ) {
         return this.columnWatchers.get(cubeX, cubeZ) != null;
     }
 
-    // CHECKED: 1.10.2-12.18.1.2092
-    @Override
-    public ColumnWatcher getEntry(int cubeX, int cubeZ) {
-        return this.columnWatchers.get(cubeX, cubeZ);
-    }
+    // TODO WATCH
+//    // CHECKED: 1.10.2-12.18.1.2092
+//    @Override
+//    public ColumnWatcher getEntry(int cubeX, int cubeZ) {
+//        return this.columnWatchers.get(cubeX, cubeZ);
+//    }
 
     /**
      * Returns existing CubeWatcher or creates new one if it doesn't exist.
@@ -648,7 +648,7 @@ public class CubicPlayerManager extends PlayerManager {
 
     // CHECKED: 1.10.2-12.18.1.2092
     @Override
-    public void updateMovingPlayer(EntityPlayerMP player) {
+    public void updatePlayerPertinentChunks(EntityPlayerMP player) {
         // the player moved
         // if the player moved into a new chunk, update which chunks the player needs to know about
         // then update the list of chunks that need to be sent to the client
@@ -760,7 +760,7 @@ public class CubicPlayerManager extends PlayerManager {
     // CHECKED: 1.10.2-12.18.1.2092
     @Override
     @Deprecated
-    public final void setPlayerViewRadius(int newHorizontalViewDistance) {
+    public final void func_152622_a(int newHorizontalViewDistance) {
         this.setPlayerViewDistance(newHorizontalViewDistance, verticalViewDistance);
     }
 
@@ -840,16 +840,16 @@ public class CubicPlayerManager extends PlayerManager {
         this.verticalViewDistance = newVerticalViewDistance;
     }
 
-    // TODO WATCH THESE
-    @Override
-    public void entryChanged(IColumnWatcher entry) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void removeEntry(IColumnWatcher entry) {
-        throw new UnsupportedOperationException();
-    }
+    // TODO NEEDED?
+//    @Override
+//    public void entryChanged(IColumnWatcher entry) {
+//        throw new UnsupportedOperationException();
+//    }
+//
+//    @Override
+//    public void removeEntry(IColumnWatcher entry) {
+//        throw new UnsupportedOperationException();
+//    }
 
     void addToUpdateEntry(CubeWatcher cubeWatcher) {
         this.cubeWatchersToUpdate.add(cubeWatcher);
@@ -879,7 +879,7 @@ public class CubicPlayerManager extends PlayerManager {
 
     public void removeEntry(ColumnWatcher entry) {
         ChunkCoordIntPair pos = entry.getPos();
-        entry.UpdateChunkInhabitedTime();
+        entry.IncreaseInhabitedTime();
         this.columnWatchers.remove(pos.chunkXPos, pos.chunkZPos);
         this.columnsToGenerate.remove(entry);
         this.columnsToSendToClients.remove(entry);

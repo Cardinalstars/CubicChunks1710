@@ -129,7 +129,7 @@ public class IONbtReader {
         readTileEntities(level, world, cube);
         readScheduledBlockTicks(level, world);
         readLightingInfo(cube, level, world);
-        cube.markSaved(); // its exactly the same as on disk so its not modified
+        cube.onCubeLoad(); // its exactly the same as on disk so its not modified
     }
 
     @Nullable
