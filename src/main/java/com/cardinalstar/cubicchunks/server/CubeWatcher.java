@@ -27,13 +27,14 @@ package com.cardinalstar.cubicchunks.server;
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.world.ICubeWatcher;
 import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
+import com.cardinalstar.cubicchunks.event.events.CubeUnWatchEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubeBlockChange;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.network.PacketUnloadCube;
+import com.cardinalstar.cubicchunks.server.chunkio.async.forge.CubeIOExecutor;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ITicket;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
@@ -174,7 +175,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
     void invalidate() {
         if (loading) {
-            AsyncWorldIOExecutor.dropQueuedCubeLoad(this.cubicPlayerManager.getWorldServer(),
+            CubeIOExecutor.dropQueuedCubeLoad(this.cubicPlayerManager.getWorldServer(),
                 cubePos.getX(), cubePos.getY(), cubePos.getZ(),
                 c -> this.cube = c);
         }
@@ -230,7 +231,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
     boolean isWaitingForColumn() {
         ColumnWatcher columnEntry = cubicPlayerManager.getColumnWatcher(this.cubePos.chunkPos());
-        return columnEntry == null || !columnEntry.isSentToPlayers();
+        return columnEntry == null || !columnEntry.isSentToPlayers;
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
@@ -331,7 +332,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
                 BlockPos pos = cube.localAddressToBlockPos(localAddress);
 
                 Block block = this.cube.getBlock(pos.getX(), pos.getY(), pos.getZ());
-                int meta = this.cube.getBlockMetadata(pos.getX(), pos.getY(), pos.getZ())
+                int meta = this.cube.getBlockMetadata(pos.getX(), pos.getY(), pos.getZ());
                 if (block.hasTileEntity(meta)) {
                     sendBlockEntityToAllPlayers(world.getTileEntity(pos.getX(), pos.getY(), pos.getZ()));
                 }
@@ -366,6 +367,11 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             }
         }
         return false;
+    }
+
+    boolean hasPlayer()
+    {
+        return players.elements().length != 0;
     }
 
     boolean hasPlayerMatchingInRange(Predicate<EntityPlayerMP> predicate, int range) {

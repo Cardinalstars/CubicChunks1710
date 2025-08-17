@@ -38,12 +38,15 @@ import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.XZAddressable;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.management.PlayerManager;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkWatchEvent;
 
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -52,80 +55,101 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnWatcher
 {
 
-    @Nonnull private final Object backingPlayerInstance;
     @Nonnull private final CubicPlayerManager cubicPlayerManager;
     @Nonnull private final BitSet dirtyColumns = new BitSet(256);
 
-    public boolean isSentToPlayers;
-    ColumnWatcher(CubicPlayerManager cubicPlayerManager, ChunkCoordIntPair pos, Object backingPlayerInstance)
+    private long previousWorldTime;
+    private final ChunkCoordIntPair chunkLocation;
+    private boolean isLoaded = false;
+    @Nonnull private Chunk chunk;
+    private final List<EntityPlayerMP> playersWatchingChunk = new ArrayList();
+    private final java.util.HashMap<EntityPlayerMP, Runnable> players = new java.util.HashMap<EntityPlayerMP, Runnable>();
+
+    private Runnable loadedRunnable = new Runnable()
     {
-        this.backingPlayerInstance = backingPlayerInstance;
+        public void run()
+        {
+            ColumnWatcher.this.isLoaded = true;
+        }
+    };
+
+    public boolean isSentToPlayers;
+    ColumnWatcher(CubicPlayerManager cubicPlayerManager, ChunkCoordIntPair pos)
+    {
         this.cubicPlayerManager = cubicPlayerManager;
+        this.chunkLocation = pos;
+        this.chunk = this.cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(chunkLocation.chunkXPos, chunkLocation.chunkZPos);
     }
 
     public boolean providePlayerChunk(boolean canGenerate) {
-        if (!((IPlayerInstance) backingPlayerInstance).isLoaded()) {
+        if (isLoaded) {
             return false;
         }
-        if (((IPlayerInstance) backingPlayerInstance).getChunk() != null) {
+        if (this.chunk != null) {
             return true;
         }
         if (canGenerate) {
-            Chunk chunk = this.cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(((IPlayerInstance) backingPlayerInstance).getPos().chunkXPos, ((IPlayerInstance) backingPlayerInstance).getPos().chunkZPos);
+            Chunk chunk = this.cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(chunkLocation.chunkXPos, chunkLocation.chunkZPos);
             if (chunk.isEmpty()) {
                 return false;
             }
-            ((IPlayerInstance) backingPlayerInstance).setChunk(chunk);
+            this.chunk = chunk;
         } else {
-            ((IPlayerInstance) backingPlayerInstance).setChunk(this.cubicPlayerManager.getWorldServer().getChunkProvider().loadChunk(((IPlayerInstance) backingPlayerInstance).getPos().chunkXPos, ((IPlayerInstance) backingPlayerInstance).getPos().chunkZPos));
+            this.chunk = this.cubicPlayerManager.getWorldServer().getChunkProvider().loadChunk(chunkLocation.chunkXPos, chunkLocation.chunkZPos);
         }
 
-        return ((IPlayerInstance) backingPlayerInstance).getChunk() != null;
+        return this.chunk != null;
+    }
+
+    boolean hasPlayer()
+    {
+        return !playersWatchingChunk.isEmpty();
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
     @Override
     public void addPlayer(EntityPlayerMP player) {
-        assert ((IPlayerInstance) backingPlayerInstance).getChunk() == null || ((IPlayerInstance) backingPlayerInstance).getChunk() == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
-        if (((IPlayerInstance) backingPlayerInstance).getPlayers().contains(player)) {
+        assert this.chunk == null || this.chunk == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
+        if (playersWatchingChunk.contains(player)) {
             CubicChunks.LOGGER.debug("Failed to expand player. {} already is in chunk {}, {}", player,
-                ((IPlayerInstance) backingPlayerInstance).getPos().chunkXPos,
-                ((IPlayerInstance) backingPlayerInstance).getPos().chunkZPos);
+                chunkLocation.chunkXPos,
+                chunkLocation.chunkZPos);
             return;
         }
-        if (((IPlayerInstance) backingPlayerInstance).getPlayers().isEmpty()) {
-            ((IPlayerInstance) backingPlayerInstance).setLastUpdateInhabitedTime(cubicPlayerManager.getWorldServer().getTotalWorldTime());
+        if (this.playersWatchingChunk.isEmpty())
+        {
+            this.previousWorldTime = cubicPlayerManager.getWorldServer().getTotalWorldTime();
         }
 
-        ((IPlayerInstance) backingPlayerInstance).getPlayers().add(player);
+        playersWatchingChunk.add(player);
 
         //always sent to players, no need to check it
 
         if (this.isSentToPlayers) {
             if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
-                PacketColumn message = new PacketColumn(((IPlayerInstance) backingPlayerInstance).getChunk());
+                PacketColumn message = new PacketColumn(chunk);
                 PacketDispatcher.sendTo(message, player);
             } else {
-                cubicPlayerManager.vanillaNetworkHandler.sendColumnLoadPacket(((IPlayerInstance) backingPlayerInstance).getChunk(), player);
+                cubicPlayerManager.vanillaNetworkHandler.sendColumnLoadPacket(chunk, player);
             }
             //this.sendNearbySpecialEntities - done by cube entry
-            MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(((IPlayerInstance) backingPlayerInstance).getChunk().getChunkCoordIntPair(), player));
+            MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(chunk.getChunkCoordIntPair(), player));
         }
     }
 
     // CHECKED: 1.10.2-12.18.1.2092//TODO: remove it, the only different line is sending packet
     @Override
     public void removePlayer(EntityPlayerMP player) {
-        assert ((IPlayerInstance) backingPlayerInstance).getChunk() == null || ((IPlayerInstance) backingPlayerInstance).getChunk() == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
-        if (!((IPlayerInstance) backingPlayerInstance).getPlayers().contains(player)) {
+        assert (this.chunk == null || this.chunk == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ()));
+        if (!playersWatchingChunk.contains(player)) {
             return;
         }
-        if (((IPlayerInstance) backingPlayerInstance).getChunk() == null) {
-            ((IPlayerInstance) backingPlayerInstance).getPlayers().remove(player);
-            if (((IPlayerInstance) backingPlayerInstance).getPlayers().isEmpty()) {
-                if (!((IPlayerInstance) backingPlayerInstance).isLoaded()) {
+        if (this.chunk == null) {
+            playersWatchingChunk.remove(player);
+            if (playersWatchingChunk.isEmpty()) {
+                if (!isLoaded) {
                     CubeIOExecutor.dropQueuedColumnLoad(
-                        cubicPlayerManager.getWorldServer(), ((IPlayerInstance) backingPlayerInstance).getPos().chunkXPos, ((IPlayerInstance) backingPlayerInstance).getPos().chunkZPos, (c) -> ((IPlayerInstance) backingPlayerInstance).getLoadedRunnable().run());
+                        cubicPlayerManager.getWorldServer(), chunkLocation.chunkXPos, chunkLocation.chunkZPos, (c) -> loadedRunnable.run());
                 }
                 this.cubicPlayerManager.removeEntry(this);
             }
@@ -134,40 +158,41 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
 
         if (this.isSentToPlayers) {
             if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
-                PacketDispatcher.sendTo(new PacketUnloadColumn(((IPlayerInstance) backingPlayerInstance).getPos()), player);
+                PacketDispatcher.sendTo(new PacketUnloadColumn(chunkLocation), player);
             } else {
-                cubicPlayerManager.vanillaNetworkHandler.sendColumnUnloadPacket(((IPlayerInstance) backingPlayerInstance).getPos(), player);
+                cubicPlayerManager.vanillaNetworkHandler.sendColumnUnloadPacket(chunkLocation, player);
             }
         }
 
-        ((IPlayerInstance) backingPlayerInstance).getPlayers().remove(player);
+        playersWatchingChunk.remove(player);
 
-        MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.UnWatch(((IPlayerInstance) backingPlayerInstance).getChunk().getChunkCoordIntPair(), player));
+        MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.UnWatch(chunkLocation, player));
 
-        if (((IPlayerInstance) backingPlayerInstance).getPlayers().isEmpty()) {
+        if (playersWatchingChunk.isEmpty()) {
             cubicPlayerManager.removeEntry(this);
         }
     }
 
     @Override
     public boolean containsPlayer(EntityPlayerMP playerMP) {
-        return ((IPlayerInstance) backingPlayerInstance).getPlayers().contains(playerMP);
+        return playersWatchingChunk.contains(playerMP);
     }
 
     @Override
     public Chunk getChunk() {
-        return ((IPlayerInstance) backingPlayerInstance).getChunk();
+        return this.chunk;
     }
 
     @Override
     public ChunkCoordIntPair getPos() {
-        return ((IPlayerInstance) backingPlayerInstance).getPos();
+        return chunkLocation;
     }
 
     @Override
-    public void UpdateChunkInhabitedTime()
+    public void IncreaseInhabitedTime()
     {
-        ((IPlayerInstance) backingPlayerInstance).increaseInhabitedTime(this.getChunk());
+        this.chunk.inhabitedTime += cubicPlayerManager.getWorldServer().getTotalWorldTime() - this.previousWorldTime;
+        this.previousWorldTime = cubicPlayerManager.getWorldServer().getTotalWorldTime();
     }
 
     //providePlayerChunk - ok
@@ -178,18 +203,18 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         if (this.isSentToPlayers) {
             return true;
         }
-        if (((IPlayerInstance) backingPlayerInstance).getChunk() == null) {
+        if (this.chunk == null) {
             return false;
         }
-        assert ((IPlayerInstance) backingPlayerInstance).getChunk() == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
+        assert (this.chunk == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ()));
         try {
 
-            PacketColumn message = new PacketColumn(((IPlayerInstance) backingPlayerInstance).getChunk());
-            for (EntityPlayerMP player : ((IPlayerInstance) backingPlayerInstance).getPlayers()) {
+            PacketColumn message = new PacketColumn(chunk);
+            for (EntityPlayerMP player : playersWatchingChunk) {
                 if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
                     PacketDispatcher.sendTo(message, player);
                 } else {
-                    cubicPlayerManager.vanillaNetworkHandler.sendColumnLoadPacket(((IPlayerInstance) backingPlayerInstance).getChunk(), player);
+                    cubicPlayerManager.vanillaNetworkHandler.sendColumnLoadPacket(chunk, player);
                 }
             }
             isSentToPlayers = true;
@@ -202,16 +227,15 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
     @Override
     @Deprecated
     public void sendToPlayer(EntityPlayerMP player) {
-        assert ((IPlayerInstance) backingPlayerInstance).getChunk() == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
+        assert this.chunk == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
         //done by cube watcher
     }
 
-    //updateChunkInhabitedTime - ok
 
     @Override
     @Deprecated
     public void blockChanged(int x, int y, int z) {
-        assert ((IPlayerInstance) backingPlayerInstance).getChunk() == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
+        assert this.chunk == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
         CubeWatcher watcher = cubicPlayerManager.getCubeWatcher(CubePos.fromBlockCoords(x, y, z));
         if (watcher != null) {
             watcher.blockChanged(x, y, z);
@@ -223,16 +247,16 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         if (!isSentToPlayers) {
             return;
         }
-        assert ((IPlayerInstance) backingPlayerInstance).getChunk() == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ()) :
-            "Column watcher " + this + " at " + ((IPlayerInstance) backingPlayerInstance).getPos() + " contains column " + ((IPlayerInstance) backingPlayerInstance).getChunk() + " but loaded column is " +
-                cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
+        assert this.chunk == this.cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ()) :
+            "Column watcher " + this + " at " + this.chunkLocation + " contains column " + this.chunk + " but loaded column is " +
+                this.cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
         if (this.dirtyColumns.isEmpty()) {
             return;
         }
-        assert ((IPlayerInstance) backingPlayerInstance).getChunk() != null;
-        for (EntityPlayerMP player : ((IPlayerInstance) backingPlayerInstance).getPlayers()) {
-            if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
-                PacketDispatcher.sendTo(new PacketHeightMapUpdate(dirtyColumns, ((IPlayerInstance) backingPlayerInstance).getChunk()), player);
+        assert this.chunk != null;
+        for (EntityPlayerMP player : this.playersWatchingChunk) {
+            if (this.cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
+                PacketDispatcher.sendTo(new PacketHeightMapUpdate(dirtyColumns, this.chunk), player);
             }
         }
         this.dirtyColumns.clear();
@@ -241,18 +265,18 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
     //containsPlayer, hasPlayerMatching, hasPlayerMatchingInRange, isAddedToChunkUpdateQueue, getChunk, getClosestPlayerDistance - ok
 
     @Override public int getX() {
-        return ((IPlayerInstance) backingPlayerInstance).getPos().chunkXPos;
+        return this.chunkLocation.chunkXPos;
     }
 
     @Override public int getZ() {
-        return ((IPlayerInstance) backingPlayerInstance).getPos().chunkZPos;
+        return this.chunkLocation.chunkZPos;
     }
 
     void heightChanged(int localX, int localZ) {
         if (!isSentToPlayers) {
             return;
         }
-        assert ((IPlayerInstance) backingPlayerInstance).getChunk() == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
+        assert this.chunk == cubicPlayerManager.getWorldServer().getChunkProvider().provideChunk(getX(), getZ());
         if (this.dirtyColumns.isEmpty()) {
             cubicPlayerManager.addToUpdateEntry(this);
         }
