@@ -220,7 +220,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
         profiler.startSection("providerTick");
         long i = System.currentTimeMillis();
         Random rand = this.worldObj.rand;
-        PlayerCubeMap playerCubeMap = ((PlayerCubeMap) this.world.getPlayerChunkMap());
+        PlayerCubeMap playerCubeMap = ((PlayerCubeMap) this.worldObj.getPlayerChunkMap());
         Iterator<Cube> watchersIterator = playerCubeMap.getCubeIterator();
         BooleanSupplier tickFaster = () -> System.currentTimeMillis() - i > 40;
         while (watchersIterator.hasNext()) {

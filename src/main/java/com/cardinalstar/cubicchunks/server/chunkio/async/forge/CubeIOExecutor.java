@@ -25,16 +25,16 @@ public class CubeIOExecutor
     private static final AsynchronousExecutor<QueuedCube, ICubeIO.PartialData<ICube>, Consumer<Cube>, RuntimeException> cubeInstance = new AsynchronousExecutor<QueuedCube, ICubeIO.PartialData<ICube>, Consumer<Cube>, RuntimeException>(new CubeIOProvider(), BASE_THREADS);
 
 
-    public static ICubeIO.PartialData<IColumn> syncChunkLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int z) {
+    public static ICubeIO.PartialData<IColumn> syncColumnLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int z) {
         return columnInstance.getSkipQueue(new QueuedColumn(x, z, loader, world, provider));
     }
 
-    public static void queueChunkLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int z, Consumer<Chunk> runnable) {
+    public static void queueColumnLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int z, Consumer<Chunk> runnable) {
         columnInstance.add(new QueuedColumn(x, z, loader, world, provider), runnable);
     }
 
     // Abuses the fact that hashCode and equals for QueuedChunk only use world and coords
-    public static void dropQueuedChunkLoad(World world, int x, int z, Consumer<Chunk> runnable) {
+    public static void dropQueuedColumnLoad(World world, int x, int z, Consumer<Chunk> runnable) {
         columnInstance.drop(new QueuedColumn(x, z, null, world, null), runnable);
     }
 
