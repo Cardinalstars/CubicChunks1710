@@ -11,5 +11,9 @@ public interface IColumnWatcher
     boolean containsPlayer(EntityPlayerMP playerMP);
     Chunk getChunk();
     ChunkCoordIntPair getPos();
-    void UpdateChunkInhabitedTime();
+    void IncreaseInhabitedTime();
+    void blockChanged(int x, int y, int z);
+    void update();
+    void sendToPlayer(EntityPlayerMP player);
+    boolean sendToPlayers();
 }
