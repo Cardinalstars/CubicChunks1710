@@ -30,9 +30,11 @@ import com.cardinalstar.cubicchunks.api.IntRange;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
+import com.cardinalstar.cubicchunks.network.PacketCubicWorldData;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.server.VanillaNetworkHandler;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
+import com.cardinalstar.cubicchunks.util.ReflectionUtil;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
@@ -40,6 +42,8 @@ import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.google.common.collect.ImmutableList;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.relauncher.Side;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -66,12 +70,12 @@ public class CommonEventHandler {
         WorldServer world = (WorldServer) event.world;
 
         WorldSavedCubicChunksData savedData =
-            (WorldSavedCubicChunksData) event.world.getPerWorldStorage().getOrLoadData(WorldSavedCubicChunksData.class, "cubicChunksData");
-        boolean ccWorldType = event.world.getWorldType() instanceof ICubicWorldType;
-        boolean ccGenerator = ccWorldType && ((ICubicWorldType) evt.getObject().getWorldType()).hasCubicGeneratorForWorld(evt.getObject());
+            (WorldSavedCubicChunksData) event.world.perWorldStorage.loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
+        boolean ccWorldType = event.world.getWorldInfo().getTerrainType() instanceof ICubicWorldType;
+        boolean ccGenerator = ccWorldType && ((ICubicWorldType) event.world.getWorldInfo().getTerrainType()).hasCubicGeneratorForWorld(event.world);
         boolean savedCC = savedData != null && savedData.isCubicChunks;
         boolean ccWorldInfo = ((ICubicWorldSettings) world.getWorldInfo()).isCubic() && (savedData == null || savedData.isCubicChunks);
-        boolean excludeCC = CubicChunksConfig.isDimensionExcluded(evt.getObject().provider.getDimension());
+        boolean excludeCC = CubicChunksConfig.isDimensionExcluded(event.world.provider.dimensionId);
         boolean forceExclusions = CubicChunksConfig.forceDimensionExcludes;
         // TODO: simplify this mess of booleans and document where each of them comes from
         // these espressions are generated using Quine McCluskey algorithm
@@ -97,7 +101,7 @@ public class CommonEventHandler {
             int maxY = CubicChunksConfig.defaultMaxHeight;
             if (world.provider.dimensionId != 0) {
                 WorldSavedCubicChunksData overworld = (WorldSavedCubicChunksData) DimensionManager
-                    .getWorld(0).getPerWorldStorage().getOrLoadData(WorldSavedCubicChunksData.class, "cubicChunksData");
+                    .getWorld(0).perWorldStorage.loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
                 if (overworld != null) {
                     minY = overworld.minHeight;
                     maxY = overworld.maxHeight;
@@ -106,22 +110,22 @@ public class CommonEventHandler {
             savedData = new WorldSavedCubicChunksData("cubicChunksData", isCC, minY, maxY);
         }
         savedData.markDirty();
-        evt.getObject().getPerWorldStorage().setData("cubicChunksData", savedData);
-        evt.getObject().getPerWorldStorage().saveAllData();
+        event.world.perWorldStorage.setData("cubicChunksData", savedData);
+        event.world.perWorldStorage.saveAllData();
 
         if (!isCC) {
             return;
         }
 
         if (shouldSkipWorld(world)) {
-            CubicChunks.LOGGER.info("Skipping world " + evt.getObject() + " with type " + evt.getObject().getWorldType() + " due to potential "
+            CubicChunks.LOGGER.info("Skipping world " + event.world + " with type " + event.world.getWorldInfo().getTerrainType() + " due to potential "
                 + "compatibility issues");
             return;
         }
-        CubicChunks.LOGGER.info("Initializing world " + evt.getObject() + " with type " + evt.getObject().getWorldType());
+        CubicChunks.LOGGER.info("Initializing world " + event.world + " with type " + event.world.getWorldInfo().getTerrainType());
 
         IntRange generationRange = new IntRange(0, ((ICubicWorldProvider) world.provider).getOriginalActualHeight());
-        WorldType type = evt.getObject().getWorldType();
+        WorldType type = event.world.getWorldInfo().getTerrainType();
         if (type instanceof ICubicWorldType && ((ICubicWorldType) type).hasCubicGeneratorForWorld(world)) {
             generationRange = ((ICubicWorldType) type).calculateGenerationHeightRange(world);
         }
@@ -142,8 +146,8 @@ public class CommonEventHandler {
 
     @SubscribeEvent
     public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
-        if (evt.getEntity() instanceof EntityPlayerMP && ((ICubicWorld) evt.getWorld()).isCubicWorld()) {
-            PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.getWorld()), (EntityPlayerMP) evt.getEntity());
+        if (evt.entity instanceof EntityPlayerMP && ((ICubicWorld) evt.world).isCubicWorld()) {
+            PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
         }
     }
 
@@ -176,11 +180,11 @@ public class CommonEventHandler {
 
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
-        if (event.getWorld().isRemote || !((ICubicWorld) event.getWorld()).isCubicWorld()) {
+        if (event.world.isRemote || !((ICubicWorld) event.world).isCubicWorld()) {
             return;
         }
 
-        ICubicWorld world = (ICubicWorld) event.getWorld();
+        ICubicWorld world = (ICubicWorld) event.world;
         if (!world.isCubicWorld()) {
             return;
         }
