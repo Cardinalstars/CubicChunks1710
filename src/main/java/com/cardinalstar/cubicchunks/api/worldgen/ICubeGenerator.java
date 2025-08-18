@@ -22,7 +22,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.world;
+package com.cardinalstar.cubicchunks.api.worldgen;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,8 +32,12 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.util.Box;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import net.minecraft.block.Block;
 import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 
 @ParametersAreNonnullByDefault
@@ -62,10 +66,10 @@ public interface ICubeGenerator {
      * @param cubeZ the cube's Z coordinate
      *
      * @return A CubePrimer with the generated blocks
-     * @deprecated generators are advised to implement {@link #generateCube(int, int, int, CubePrimer)}
+     * @deprecated generators are advised to implement {@link #provideCube(Chunk, int, int, int)}
      */
     @Deprecated
-    CubePrimer generateCube(int cubeX, int cubeY, int cubeZ);
+    Cube loadCube(Chunk chunk, int cubeX, int cubeY, int cubeZ);
 
     /**
      * Generate a new cube
@@ -73,15 +77,12 @@ public interface ICubeGenerator {
      * @param cubeX the cube's X coordinate
      * @param cubeY the cube's Y coordinate
      * @param cubeZ the cube's Z coordinate
-     * @param primer a CubePrimer which may be used for generating the new cube. Note that generators are allowed to return an
-     *               arbitrary CubePrimer, this parameter is simply a hint to help reduce allocations. However, if a different
-     *               primer is to be returned, the given primer's state must remain unmodified.
      *
      * @return A CubePrimer with the generated blocks
      */
-    default CubePrimer generateCube(int cubeX, int cubeY, int cubeZ, CubePrimer primer) {
+    default Cube provideCube(Chunk chunk, int cubeX, int cubeY, int cubeZ) {
         // proxy to legacy generateCube method to retain API backwards-compatibility
-        return this.generateCube(cubeX, cubeY, cubeZ);
+        return this.loadCube(chunk, cubeX, cubeY, cubeZ);
     }
 
     /**
@@ -103,11 +104,11 @@ public interface ICubeGenerator {
      */
     void populate(ICube cube);
 
-    default Optional<CubePrimer> tryGenerateCube(int cubeX, int cubeY, int cubeZ, CubePrimer primer, boolean forceGenerate) {
-        return Optional.of(this.generateCube(cubeX, cubeY, cubeZ, primer));
+    default Optional<Cube> tryGenerateCube(Chunk chunk, int cubeX, int cubeY, int cubeZ, boolean forceGenerate) {
+        return Optional.of(this.provideCube(chunk, cubeX, cubeY, cubeZ));
     }
 
-    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, ChunkPrimer primer, boolean forceGenerate) {
+    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, Block[] blocks, byte[] blockMeta, boolean forceGenerate) {
         Chunk column = new Chunk(world, columnX, columnZ);
         this.generateColumn(column);
         return Optional.of(column);
@@ -233,7 +234,7 @@ public interface ICubeGenerator {
 
     /**
      * Called to reload structures that apply to {@code cube}. Mostly used to prepare calls to
-     * {@link ICubeGenerator#getPossibleCreatures(EnumCreatureType, BlockPos)} <br>
+     * {@link ICubeGenerator#getPossibleCreatures(EnumCreatureType, int, int, int)} <br>
      *
      * @param cube The cube being loaded
      *
@@ -243,7 +244,7 @@ public interface ICubeGenerator {
 
     /**
      * Called to reload structures that apply to {@code column}. Mostly used to prepare calls to
-     * {@link ICubeGenerator#getPossibleCreatures(EnumCreatureType, BlockPos)} <br>
+     * {@link ICubeGenerator#getPossibleCreatures(EnumCreatureType, int, int, int)} <br>
      *
      * @param column The column being loaded
      *
@@ -255,12 +256,14 @@ public interface ICubeGenerator {
      * Retrieve a list of creature classes eligible for spawning at the specified location.
      *
      * @param type the creature type that we are interested in spawning
-     * @param pos the position we want to spawn creatures at
+     * @param x the x position we want to spawn creatures at
+     * @param y the y position we want to spawn creatures at
+     * @param z the z position we want to spawn creatures at
      *
      * @return a list of creature classes that can spawn here. Example: Calling this method inside a nether fortress
      * returns EntityBlaze, EntityPigZombie, EntitySkeleton, and EntityMagmaCube
      */
-    List<net.minecraft.world.biome.BiomeGenBase.SpawnListEntry> getPossibleCreatures(EnumCreatureType type, int x, int y, int z);
+    List<BiomeGenBase.SpawnListEntry> getPossibleCreatures(EnumCreatureType type, int x, int y, int z);
 
     /**
      * Gets the closest structure with name {@code name}. This is primarily used when an eye of ender is trying to find
@@ -272,7 +275,8 @@ public interface ICubeGenerator {
      *
      * @return the position of the structure, or {@code null} if none could be found
      */
-    @Nullable BlockPos getClosestStructure(String name, BlockPos pos, boolean findUnexplored);
+    @Nullable
+    ChunkPosition getNearestStructure(String name, int x, int y, int z);
 
     enum GeneratorReadyState {
         /**

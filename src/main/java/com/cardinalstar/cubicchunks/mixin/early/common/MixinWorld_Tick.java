@@ -70,7 +70,7 @@ public abstract class MixinWorld_Tick implements ICubicWorld {
      */
     @Group(name = "updateEntity", max = 2, min = 2)
     @Redirect(method = "updateEntityWithOptionalForce",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;checkChunksExist]" +
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;checkChunksExist" +
             "(IIIIII)Z"),
         require = 1)
     private boolean canUpdateEntity(World _this, int startBlockX, int oldStartBlockY, int startBlockZ, int endBlockX, int oldEndBlockY, int endBlockZ) {

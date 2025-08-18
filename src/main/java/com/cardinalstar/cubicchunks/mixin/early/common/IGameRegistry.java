@@ -22,41 +22,24 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+package com.cardinalstar.cubicchunks.mixin.early.common;
 
-package com.cardinalstar.cubicchunks.world.core;
+import cpw.mods.fml.common.IWorldGenerator;
+import cpw.mods.fml.common.registry.GameRegistry;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import net.minecraft.block.Block;
-import net.minecraft.network.PacketBuffer;
+import java.util.List;
 
-public interface IColumnInternal extends IColumn {
+import javax.annotation.Nullable;
 
-    Block[] getCompatGenerationBlockArray();
-    byte[] getCompatGenerationByteArray();
-
-    void removeFromStagingHeightmap(ICube cube);
-
-    void addToStagingHeightmap(ICube cube);
-
-    /**
-     * Returns Y coordinate of the top non-transparent block
-     *
-     * @param localX column-local X coordinate
-     * @param localZ column-local Z coordinate
-     * @return the Y coordinate of the top non-transparent block
-     */
-    int getTopYWithStaging(int localX, int localZ);
-
-    default void writeHeightmapDataForClient(PacketBuffer out) {
-        for (int i = 0; i < Cube.SIZE * Cube.SIZE; i++) {
-            out.writeInt(getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
-        }
+@Mixin(value = GameRegistry.class, remap = false)
+public interface IGameRegistry {
+    @Nullable @Accessor static List<IWorldGenerator> getSortedGeneratorList() {
+        throw new Error("IGameRegistry failed to apply");
     }
-
-    default void loadClientHeightmapData(PacketBuffer in) {
-        ((ClientHeightMap) getOpacityIndex()).loadData(in);
+    @Invoker("computeSortedGeneratorList") static void computeGenerators() {
+        throw new Error("IGameRegistry failed to apply");
     }
 }

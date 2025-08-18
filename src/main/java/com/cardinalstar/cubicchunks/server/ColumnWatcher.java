@@ -27,7 +27,6 @@ package com.cardinalstar.cubicchunks.server;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.world.IColumnWatcher;
-import com.cardinalstar.cubicchunks.mixin.server.IPlayerInstance;
 import com.cardinalstar.cubicchunks.network.PacketColumn;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.network.PacketHeightMapUpdate;
@@ -38,7 +37,6 @@ import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.XZAddressable;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.server.management.PlayerManager;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;

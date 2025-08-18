@@ -22,41 +22,45 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+package com.cardinalstar.cubicchunks.util;
 
-package com.cardinalstar.cubicchunks.world.core;
 
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import net.minecraft.block.Block;
-import net.minecraft.network.PacketBuffer;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 
-public interface IColumnInternal extends IColumn {
+import javax.annotation.ParametersAreNonnullByDefault;
 
-    Block[] getCompatGenerationBlockArray();
-    byte[] getCompatGenerationByteArray();
-
-    void removeFromStagingHeightmap(ICube cube);
-
-    void addToStagingHeightmap(ICube cube);
+@ParametersAreNonnullByDefault
+public class ReflectionUtil {
 
     /**
-     * Returns Y coordinate of the top non-transparent block
+     * Casts any object to inferred type. Useful for reflection.
      *
-     * @param localX column-local X coordinate
-     * @param localZ column-local Z coordinate
-     * @return the Y coordinate of the top non-transparent block
+     * @param in an object
+     * @param <T> an inferred type
+     * @return the input object, cast to arbitrary type T
      */
-    int getTopYWithStaging(int localX, int localZ);
+    @SuppressWarnings("unchecked") public static <T> T cast(Object in) {
+        return (T) in;
+    }
 
-    default void writeHeightmapDataForClient(PacketBuffer out) {
-        for (int i = 0; i < Cube.SIZE * Cube.SIZE; i++) {
-            out.writeInt(getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
+    public static <T> Class<? extends T> getClassOrDefault(String name, Class<? extends T> cl) {
+        try {
+            return cast(Class.forName(name));
+        } catch (ClassNotFoundException ex) {
+            return cl;
         }
     }
 
-    default void loadClientHeightmapData(PacketBuffer in) {
-        ((ClientHeightMap) getOpacityIndex()).loadData(in);
+    public static MethodHandle constructHandle(Class<?> owner, Class<?>... args) {
+        try {
+            Constructor<?> constr = owner.getDeclaredConstructor(args);
+            constr.setAccessible(true);
+            return MethodHandles.lookup().unreflectConstructor(constr);
+        } catch (IllegalAccessException | NoSuchMethodException e) {
+            //if it happens - either something has gone horribly wrong or the JVM is blocking access
+            throw new Error(e);
+        }
     }
 }

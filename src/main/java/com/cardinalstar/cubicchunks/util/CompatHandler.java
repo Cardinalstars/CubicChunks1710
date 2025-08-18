@@ -35,10 +35,18 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
+import cpw.mods.fml.common.IWorldGenerator;
+import cpw.mods.fml.common.eventhandler.Event;
+import cpw.mods.fml.common.eventhandler.EventBus;
+import cpw.mods.fml.common.eventhandler.IEventListener;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.terraingen.DecorateBiomeEvent;
 import net.minecraftforge.event.terraingen.PopulateChunkEvent;
@@ -124,7 +132,7 @@ public class CompatHandler {
         return mods;
     }
 
-    public static void beforePopulate(World world, IChunkGenerator vanilla) {
+    public static void beforePopulate(World world, IChunkProvider vanilla) {
         String modid = packageToModId.get(getPackageName(vanilla.getClass()));
         if (vanillaCompatPopulationFakeHeight.contains(modid)) {
             ((ICubicWorldInternal.Server) world).fakeWorldHeight(256);

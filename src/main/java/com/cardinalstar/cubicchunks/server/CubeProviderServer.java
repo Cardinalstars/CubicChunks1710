@@ -30,12 +30,12 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.api.world.storage.StorageFormatProviderBase;
+import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.chunkio.AsyncBatchingCubeIO;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
 import com.cardinalstar.cubicchunks.server.chunkio.async.forge.CubeIOExecutor;
 import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.ICubeGenerator;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
@@ -51,7 +51,6 @@ import net.minecraft.util.IProgressUpdate;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.ForgeChunkManager;
@@ -459,16 +458,16 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
      * @return The generated cube
      */
     private Optional<Cube> generateCube(int cubeX, int cubeY, int cubeZ, Chunk column, boolean forceGenerate) {
-        return cubeGen.tryGenerateCube(cubeX, cubeY, cubeZ, this.cubePrimer, forceGenerate)
-            .map(primer -> {
-                Cube cube = new Cube(column, cubeY, primer);
+        return cubeGen.tryGenerateCube(cubeX, cubeY, cubeZ, forceGenerate)
+            .map(cube -> {
                 onCubeLoaded(cube, column);
                 // don't bother resetting the primer if it wasn't used by the generator.
                 // if the generator modifies the primer and then returns a different one it's
                 // not implementing generateCube correctly, so we don't account for that case
-                if (primer == this.cubePrimer) {
-                    primer.reset();
-                }
+//                if (primer == this.cubePrimer) {
+//                    primer.reset();
+//                }     // TODO MAKE SURE I DON'T NEED TO USE THIS. I don't think I have to since we make our own
+                        // byte/block arrays but it might be faster to keep an array here.
                 return cube;
             });
     }

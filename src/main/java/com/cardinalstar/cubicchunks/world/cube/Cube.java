@@ -24,6 +24,7 @@
  */
 package com.cardinalstar.cubicchunks.world.cube;
 
+import static com.cardinalstar.cubicchunks.util.ChunkStorageUtils.getCubeBlockIndexFromChunkData;
 import static com.cardinalstar.cubicchunks.util.Coords.*;
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
@@ -41,7 +42,6 @@ import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.world.ICubeGenerator;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
@@ -235,29 +235,58 @@ public class Cube implements ICube {
      * Constructor to be used from subclasses to provide all field values
      *
      */
-    protected Cube(Chunk column, int cubeY, Block[] blocks, byte[] meta)
+    public Cube(Chunk column, int cubeY, Block[] blocks, byte[] meta, boolean builtWithChunkData)
     {
         this(column, cubeY);
         boolean flag = !world.provider.hasNoSky;
-        for (int y = Cube.SIZE - 1; y >= 0; y--)
+        if (!builtWithChunkData)
         {
-            for (int z = 0; z < Cube.SIZE; z++)
+            for (int y = Cube.SIZE - 1; y >= 0; y--)
             {
-                for (int x = 0; x < Cube.SIZE; x++)
+                for (int z = 0; z < Cube.SIZE; z++)
                 {
-                    int blockIter = x << 11 | z << 7 | y;
-                    Block block = blocks[blockIter];
-
-                    if (block != null && block != Blocks.air)
+                    for (int x = 0; x < Cube.SIZE; x++)
                     {
+                        int blockIter = x << 11 | z << 7 | y;
+                        Block block = blocks[blockIter];
 
-                        if (this.storage == null)
+                        if (block != null && block != Blocks.air)
                         {
-                            this.storage = new ExtendedBlockStorage(cubeY, flag);
-                        }
 
-                        this.storage.func_150818_a(x, y, z, block);
-                        this.storage.setExtBlockMetadata(x, y, z, meta[blockIter]);
+                            if (this.storage == null)
+                            {
+                                this.storage = new ExtendedBlockStorage(cubeY, flag);
+                            }
+
+                            this.storage.func_150818_a(x, y, z, block);
+                            this.storage.setExtBlockMetadata(x, y, z, meta[blockIter]);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int y = Cube.SIZE - 1; y >= 0; y--)
+            {
+                for (int z = 0; z < Cube.SIZE; z++)
+                {
+                    for (int x = 0; x < Cube.SIZE; x++)
+                    {
+                        int blockIter = getCubeBlockIndexFromChunkData(x, y, z, cubeY);
+                        Block block = blocks[blockIter];
+
+                        if (block != null && block != Blocks.air)
+                        {
+
+                            if (this.storage == null)
+                            {
+                                this.storage = new ExtendedBlockStorage(cubeY, flag);
+                            }
+
+                            this.storage.func_150818_a(x, y, z, block);
+                            this.storage.setExtBlockMetadata(x, y, z, meta[blockIter]);
+                        }
                     }
                 }
             }

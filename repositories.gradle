@@ -1,5 +1,8 @@
 // Add any additional repositories for your dependencies here.
 
 repositories {
-
+    mavenCentral()
+    maven {
+        setUrl("https://oss.sonatype.org/content/repositories/public/")
+    }
 }
