@@ -311,15 +311,17 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     }
 
     // canBlockFreezeBody
-    @ModifyConstant(method = "canBlockFreezeBody",
-        constant = @Constant(expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO, intValue = 0, ordinal = 0))
+    @ModifyConstant(method = "canBlockFreezeBody(IIIZ)Z",
+        constant = @Constant(expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO, intValue = 0, ordinal = 0),
+        remap = false)
     private int canBlockFreezeBody_heightLimits_min(int original)
     {
         return getMinHeight();
     }
 
-    @ModifyConstant(method = "canBlockFreezeBody",
-        constant = @Constant(intValue = 256, ordinal = 0))
+    @ModifyConstant(method = "canBlockFreezeBody(IIIZ)Z",
+        constant = @Constant(intValue = 256, ordinal = 0),
+        remap = false)
     private int canBlockFreezeBody_heightLimits_max(int original)
     {
         return getMaxHeight();
@@ -327,14 +329,16 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
 
     // canSnowAtBody
     @ModifyConstant(method = "canSnowAtBody",
-        constant = @Constant(expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO, intValue = 0, ordinal = 0))
+        constant = @Constant(expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO, intValue = 0, ordinal = 0),
+        remap = false)
     private int canSnowAtBody_heightLimits_min(int original)
     {
         return getMinHeight();
     }
 
     @ModifyConstant(method = "canSnowAtBody",
-        constant = @Constant(intValue = 256, ordinal = 0))
+        constant = @Constant(intValue = 256, ordinal = 0),
+        remap = false)
     private int canSnowAtBody_heightLimits_max(int original)
     {
         return getMaxHeight();
@@ -342,14 +346,16 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
 
     // getBlockLightOpacity
     @ModifyConstant(method = "getBlockLightOpacity",
-        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, intValue = 0, ordinal = 0))
+        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, intValue = 0, ordinal = 0),
+        remap = false)
     private int getBlockLightOpacity_heightLimits_min(int original)
     {
         return getMinHeight();
     }
 
     @ModifyConstant(method = "getBlockLightOpacity",
-        constant = @Constant(intValue = 256, ordinal = 0))
+        constant = @Constant(intValue = 256, ordinal = 0),
+        remap = false)
     private int getBlockLightOpacity_heightLimits_max(int original)
     {
         return getMaxHeight();
@@ -435,7 +441,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
      * @author Barteks2x
      */
     @Group(name = "exists", max = 1)
-    @Inject(method = "checkChunksExist(IIIIIIZ)Z", at = @At(value = "HEAD"), cancellable = true, require = 1)
+    @Inject(method = "checkChunksExist(IIIIII)Z", at = @At(value = "HEAD"), cancellable = true, require = 1)
     private void checkChunksExistInject(int xStart, int yStart, int zStart, int xEnd, int yEnd, int zEnd, boolean allowEmpty,
                                     @Nonnull CallbackInfoReturnable<Boolean> cbi) {
         if (!this.isCubicWorld()) {

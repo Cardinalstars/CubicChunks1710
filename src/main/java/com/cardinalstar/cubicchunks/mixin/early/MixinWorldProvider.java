@@ -1,6 +1,6 @@
-package com.cardinalstar.cubicchunks.core.mixin.early;
+package com.cardinalstar.cubicchunks.mixin.early;
 
-import com.cardinalstar.cubicchunks.world.ICubeGenerator;
+import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
