@@ -32,6 +32,7 @@ import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorPr
 import com.cardinalstar.cubicchunks.event.handlers.ClientEventHandler;
 import com.cardinalstar.cubicchunks.event.handlers.CommonEventHandler;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
+import com.cardinalstar.cubicchunks.mixin.early.common.IIntegratedServer;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.server.chunkio.RegionCubeStorage;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
@@ -54,7 +55,6 @@ import cpw.mods.fml.common.versioning.DefaultArtifactVersion;
 import cpw.mods.fml.common.versioning.InvalidVersionSpecificationException;
 import cpw.mods.fml.common.versioning.VersionRange;
 import cpw.mods.fml.relauncher.Side;
-import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraftforge.common.MinecraftForge;
@@ -111,6 +111,8 @@ public class CubicChunks {
     public void preInit(FMLPreInitializationEvent e) {
         LOGGER = e.getModLog();
 
+        registerVanillaCompatibilityGeneratorProvider();
+        registerAnvil3dStorageFormatProvider();
         FMLCommonHandler.instance().registerCrashCallable(new ICrashCallable() {
             @Override public String getLabel() {
                 return "CubicChunks WorldGen Hang Watchdog samples";
@@ -154,7 +156,7 @@ public class CubicChunks {
     public void onServerAboutToStart(FMLServerAboutToStartEvent event) {
         SideUtils.runForSide(
             () -> () -> {
-                IntegratedServer integratedServer = cast(event.getServer());
+                IIntegratedServer integratedServer = cast(event.getServer());
                 ICubicWorldSettings settings = cast(integratedServer.getWorldSettings());
                 if (settings.isCubic()) {
                     event.getServer().setBuildLimit(CubicChunks.MAX_SUPPORTED_BLOCK_Y);
@@ -167,26 +169,23 @@ public class CubicChunks {
     }
 
     @SubscribeEvent
-    public static void registerRegistries(RegistryEvent.NewRegistry evt) {
-        VanillaCompatibilityGeneratorProviderBase.init();
-        StorageFormatProviderBase.init();
+    public static void registerVanillaCompatibilityGeneratorProvider()
+    {
+        VanillaCompatibilityGeneratorProviderBase.REGISTRY.register(
+            VanillaCompatibilityGeneratorProviderBase.DEFAULT,
+            new VanillaCompatibilityGeneratorProviderBase() {
+                @Override
+                public VanillaCompatibilityGenerator provideGenerator(IChunkProvider vanillaChunkGenerator, World world) {
+                    return new VanillaCompatibilityGenerator(vanillaChunkGenerator, world);
+                }
+            }.setRegistryName(VanillaCompatibilityGeneratorProviderBase.DEFAULT)
+         .setUnlocalizedName("cubicchunks.gui.worldmenu.cc_default"));
     }
 
     @SubscribeEvent
-    public static void registerVanillaCompatibilityGeneratorProvider(RegistryEvent.Register<VanillaCompatibilityGeneratorProviderBase> event) {
-        event.getRegistry().register(new VanillaCompatibilityGeneratorProviderBase() {
-
-            @Override
-            public VanillaCompatibilityGenerator provideGenerator(IChunkProvider vanillaChunkGenerator, World world) {
-                return new VanillaCompatibilityGenerator(vanillaChunkGenerator, world);
-            }
-        }.setRegistryName(VanillaCompatibilityGeneratorProviderBase.DEFAULT)
-            .setUnlocalizedName("cubicchunks.gui.worldmenu.cc_default"));
-    }
-
-    @SubscribeEvent
-    public static void registerAnvil3dStorageFormatProvider(RegistryEvent.Register<StorageFormatProviderBase> event) {
-        event.getRegistry().register(new StorageFormatProviderBase() {
+    public static void registerAnvil3dStorageFormatProvider() {
+        StorageFormatProviderBase.REGISTRY.register(StorageFormatProviderBase.DEFAULT,
+        new StorageFormatProviderBase() {
             @Override
             public ICubicStorage provideStorage(World world, Path path) throws IOException {
                 return new RegionCubeStorage(path);

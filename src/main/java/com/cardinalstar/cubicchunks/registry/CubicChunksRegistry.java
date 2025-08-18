@@ -9,11 +9,12 @@ import java.util.Map;
 public class CubicChunksRegistry<V> {
     private final Map<ResourceLocation, V> entries = new HashMap<>();
 
-    public void register(ResourceLocation name, V entry) {
+    public CubicChunksRegistry<V> register(ResourceLocation name, V entry) {
         if (entries.containsKey(name)) {
             throw new IllegalStateException("Duplicate entry: " + name);
         }
         entries.put(name, entry);
+        return this;
     }
 
     public V get(ResourceLocation name) {
