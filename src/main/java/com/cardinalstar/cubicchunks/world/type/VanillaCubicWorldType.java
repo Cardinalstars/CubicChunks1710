@@ -22,40 +22,46 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+package com.cardinalstar.cubicchunks.world.type;
 
-package com.cardinalstar.cubicchunks.world.cube;
-
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import net.minecraft.world.chunk.Chunk;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.IntRange;
+import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
+import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
+import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.WorldType;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
-public interface ICubeProvider {
+public class VanillaCubicWorldType extends WorldType implements ICubicWorldType {
 
-    @Nullable
-    ICube getLoadedCube(int cubeX, int cubeY, int cubeZ);
+    private VanillaCubicWorldType() {
+        super("VanillaCubic");
+    }
 
-    @Nullable
-    ICube getLoadedCube(CubePos coords);
+    public static VanillaCubicWorldType create() {
+        return new VanillaCubicWorldType();
+    }
 
-    ICube getCube(int cubeX, int cubeY, int cubeZ);
+    @Override public boolean canBeCreated() {
+        return CubicChunks.DEBUG_ENABLED;
+    }
 
-    ICube getCube(CubePos coords);
+    @Nullable @Override
+    public ICubeGenerator createCubeGenerator(World world) {
+        return new VanillaCompatibilityGenerator(world.provider.createChunkGenerator(), world);
+    }
 
-    /**
-     * Retrieve a column, if it exists and is loaded
-     *
-     * @param x The x position of the column
-     * @param z The zPosition position of the column
-     *
-     * @return The column, if loaded. Null, otherwise.
-     */
-    // TODO remove, use vanilla methods
-    @Nullable
-    Chunk getLoadedColumn(int x, int z); // more strictly define the return type
+    @Override public IntRange calculateGenerationHeightRange(WorldServer world) {
+        return new IntRange(0, ((ICubicWorldProvider) world.provider).getOriginalActualHeight());
+    }
 
-    Chunk provideColumn(int x, int z);   // more strictly define the return type
+    @Override public boolean hasCubicGeneratorForWorld(World object) {
+        return false;
+    }
 }

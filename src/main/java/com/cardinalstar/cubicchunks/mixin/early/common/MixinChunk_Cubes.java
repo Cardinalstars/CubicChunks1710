@@ -129,7 +129,8 @@ public abstract class MixinChunk_Cubes {
     private StagingHeightMap stagingHeightMap;
     private boolean isColumn = false;
 
-    private Block[] compatGenerationArray;
+    private Block[] compatGenerationBlockArray;
+    private byte[] compatGenerationByteArray;
 
     @Shadow public abstract byte[] getBiomeArray();
 
@@ -243,18 +244,25 @@ public abstract class MixinChunk_Cubes {
         ebs[y - (this.isColumn ? 0 : blockToCube(((IMinMaxHeight) worldObj).getMinHeight()))] = val;
     }
 
-    @ModifyConstant(method = "<init>(Lnet/minecraft/world/World;[Lnet/minecraft/block/Block;II)V",
+    @ModifyConstant(method = "<init>(Lnet/minecraft/world/World;[Lnet/minecraft/block/Block;[BII)V",
         constant = @Constant(intValue = 16, ordinal = 0), require = 1)
-    private int getInitChunkLoopEnd(int _16, World world, Block[] blocks, int x, int z) {
+    private int getInitChunkLoopEnd(int _16, World world, Block[] blocks, byte[] metaDatas, int x, int z) {
         if (((ICubicWorldInternal.Server) world).isCompatGenerationScope()) {
-            this.compatGenerationArray = blocks;
+            this.compatGenerationBlockArray = blocks;
+            this.compatGenerationByteArray = metaDatas;
             return -1;
         }
         return _16;
     }
 
-    public Block[] chunk_internal$getCompatGenerationArray() {
-        return compatGenerationArray;
+    public Block[] chunk_internal$getCompatGenerationBlockArray()
+    {
+        return compatGenerationBlockArray;
+    }
+
+    public byte[] chunk_internal$getCompatGenerationByteArray()
+    {
+        return compatGenerationByteArray;
     }
 
     // this method can't be saved by just redirecting EBS access
@@ -368,7 +376,7 @@ public abstract class MixinChunk_Cubes {
         method = "func_150807_a",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;setExtBlockMetadata(IIII;)V"
+            target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;setExtBlockMetadata(IIII)V"
         ),
         index = 7,
         name = "flag"
@@ -397,7 +405,7 @@ public abstract class MixinChunk_Cubes {
     }
 
     @Redirect(method = "func_150807_a", at = @At(value = "INVOKE",
-        target = "Lnet/minecraft/world/chunk/Chunk;getSavedLightValue(Lnet/minecraft/world/EnumSkyBlock;III"))
+        target = "Lnet/minecraft/world/chunk/Chunk;getSavedLightValue(Lnet/minecraft/world/EnumSkyBlock;III)I"))
     private int setBlockState_CubicChunks_noGetLightFor(Chunk instance, EnumSkyBlock type, int x, int y, int z) {
         if (!isColumn) {
             return instance.getSavedLightValue(type, x, y, z);
@@ -463,7 +471,7 @@ public abstract class MixinChunk_Cubes {
     //               getBlockMetadata
     // ==============================================
 
-    @Redirect(method = "getBlockMetadata(III)I;",
+    @Redirect(method = "getBlockMetadata(III)I",
         at = @At(
             value = "FIELD",
             args = "array=length",
@@ -473,7 +481,7 @@ public abstract class MixinChunk_Cubes {
         return isColumn ? Integer.MAX_VALUE : (ebs.length - blockToCube(getWorldObj().getMinHeight()));
     }
 
-    @Redirect(method = "getBlockMetadata(III)I;",
+    @Redirect(method = "getBlockMetadata(III)I",
         at = @At(
             value = "FIELD",
             args = "array=get",
@@ -488,7 +496,7 @@ public abstract class MixinChunk_Cubes {
     // ==============================================
 
     @Inject(method = "func_150807_a", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;setExtBlockMetadata"
-        + "(IIII;)V", shift = At.Shift.AFTER))
+        + "(IIII)V", shift = At.Shift.AFTER))
     private void onEBSSet_setBlockWithMeta_setOpacity(int x, int y, int z, Block block, int meta, CallbackInfoReturnable<Boolean> cir) {
         if (!isColumn) {
             return;
@@ -545,7 +553,7 @@ public abstract class MixinChunk_Cubes {
     // ==============================================
 
     @Inject(method = "setBlockMetadata", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;setExtBlockMetadata"
-        + "(IIII;)V", shift = At.Shift.AFTER))
+        + "(IIII)V", shift = At.Shift.AFTER))
     private void onEBSSet_setBlockMetadata_setOpacity(int x, int y, int z, int meta, CallbackInfoReturnable<Boolean> cir) {
         if (!isColumn) {
             return;

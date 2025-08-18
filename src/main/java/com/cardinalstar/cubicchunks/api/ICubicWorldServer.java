@@ -24,8 +24,8 @@
  */
 package com.cardinalstar.cubicchunks.api;
 
+import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.ICubeGenerator;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;

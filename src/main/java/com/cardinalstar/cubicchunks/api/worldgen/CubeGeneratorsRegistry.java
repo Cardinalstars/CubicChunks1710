@@ -38,6 +38,7 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.google.common.base.Preconditions;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 
@@ -46,10 +47,10 @@ public class CubeGeneratorsRegistry {
     /** List of populators added by other mods to vanilla compatibility generator type */
     private static final List<ICubicPopulator> customPopulatorsForFlatCubicGenerator = new ArrayList<ICubicPopulator>();
     private static final List<BiConsumer<? super World, ? super LoadingData<CubePos>>> cubeLoadingCallbacks = new ArrayList<>(2);
-    private static final List<BiConsumer<? super World, ? super LoadingData<ChunkPos>>> columnLoadingCallbacks = new ArrayList<>(2);
+    private static final List<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> columnLoadingCallbacks = new ArrayList<>(2);
 
     private static final Collection<BiConsumer<? super World, ? super LoadingData<CubePos>>> cubeLoadingCallbacksView = Collections.unmodifiableCollection(cubeLoadingCallbacks);
-    private static final Collection<BiConsumer<? super World, ? super LoadingData<ChunkPos>>> columnLoadingCallbacksView = Collections.unmodifiableCollection(columnLoadingCallbacks);
+    private static final Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> columnLoadingCallbacksView = Collections.unmodifiableCollection(columnLoadingCallbacks);
 
     private static final TreeSet<GeneratorWrapper> sortedGeneratorList = new TreeSet<>();
 
@@ -114,7 +115,7 @@ public class CubeGeneratorsRegistry {
      *
      * @param columnCallback the callback to be registered
      */
-    public static void registerColumnAsyncLoadingCallback(BiConsumer<? super World, ? super LoadingData<ChunkPos>> columnCallback) {
+    public static void registerColumnAsyncLoadingCallback(BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>> columnCallback) {
         columnLoadingCallbacks.add(columnCallback);
     }
 
@@ -122,7 +123,7 @@ public class CubeGeneratorsRegistry {
         return cubeLoadingCallbacksView;
     }
 
-    public static Collection<BiConsumer<? super World, ? super LoadingData<ChunkPos>>> getColumnAsyncLoadingCallbacks() {
+    public static Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> getColumnAsyncLoadingCallbacks() {
         return columnLoadingCallbacksView;
     }
 

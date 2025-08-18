@@ -22,41 +22,41 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+package com.cardinalstar.cubicchunks.worldgen;
 
-package com.cardinalstar.cubicchunks.world.core;
-
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import net.minecraft.block.Block;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.init.Blocks;
+import net.minecraft.world.World;
 
-public interface IColumnInternal extends IColumn {
+import java.util.Random;
 
-    Block[] getCompatGenerationBlockArray();
-    byte[] getCompatGenerationByteArray();
+import javax.annotation.ParametersAreNonnullByDefault;
 
-    void removeFromStagingHeightmap(ICube cube);
+@ParametersAreNonnullByDefault
+public class WorldGenUtils {
 
-    void addToStagingHeightmap(ICube cube);
-
-    /**
-     * Returns Y coordinate of the top non-transparent block
-     *
-     * @param localX column-local X coordinate
-     * @param localZ column-local Z coordinate
-     * @return the Y coordinate of the top non-transparent block
-     */
-    int getTopYWithStaging(int localX, int localZ);
-
-    default void writeHeightmapDataForClient(PacketBuffer out) {
-        for (int i = 0; i < Cube.SIZE * Cube.SIZE; i++) {
-            out.writeInt(getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
+    public static Block getRandomBedrockReplacement(World world, Random rand, Block block, int blockY,
+                                                    int bedrockLevels, boolean topBedrock, boolean bottomBedrock) {
+        if (bottomBedrock) {
+            int heightAboveBottom = blockY - ((IMinMaxHeight) world).getMinHeight();
+            if (heightAboveBottom < bedrockLevels) {
+                int bedrockChance = Math.max(1, heightAboveBottom + 1);
+                if (rand.nextInt(bedrockChance) == 0) {
+                    return Blocks.bedrock;
+                }
+            }
         }
+        if (topBedrock) {
+            int heightBelowTop =  ((IMinMaxHeight) world).getMaxHeight() - blockY - 1;
+            if (heightBelowTop < bedrockLevels) {
+                int bedrockChance = Math.max(1, heightBelowTop + 1);
+                if (rand.nextInt(bedrockChance) == 0) {
+                    return Blocks.bedrock;
+                }
+            }
+        }
+        return block;
     }
 
-    default void loadClientHeightmapData(PacketBuffer in) {
-        ((ClientHeightMap) getOpacityIndex()).loadData(in);
-    }
 }

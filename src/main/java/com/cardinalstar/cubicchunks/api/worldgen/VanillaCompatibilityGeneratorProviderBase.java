@@ -26,9 +26,9 @@ package com.cardinalstar.cubicchunks.api.worldgen;
 
 import com.cardinalstar.cubicchunks.registry.CubicChunksRegistry;
 import com.cardinalstar.cubicchunks.registry.ICubicChunksRegistryEntry;
-import com.cardinalstar.cubicchunks.world.ICubeGenerator;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.IChunkProvider;
 
 public abstract class VanillaCompatibilityGeneratorProviderBase implements ICubicChunksRegistryEntry<VanillaCompatibilityGeneratorProviderBase> {
 
@@ -63,5 +63,5 @@ public abstract class VanillaCompatibilityGeneratorProviderBase implements ICubi
         return unlocalizedName;
     }
 
-    public abstract ICubeGenerator provideGenerator(IChunkGenerator vanillaChunkGenerator, World world);
+    public abstract ICubeGenerator provideGenerator(IChunkProvider vanillaChunkGenerator, World world);
 }

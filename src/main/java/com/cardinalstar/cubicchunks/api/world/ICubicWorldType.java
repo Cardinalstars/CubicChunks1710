@@ -22,41 +22,24 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+package com.cardinalstar.cubicchunks.api.world;
 
-package com.cardinalstar.cubicchunks.world.core;
+import com.cardinalstar.cubicchunks.api.IntRange;
+import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import net.minecraft.block.Block;
-import net.minecraft.network.PacketBuffer;
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 
-public interface IColumnInternal extends IColumn {
+@ParametersAreNonnullByDefault
+public interface ICubicWorldType {
 
-    Block[] getCompatGenerationBlockArray();
-    byte[] getCompatGenerationByteArray();
+    // TODO: Make it Nonnull. VanillaCubic uses null
+    @Nullable
+    ICubeGenerator createCubeGenerator(World world);
 
-    void removeFromStagingHeightmap(ICube cube);
+    IntRange calculateGenerationHeightRange(WorldServer world);
 
-    void addToStagingHeightmap(ICube cube);
-
-    /**
-     * Returns Y coordinate of the top non-transparent block
-     *
-     * @param localX column-local X coordinate
-     * @param localZ column-local Z coordinate
-     * @return the Y coordinate of the top non-transparent block
-     */
-    int getTopYWithStaging(int localX, int localZ);
-
-    default void writeHeightmapDataForClient(PacketBuffer out) {
-        for (int i = 0; i < Cube.SIZE * Cube.SIZE; i++) {
-            out.writeInt(getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
-        }
-    }
-
-    default void loadClientHeightmapData(PacketBuffer in) {
-        ((ClientHeightMap) getOpacityIndex()).loadData(in);
-    }
+    boolean hasCubicGeneratorForWorld(World object);
 }
