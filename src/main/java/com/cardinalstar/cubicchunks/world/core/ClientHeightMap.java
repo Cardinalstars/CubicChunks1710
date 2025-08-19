@@ -26,7 +26,7 @@
 package com.cardinalstar.cubicchunks.world.core;
 
 import com.cardinalstar.cubicchunks.api.IHeightMap;
-import com.cardinalstar.cubicchunks.core.lighting.LightingManager;
+import com.cardinalstar.cubicchunks.lighting.LightingManager;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.network.PacketBuffer;

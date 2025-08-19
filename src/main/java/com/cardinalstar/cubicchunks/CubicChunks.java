@@ -265,4 +265,12 @@ public class CubicChunks {
             () -> () -> false
         );
     }
+
+    @NetworkCheckHandler
+    public boolean checkNetwork(Map<String, String> map, Side side) {
+        if (side == Side.CLIENT) {
+            isServerSideInstalled = map.containsKey(CubicChunks.MODID);
+        }
+        return true;
+    }
 }

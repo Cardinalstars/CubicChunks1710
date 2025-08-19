@@ -24,12 +24,13 @@
  */
 package com.cardinalstar.cubicchunks.world.core;
 
+import com.cardinalstar.cubicchunks.api.ICubicTicket;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ITicket;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ChunkCoordinates;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,7 +38,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 // this is internal interface, most of it shouldn't be in API
 @ParametersAreNonnullByDefault
-@MethodsReturnNonnullByDefault
 public interface ICubicTicketInternal extends ICubicTicket, ITicket {
 
     void addRequestedCube(CubePos pos);
@@ -46,11 +46,11 @@ public interface ICubicTicketInternal extends ICubicTicket, ITicket {
 
     // handling of forge forced chunks
 
-    void setForcedChunkCubes(ChunkPos location, IntSet yCoords);
+    void setForcedChunkCubes(ChunkCoordinates location, IntSet yCoords);
 
-    void clearForcedChunkCubes(ChunkPos location);
+    void clearForcedChunkCubes(ChunkCoordinates location);
 
-    void setAllForcedChunkCubes(Map<ChunkPos, IntSet> cubePosMap);
+    void setAllForcedChunkCubes(Map<ChunkCoordinates, IntSet> cubePosMap);
 
     // setters and getters for private data, because no ATs for forge classes
     void setModData(NBTTagCompound modData);

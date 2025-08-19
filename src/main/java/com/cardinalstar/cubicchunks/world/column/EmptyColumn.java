@@ -30,9 +30,10 @@ import java.util.Random;
 
 import javax.annotation.Nullable;
 
+import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.util.IHeightMap;
 
 
 import net.minecraft.command.IEntitySelector;
@@ -254,9 +255,9 @@ public class EmptyColumn extends Chunk implements IColumn {
     /**
      * Sets the isModified flag for this Chunk
      */
-    @Override
-    public void markDirty() {
-    }
+//    @Override
+//    public void markDirty() {
+//    }
 
     /**
      * Fills the given list of all entities that intersect within the given bounding box that aren't the passed entity.

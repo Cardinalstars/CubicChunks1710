@@ -161,9 +161,9 @@ public class LightingManager implements ILightingManager {
         return lightEngine.hasLightUpdates();
     }
 
-    @Override public void onHeightUpdate(BlockPos pos) {
+    @Override public void onHeightUpdate(int x, int y, int z) {
         if (!world.isRemote) {
-            ((CubicPlayerManager) ((WorldServer) world).getPlayerChunkMap()).heightUpdated(pos.getX(), pos.getZ());
+            ((CubicPlayerManager) ((WorldServer) world).getPlayerManager()).heightUpdated(x, z);
         }
     }
 
@@ -171,8 +171,8 @@ public class LightingManager implements ILightingManager {
         if (!world.isRemote) {
             BlockPos min = cube.getCoords().getMinBlockPos();
             BlockPos max = cube.getCoords().getMaxBlockPos();
-            for (BlockPos.MutableBlockPos pos : BlockPos.getAllInBoxMutable(min, max.add(1, 1, 1))) {
-                ((CubicPlayerManager) ((WorldServer) world).getPlayerChunkMap()).heightUpdated(pos.getX(), pos.getZ());
+            for (BlockPos pos : BlockPos.getAllInBox(min.getY(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ())) {
+                ((CubicPlayerManager) ((WorldServer) world).getPlayerManager()).heightUpdated(pos.getX(), pos.getZ());
             }
             tryScheduleOnLoadHeightChangeRelight(cube);
         }
@@ -248,7 +248,7 @@ public class LightingManager implements ILightingManager {
         public long[] lastSaveHeightMapInfo = new long[8]; // xSize*zSize * 2 bits per entry / Long.SIZE
 
         @Override public boolean needsSaving(ICube cube) {
-            int[] heightmap = cube.getColumn().getHeightMap();
+            int[] heightmap = cube.getColumn().heightMap;
             for (int i = 0; i < heightmap.length; i++) {
                 int cy = Coords.blockToCube(heightmap[i] - 1);
                 int idx = i >> 5;
@@ -273,7 +273,7 @@ public class LightingManager implements ILightingManager {
 
         @Override public void markSaved(ICube cube) {
             Arrays.fill(lastSaveHeightMapInfo, 0L);
-            int[] heightmap = cube.getColumn().getHeightMap();
+            int[] heightmap = cube.getColumn().heightMap;
             for (int i = 0; i < heightmap.length; i++) {
                 int cy = Coords.blockToCube(heightmap[i] - 1);
                 int flags = 0;

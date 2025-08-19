@@ -32,6 +32,7 @@ import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
@@ -58,15 +59,16 @@ public class PacketCubeBlockChange implements IMessage {
     int[] heightValues;
     CubePos cubePos;
     short[] localAddresses;
-    IBlockState[] blockStates;
-
+    Block[] blocks;
+    int[] blockMetas;
     public PacketCubeBlockChange() {
     }
 
     public PacketCubeBlockChange(Cube cube, TShortCollection localAddresses) {
         this.cubePos = cube.getCoords();
         this.localAddresses = localAddresses.toArray();
-        this.blockStates = new IBlockState[localAddresses.size()];
+        this.blocks = new Block[localAddresses.size()];
+        this.blockMetas = new int[localAddresses.size()];
         int i = localAddresses.size() - 1;
         TIntSet xzAddresses = new TIntHashSet();
         for (; i >= 0; i--) {
@@ -74,7 +76,8 @@ public class PacketCubeBlockChange implements IMessage {
             int x = AddressTools.getLocalX(localAddress);
             int y = AddressTools.getLocalY(localAddress);
             int z = AddressTools.getLocalZ(localAddress);
-            this.blockStates[i] = cube.getBlockState(x, y, z);
+            this.blocks[i] = cube.getBlock(x, y, z);
+            this.blockMetas[i] = cube.getBlockMetadata(x, y, z);
             xzAddresses.add(AddressTools.getLocalAddress(x, z));
         }
         this.heightValues = new int[xzAddresses.size()];
@@ -95,11 +98,13 @@ public class PacketCubeBlockChange implements IMessage {
         this.cubePos = new CubePos(in.readInt(), in.readInt(), in.readInt());
         short numBlocks = in.readShort();
         localAddresses = new short[numBlocks];
-        blockStates = new IBlockState[numBlocks];
+        blocks = new Block[numBlocks];
+        blockMetas = new int[numBlocks];
 
         for (int i = 0; i < numBlocks; i++) {
             localAddresses[i] = in.readShort();
-            blockStates[i] = Block.BLOCK_STATE_IDS.getByValue(readVarInt(in, 4));
+            blocks[i] = Block.getBlockById(in.readUnsignedShort());
+            blockMetas[i] = in.readUnsignedByte();
         }
         int numHmapChanges = in.readUnsignedByte();
         heightValues = new int[numHmapChanges];
@@ -117,7 +122,8 @@ public class PacketCubeBlockChange implements IMessage {
         out.writeShort(localAddresses.length);
         for (int i = 0; i < localAddresses.length; i++) {
             out.writeShort(localAddresses[i]);
-            ByteBufUtils.writeVarInt(out, Block.BLOCK_STATE_IDS.get(blockStates[i]), 4);
+            out.writeShort(Block.getIdFromBlock(blocks[i]));
+            out.writeByte(blockMetas[i]);
         }
         out.writeByte(heightValues.length);
         for (int v : heightValues) {
@@ -151,7 +157,7 @@ public class PacketCubeBlockChange implements IMessage {
             for (int i = 0; i < packet.localAddresses.length; i++) {
                 BlockPos pos = cube.localAddressToBlockPos(packet.localAddresses[i]);
                 worldClient.invalidateBlockReceiveRegion(pos.getX(), pos.getY(), pos.getZ(), pos.getX(), pos.getY(), pos.getZ());
-                worldClient.setBlockState(pos, packet.blockStates[i], 3);
+                worldClient.setBlock(pos.getX(), pos.getY(), pos.getZ(), packet.blocks[i], packet.blockMetas[i], 3);
             }
             cube.getTileEntityMap().values().forEach(TileEntity::updateContainingBlockInfo);
         }

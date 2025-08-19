@@ -36,14 +36,19 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.fixes.common.fakeheight.IASMEventHandler;
+import com.cardinalstar.cubicchunks.fixes.common.fakeheight.IEventBus;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import cpw.mods.fml.common.IWorldGenerator;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.Event;
 import cpw.mods.fml.common.eventhandler.EventBus;
 import cpw.mods.fml.common.eventhandler.IEventListener;
+import cpw.mods.fml.common.eventhandler.ListenerList;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
@@ -168,21 +173,21 @@ public class CompatHandler {
         if (!(MinecraftForge.EVENT_BUS instanceof IEventBus)) {
             MinecraftForge.EVENT_BUS.post(event);
         }
-        return postEventPerModFakeHeight(event.getWorld(), event, MinecraftForge.EVENT_BUS, POPULATE_EVENT_PRE_FAKE_HEIGHT);
+        return postEventPerModFakeHeight(event.world, event, MinecraftForge.EVENT_BUS, POPULATE_EVENT_PRE_FAKE_HEIGHT);
     }
 
     public static boolean postBiomeDecorateWithFakeWorldHeight(DecorateBiomeEvent.Decorate event) {
         if (!(MinecraftForge.EVENT_BUS instanceof IEventBus)) {
             MinecraftForge.EVENT_BUS.post(event);
         }
-        return postEventPerModFakeHeight(event.getWorld(), event, MinecraftForge.EVENT_BUS, DECORATE_EVENT_FAKE_HEIGHT);
+        return postEventPerModFakeHeight(event.world, event, MinecraftForge.EVENT_BUS, DECORATE_EVENT_FAKE_HEIGHT);
     }
 
     public static boolean postBiomePostDecorateWithFakeWorldHeight(DecorateBiomeEvent.Post event) {
         if (!(MinecraftForge.EVENT_BUS instanceof IEventBus)) {
             MinecraftForge.EVENT_BUS.post(event);
         }
-        return postEventPerModFakeHeight(event.getWorld(), event, MinecraftForge.EVENT_BUS, POST_DECORATE_EVENT_FAKE_HEIGHT);
+        return postEventPerModFakeHeight(event.world, event, MinecraftForge.EVENT_BUS, POST_DECORATE_EVENT_FAKE_HEIGHT);
     }
 
     private static boolean postEventPerModFakeHeight(World world, Event event, EventBus eventBus, Set<String> modIds) {
@@ -201,9 +206,9 @@ public class CompatHandler {
 
     private static void onChunkLoadImpl(ChunkEvent.Load load) {
         IEventBus bus = (IEventBus) MinecraftForge.EVENT_BUS;
-        if (bus.isShutdown()) {
-            return;
-        }
+//        if (bus.isShutdown()) {
+//            return;
+//        }
         int i = -1;
         try {
             for (i = 0; i < fakeChunkLoadListeners.length; i++) {
@@ -212,16 +217,16 @@ public class CompatHandler {
             }
         } catch (Throwable throwable) {
             bus.getExceptionHandler().handleException(MinecraftForge.EVENT_BUS, load, fakeChunkLoadListeners, i, throwable);
-            Throwables.throwIfUnchecked(throwable);
+            CompatHandler.throwIfUnchecked(throwable);
             throw new RuntimeException(throwable);
         }
     }
 
     private static <T> boolean postEvent(T ctx, Event event, EventBus eventBus, Set<String> modIds, Consumer<T> preEvt, Consumer<T> postEvt) {
         IEventBus forgeEventBus = (IEventBus) eventBus;
-        if (forgeEventBus.isShutdown()) {
-            return false;
-        }
+//        if (forgeEventBus.isShutdown()) {
+//            return false;
+//        }
         IEventListener[] listeners = event.getListenerList().getListeners(forgeEventBus.getBusID());
         int index = 0;
         try {
@@ -242,7 +247,7 @@ public class CompatHandler {
             }
         } catch (Throwable throwable) {
             forgeEventBus.getExceptionHandler().handleException(eventBus, event, listeners, index, throwable);
-            Throwables.throwIfUnchecked(throwable);
+            CompatHandler.throwIfUnchecked(throwable);
             throw new RuntimeException(throwable);
         }
         return event.isCancelable() && event.isCanceled();
@@ -284,5 +289,14 @@ public class CompatHandler {
         }
 
         return newList.toArray(new IEventListener[0]);
+    }
+
+    public static void throwIfUnchecked(Throwable throwable) {
+        Preconditions.checkNotNull(throwable);
+        if (throwable instanceof RuntimeException) {
+            throw (RuntimeException)throwable;
+        } else if (throwable instanceof Error) {
+            throw (Error)throwable;
+        }
     }
 }

@@ -30,6 +30,7 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.MathUtil;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.IBlockAccess;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -55,7 +56,11 @@ import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
 @ParametersAreNonnullByDefault
 public class FirstLightProcessor {
 
-    private final MutableBlockPos mutablePos = new MutableBlockPos();
+    //Iteration state data
+    //Cache position to avoid allocation of new object each time
+    private int curPosX = 0;
+    private int curPosY = 0;
+    private int curPosZ = 0;
 
     /**
      * Diffuses skylight in the given cube and all cubes affected by this update.
@@ -64,16 +69,19 @@ public class FirstLightProcessor {
      */
     public void diffuseSkylight(ICube cube) {
         ILightingManager lm = ((ICubicWorldInternal) cube.getWorld()).getLightingManager();
-        Iterable<? extends BlockPos.MutableBlockPos> allBlocks = BlockPos.getAllInBoxMutable(
-            cube.getCoords().getMinBlockPos(),
-            cube.getCoords().getMaxBlockPos()
+        BlockPos minPos = cube.getCoords().getMinBlockPos();
+        BlockPos maxPos = cube.getCoords().getMaxBlockPos();
+
+        Iterable<BlockPos> allBlocks = BlockPos.getAllInBox(
+            minPos.x, minPos.y, minPos.z,
+            maxPos.x, maxPos.y, maxPos.z
         );
-        for (BlockPos.MutableBlockPos pos : allBlocks) {
-            if (cube.getBlockState(pos).getLightValue(cube.getWorld(), pos) > 0) {
-                lm.checkLightFor(EnumSkyBlock.BLOCK, pos);
+        for (BlockPos pos : allBlocks) {
+            if (cube.getBlock(pos.x, pos.y,pos.z).getLightValue(cube.getWorld(), pos.x, pos.y, pos.z) > 0) {
+                lm.checkLightFor(EnumSkyBlock.Block, pos.x, pos.y, pos.z);
             }
         }
-        if (!cube.getWorld().provider.hasSkyLight()) {
+        if (cube.getWorld().provider.hasNoSky) {
             return;
         }
 
@@ -104,7 +112,10 @@ public class FirstLightProcessor {
 
                 int minCubeBlockX = cube.getCoords().getMinBlockX();
                 int minCubeBlockZ = cube.getCoords().getMinBlockZ();
-                mutablePos.setPos(minCubeBlockX + localX, 0, minCubeBlockZ + localZ);
+
+                curPosX = minCubeBlockX + localX;
+                curPosY = 0;
+                curPosZ = minCubeBlockZ + localZ;
 
                 int minInstantFill = Integer.MIN_VALUE, maxInstantFill = Integer.MIN_VALUE;
                 if (cube.getStorage() != null && localX != 0 && localX != 15 && localZ != 0 && localZ != 15 && maxCubeBlockY > height) {
@@ -121,11 +132,11 @@ public class FirstLightProcessor {
                     int minCubeBlockY = cube.getCoords().getMinBlockY();
                     int minY = Math.max(height, minCubeBlockY);
                     for (int yPos = minY; yPos <= maxY; yPos++) {
-                        mutablePos.setY(yPos);
+                        curPosY = yPos;
                         if (yPos >= minInstantFill && yPos <= maxInstantFill) {
-                            cube.setLightFor(EnumSkyBlock.Sky, mutablePos, 15);
+                            cube.setLightFor(EnumSkyBlock.Sky, curPosX, curPosY, curPosZ, 15);
                         } else {
-                            lm.checkLightFor(EnumSkyBlock.Sky, mutablePos);
+                            lm.checkLightFor(EnumSkyBlock.Sky, curPosX, curPosY, curPosZ);
                         }
                     }
                 }
@@ -163,10 +174,11 @@ public class FirstLightProcessor {
                         continue;
                     }
 
-                    this.mutablePos.setPos(blockX, this.mutablePos.getY(), blockZ);
+                    this.curPosX = blockX;
+                    this.curPosZ = blockZ;
                     // Update the block column in this cube.
-                    if (!diffuseSkylightInBlockColumn(lm, otherCube, this.mutablePos, minBlockY, maxBlockY)) {
-                        throw new IllegalStateException("Check light failed at " + this.mutablePos + "!");
+                    if (!diffuseSkylightInBlockColumn(lm, otherCube, this.curPosX, this.curPosY, this.curPosZ, minBlockY, maxBlockY)) {
+                        throw new IllegalStateException("Check light failed at (" + this.curPosX + ", " + this.curPosY + ", " + this.curPosZ + ")" + "!");
                     }
                 }
             }
@@ -178,13 +190,15 @@ public class FirstLightProcessor {
      * update is limited vertically by minBlockY and maxBlockY.
      *
      * @param cube the cube inside of which the skylight is to be diffused
-     * @param pos the xz-position of the block column to be updated
+     * @param posX the x position of the block column to be updated
+     * @param posY the y position of the block column to be updated
+     * @param posZ the z position of the block column to be updated
      * @param minBlockY the lower bound of the section to be updated
      * @param maxBlockY the upper bound of the section to be updated
      *
      * @return true if the update was successful, false otherwise
      */
-    private boolean diffuseSkylightInBlockColumn(ILightingManager lm, ICube cube, MutableBlockPos pos, int minBlockY, int maxBlockY) {
+    private boolean diffuseSkylightInBlockColumn(ILightingManager lm, ICube cube, int posX, int posY, int posZ, int minBlockY, int maxBlockY) {
         int cubeMinBlockY = cubeToMinBlock(cube.getY());
         int cubeMaxBlockY = cubeToMaxBlock(cube.getY());
 
@@ -192,9 +206,9 @@ public class FirstLightProcessor {
         int minBlockYInCube = Math.max(cubeMinBlockY, minBlockY);
 
         for (int blockY = maxBlockYInCube; blockY >= minBlockYInCube; --blockY) {
-            pos.setY(blockY);
-            if (needsSkylightUpdate(cube, pos)) {
-                lm.checkLightFor(EnumSkyBlock.Sky, pos);
+            posY = blockY;
+            if (needsSkylightUpdate(cube, posX, posY, posZ)) {
+                lm.checkLightFor(EnumSkyBlock.Sky, posX, posY, posZ);
             }
         }
 
@@ -205,8 +219,9 @@ public class FirstLightProcessor {
     /**
      * Determines if the block at the given position requires a skylight update.
      *
-     * @param pos the block's global position
-     *
+     * @param x the block's global x position
+     * @param y the block's global y position
+     * @param z the block's global z position
      * @return true if the specified block needs a skylight update, false otherwise
      */
     private static boolean needsSkylightUpdate(ICube cube, int x, int y, int z) {
