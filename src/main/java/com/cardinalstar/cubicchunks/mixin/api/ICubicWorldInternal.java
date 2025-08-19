@@ -29,7 +29,7 @@ import com.cardinalstar.cubicchunks.client.CubeProviderClient;
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
-import com.cardinalstar.cubicchunks.server.VanillaNetworkHandler;
+// import com.cardinalstar.cubicchunks.server.VanillaNetworkHandler;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickList;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
@@ -131,7 +131,7 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
         boolean isCompatGenerationScope();
 
-        VanillaNetworkHandler getVanillaNetworkHandler();
+        // VanillaNetworkHandler getVanillaNetworkHandler();
     }
 
     interface Client extends ICubicWorldInternal {

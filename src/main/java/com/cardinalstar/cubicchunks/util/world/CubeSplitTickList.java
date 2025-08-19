@@ -25,9 +25,7 @@
 
 package com.cardinalstar.cubicchunks.util.world;
 
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
 import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
 import net.minecraft.world.NextTickListEntry;
 
 import java.util.AbstractList;

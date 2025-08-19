@@ -32,7 +32,7 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 import com.cardinalstar.cubicchunks.network.PacketCubicWorldData;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
-import com.cardinalstar.cubicchunks.server.VanillaNetworkHandler;
+// import com.cardinalstar.cubicchunks.server.VanillaNetworkHandler;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
@@ -153,7 +153,7 @@ public class CommonEventHandler {
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        VanillaNetworkHandler.removeBedrockPlayer((EntityPlayerMP) event.player);
+        // VanillaNetworkHandler.removeBedrockPlayer((EntityPlayerMP) event.player);
     }
 
     @SuppressWarnings("unchecked")

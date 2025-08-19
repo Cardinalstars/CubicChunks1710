@@ -197,7 +197,7 @@ public class CubicPlayerManager extends PlayerManager {
     // see comment in updateMovingPlayer() for explnation why it's in this class
     private final ChunkGc chunkGc;
 
-    final VanillaNetworkHandler vanillaNetworkHandler;
+    // final VanillaNetworkHandler vanillaNetworkHandler;
 
     public CubicPlayerManager(WorldServer worldServer) {
         super(worldServer);
@@ -205,7 +205,7 @@ public class CubicPlayerManager extends PlayerManager {
         this.setPlayerViewDistance(worldServer.func_73046_m().getConfigurationManager().getViewDistance(),
             ((ICubicPlayerList) worldServer.func_73046_m().getConfigurationManager()).getVerticalViewDistance());
         this.chunkGc = new ChunkGc(((ICubicWorldInternal.Server) worldServer).getCubeCache());
-        this.vanillaNetworkHandler = ((ICubicWorldInternal.Server) worldServer).getVanillaNetworkHandler();
+        // this.vanillaNetworkHandler = ((ICubicWorldInternal.Server) worldServer).getVanillaNetworkHandler();
     }
 
 //    /**
@@ -458,23 +458,23 @@ public class CubicPlayerManager extends PlayerManager {
                     continue;
                 }
                 ((ICubicWorldInternal) getWorldServer()).getLightingManager().onSendCubes(cubes);
-                if (vanillaNetworkHandler.hasCubicChunks(player)) {
-                    ArrayList<Cube> list = new ArrayList<>(1024);
-                    for (Cube cube : cubes) {
-                        list.add(cube);
-                        if (list.size() >= 1024) {
-                            PacketCubes packet = new PacketCubes(list);
-                            PacketDispatcher.sendTo(packet, player);
-                            list.clear();
-                        }
-                    }
-                    if (!list.isEmpty()) {
+//                 if (vanillaNetworkHandler.hasCubicChunks(player)) {
+                ArrayList<Cube> list = new ArrayList<>(1024);
+                for (Cube cube : cubes) {
+                    list.add(cube);
+                    if (list.size() >= 1024) {
                         PacketCubes packet = new PacketCubes(list);
                         PacketDispatcher.sendTo(packet, player);
+                        list.clear();
                     }
-                } else {
-                    vanillaNetworkHandler.sendCubeLoadPackets(cubes, player);
                 }
+                if (!list.isEmpty()) {
+                    PacketCubes packet = new PacketCubes(list);
+                    PacketDispatcher.sendTo(packet, player);
+                }
+//                } else {
+//                    vanillaNetworkHandler.sendCubeLoadPackets(cubes, player);
+//                }
                 //Sending entities per cube.
                 for (Cube cube : cubes) {
                     ((ICubicEntityTracker) getWorldServer().getEntityTracker()).sendLeashedEntitiesInCube(player, cube);
@@ -588,9 +588,9 @@ public class CubicPlayerManager extends PlayerManager {
         PlayerWrapper playerWrapper = new PlayerWrapper(player);
         playerWrapper.updateManagedPos();
 
-        if (!vanillaNetworkHandler.hasCubicChunks(player)) {
-            vanillaNetworkHandler.updatePlayerPosition(this, player, playerWrapper.getManagedCubePos());
-        }
+//        if (!vanillaNetworkHandler.hasCubicChunks(player)) {
+//            vanillaNetworkHandler.updatePlayerPosition(this, player, playerWrapper.getManagedCubePos());
+//        }
 
         CubePos playerCubePos = CubePos.fromEntity(player);
 
@@ -643,7 +643,7 @@ public class CubicPlayerManager extends PlayerManager {
             .filter(watcher->watcher.containsPlayer(player))
             .forEach(watcher->watcher.removePlayer(player));
         this.players.remove(player.getEntityId());
-        vanillaNetworkHandler.removePlayer(player);
+        // vanillaNetworkHandler.removePlayer(player);
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
@@ -668,9 +668,9 @@ public class CubicPlayerManager extends PlayerManager {
         this.updatePlayer(playerWrapper, playerWrapper.getManagedCubePos(), CubePos.fromEntity(player));
         playerWrapper.updateManagedPos();
 
-        if (!vanillaNetworkHandler.hasCubicChunks(player)) {
-            vanillaNetworkHandler.updatePlayerPosition(this, player, playerWrapper.getManagedCubePos());
-        }
+//        if (!vanillaNetworkHandler.hasCubicChunks(player)) {
+//            vanillaNetworkHandler.updatePlayerPosition(this, player, playerWrapper.getManagedCubePos());
+//        }
         // With ChunkGc being separate from PlayerCubeMap, there are 2 issues:
         // Problem 0: Sometimes, a chunk can be generated after CubeWatcher's chunk load callback returns with a null
         // but before ChunkGC call. This means that the cube will get unloaded, even when ChunkWatcher is waiting for it.

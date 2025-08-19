@@ -26,7 +26,7 @@ package com.cardinalstar.cubicchunks.world.column;
 
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.util.CubeCoordIntTriple;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.collect.Lists;
 
@@ -238,8 +238,10 @@ public class CubeMap implements Iterable<Cube> {
             final int x = AddressTools.getLocalX(relightCubeBlockIdx);
             final int y = AddressTools.getLocalY(relightCubeBlockIdx);
             final int z = AddressTools.getLocalZ(relightCubeBlockIdx);
-            final CubeCoordIntTriple min = cube.getCoords().getMinBlockPos();
-            cube.getWorld().func_147451_t(min.getX() + x, min.getY() + y, min.getZ() + z);
+            final int minX = cube.getCoords().getMinBlockX();
+            final int minY = cube.getCoords().getMinBlockY();
+            final int minZ = cube.getCoords().getMinBlockZ();
+            cube.getWorld().func_147451_t(minX + x, minY + y, minZ + z);
 
             relightCubeIdx++;
         }

@@ -7,6 +7,7 @@ import com.cardinalstar.cubicchunks.util.DirectionUtils;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
+import com.gtnewhorizon.gtnhlib.client.renderer.quad.Axis;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.world.EnumSkyBlock;
@@ -60,7 +61,9 @@ public class LightingHooks {
 
         Iterable<? extends ICube> cubes = ((IColumn) chunk).getLoadedCubes(yMaxCube, yMinCube);
 
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int posX;
+        int posY;
+        int posZ;
 
         for (ICube cube : cubes) {
             int cubeY = cube.getY();
@@ -73,7 +76,10 @@ public class LightingHooks {
                 maxLocalY = blockToLocal(yMax);
             }
             for (int localY = minLocalY; localY <= maxLocalY; localY++) {
-                world.checkLightFor(lightType, pos.setPos(x, baseY + localY, z));
+                posX = x;
+                posY = baseY + localY;
+                posZ = z;
+                world.updateLightByType(lightType, posX, posY, posZ);
             }
         }
     }
@@ -131,17 +137,17 @@ public class LightingHooks {
      */
     private static int getQuadrantId(final EnumFacing dir, final int x, final int y, final int z) {
         int x1, x2;
-        EnumFacing.Axis axis = dir.getAxis();
+        Axis axis = DirectionUtils.fromFacing(dir);
         // get coordinates perpendicular to the axis of direction
-        if (axis == EnumFacing.Axis.X) {
+        if (axis == Axis.X) {
             //noinspection SuspiciousNameCombination
             x1 = y;
             x2 = z;
-        } else if (axis == EnumFacing.Axis.Y) {
+        } else if (axis == Axis.Y) {
             x1 = x;
             x2 = z;
         } else {
-            assert axis == EnumFacing.Axis.Z;
+            assert axis == Axis.Z;
             x1 = x;
             //noinspection SuspiciousNameCombination
             x2 = y;
