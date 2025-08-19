@@ -27,8 +27,15 @@ package com.cardinalstar.cubicchunks.lighting;
 
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.lighting.phosphor.LightingHooks;
 import com.cardinalstar.cubicchunks.lighting.phosphor.PhosphorLightEngine;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
@@ -40,6 +47,9 @@ import java.util.Arrays;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+
+import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
+import static com.cardinalstar.cubicchunks.util.Coords.localToBlock;
 
 //TODO: extract interfaces when it's done
 @ParametersAreNonnullByDefault
@@ -153,16 +163,16 @@ public class LightingManager implements ILightingManager {
 
     @Override public void onHeightUpdate(BlockPos pos) {
         if (!world.isRemote) {
-            ((PlayerCubeMap) ((WorldServer) world).getPlayerChunkMap()).heightUpdated(pos.getX(), pos.getZ());
+            ((CubicPlayerManager) ((WorldServer) world).getPlayerChunkMap()).heightUpdated(pos.getX(), pos.getZ());
         }
     }
 
     @Override public void onTrackCubeSurface(ICube cube) {
         if (!world.isRemote) {
-            CubeCoordIntTriple min = cube.getCoords().getMinBlockPos();
-            CubeCoordIntTriple max = cube.getCoords().getMaxBlockPos();
+            BlockPos min = cube.getCoords().getMinBlockPos();
+            BlockPos max = cube.getCoords().getMaxBlockPos();
             for (BlockPos.MutableBlockPos pos : BlockPos.getAllInBoxMutable(min, max.add(1, 1, 1))) {
-                ((PlayerCubeMap) ((WorldServer) world).getPlayerChunkMap()).heightUpdated(pos.getX(), pos.getZ());
+                ((CubicPlayerManager) ((WorldServer) world).getPlayerChunkMap()).heightUpdated(pos.getX(), pos.getZ());
             }
             tryScheduleOnLoadHeightChangeRelight(cube);
         }
