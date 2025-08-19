@@ -29,15 +29,24 @@ package com.cardinalstar.cubicchunks.lighting.phosphor;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.util.DirectionUtils;
+import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import org.joml.Vector3i;
 
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
 
 public class PhosphorLightEngine {
     public static final boolean ENABLE_ILLEGAL_THREAD_ACCESS_WARNINGS = true;
@@ -69,10 +78,10 @@ public class PhosphorLightEngine {
     static {
         long sx = 0, sy = 0, sz = 0;
         for (int i = 0; i < 6; ++i) {
-            final Vec3i offset = EnumFacing.VALUES[i].getDirectionVec();
-            sx |= (offset.getX() & 0xFFL) << (i * 8);
-            sy |= (offset.getY() & 0xFFL) << (i * 8);
-            sz |= (offset.getZ() & 0xFFL) << (i * 8);
+            final Vector3i offset = DirectionUtils.getDirectionVec(EnumFacing.values()[i]);
+            sx |= (offset.x() & 0xFFL) << (i * 8);
+            sy |= (offset.y() & 0xFFL) << (i * 8);
+            sz |= (offset.z() & 0xFFL) << (i * 8);
         }
         neighborShiftsX = sx;
         neighborShiftsY = sy;
@@ -81,7 +90,10 @@ public class PhosphorLightEngine {
 
     //Iteration state data
     //Cache position to avoid allocation of new object each time
-    private final MutableBlockPos curPos = new MutableBlockPos();
+    private int curPosX = 0;
+    private int curPosY = 0;
+    private int curPosZ = 0;
+
     private ICube curCube;
     private int curCubeIdentifierX, curCubeIdentifierY, curCubeIdentifierZ;
     private int curDataX, curDataY, curDataZ, curDataVal;
@@ -125,7 +137,9 @@ public class PhosphorLightEngine {
      * {@link #processLightUpdatesForType(EnumSkyBlock)}
      *
      * @param lightType the type of light to update
-     * @param pos the position to update
+     * @param x the x position to update
+     * @param y the y position to update
+     * @param z the z position to update
      */
     public void scheduleLightUpdate(final EnumSkyBlock lightType, final int x, final int y, final int z) {
         this.acquireLock();
@@ -277,7 +291,7 @@ public class PhosphorLightEngine {
 
             if (newLight > this.getCursorCachedLight(lightType)) {
                 //Sets the light to newLight to only schedule once. Clear leading bits of curData for later
-                this.enqueueBrightening(this.curPos, this.curDataX, this.curDataY, this.curDataZ, newLight, this.curCube, lightType);
+                this.enqueueBrightening(this.curPosX, this.curPosY, this.curPosZ, this.curDataX, this.curDataY, this.curDataZ, newLight, this.curCube, lightType);
             }
         }
 
@@ -288,7 +302,7 @@ public class PhosphorLightEngine {
 
             if (oldLight != 0) {
                 //Sets the light to 0 to only schedule once
-                this.enqueueDarkening(this.curPos, this.curDataX, this.curDataY, this.curDataZ, oldLight, this.curCube, lightType);
+                this.enqueueDarkening(this.curPosX, this.curPosY, this.curPosZ, this.curDataX, this.curDataY, this.curDataZ, oldLight, this.curCube, lightType);
             }
         }
 
@@ -304,14 +318,14 @@ public class PhosphorLightEngine {
                 if (this.getCursorCachedLight(lightType) >= curLight) { //don't darken if we got brighter due to some other change
                     continue;
                 }
-                final IBlockState state = LightingEngineHelpers.posToState(this.curPos, this.curCube);
-                final int luminosity = this.getCursorLuminosity(state, lightType);
+                final Block block = LightingEngineHelpers.posToBlock(this.curPosX, this.curPosY, this.curPosZ, this.curCube);
+                final int luminosity = this.getCursorLuminosity(block, lightType);
                 final int opacity; //if luminosity is high enough, opacity is irrelevant
 
                 if (luminosity >= MAX_LIGHT - 1) {
                     opacity = 1;
                 } else {
-                    opacity = this.getPosOpacity(this.curPos, state);
+                    opacity = this.getPosOpacity(this.curPosX, this.curPosY, this.curPosZ, block);
                 }
 
                 //only darken neighbors if we indeed became darker
@@ -327,7 +341,7 @@ public class PhosphorLightEngine {
                         final ICube nCube = info.cube;
 
                         if (nCube == null) {
-                            LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPos, lightType, EnumFacing.VALUES[i], EnumBoundaryFacing.OUT);
+                            LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPosX, this.curPosY, this.curPosZ, lightType, EnumFacing.values()[i], LightingHooks.EnumBoundaryFacing.OUT);
                             continue;
                         }
 
@@ -337,11 +351,13 @@ public class PhosphorLightEngine {
                             continue;
                         }
 
-                        final MutableBlockPos nPos = info.pos;
+                        final int nPosX = info.posX;
+                        final int nPosY = info.posY;
+                        final int nPosZ = info.posZ;
 
                         //schedule neighbor for darkening if we possibly light it
-                        if (curLight - this.getPosOpacity(nPos, LightingEngineHelpers.posToState(nPos, info.section)) >= nLight) {
-                            this.enqueueDarkening(nPos, info.blockX, info.blockY, info.blockZ, nLight, nCube, lightType);
+                        if (curLight - this.getPosOpacity(nPosX, nPosY, nPosZ, LightingEngineHelpers.posToBlock(this.curPosX, this.curPosY, this.curPosZ, info.section)) >= nLight) {
+                            this.enqueueDarkening(nPosX, nPosY, nPosZ, info.blockX, info.blockY, info.blockZ, nLight, nCube, lightType);
                         } else { //only use for new light calculation if not
                             //if we can't darken the neighbor, no one else can (because of processing order) -> safe to let us be illuminated by it
                             newLight = Math.max(newLight, nLight - opacity);
@@ -364,7 +380,7 @@ public class PhosphorLightEngine {
                 final int oldLight = this.getCursorCachedLight(lightType);
 
                 if (oldLight == curLight) { //only process this if nothing else has happened at this position since scheduling
-                    this.world.notifyLightSet(this.curPos);
+                    this.world.func_147479_m(this.curPosX, this.curPosY, this.curPosZ); // TODO WATCH THIS
 
                     if (curLight > 1) {
                         this.spreadLightFromCursor(curLight, lightType);
@@ -398,7 +414,8 @@ public class PhosphorLightEngine {
             final int nPosY = info.blockY = this.curDataY + (byte) (neighborShiftsY >> bitIdx);
             final int nPosZ = info.blockZ = this.curDataZ + (byte) (neighborShiftsZ >> bitIdx);
 
-            final MutableBlockPos nPos = info.pos.setPos(nPosX, nPosY, nPosZ);
+            // TODO IS THIS A PROBLEM?
+            // final MutableBlockPos nPos = info.setPos(nPosX, nPosY, nPosZ);
 
             final ICube nCube;
 
@@ -409,43 +426,43 @@ public class PhosphorLightEngine {
             if (nCubeX == this.curCubeIdentifierX && nCubeY == this.curCubeIdentifierY && nCubeZ == this.curCubeIdentifierZ) {
                 nCube = info.cube = this.curCube;
             } else {
-                nCube = info.cube = this.getCube(nPos);
+                nCube = info.cube = this.getCube(nPosX, nPosY, nPosZ);
             }
 
             if (nCube != null) {
                 ExtendedBlockStorage nSection = nCube.getStorage();
 
-                info.light = getCachedLightFor(nCube, nSection, nPos, lightType);
+                info.light = getCachedLightFor(nCube, nSection, nPosX, nPosY, nPosZ, lightType);
                 info.section = nSection;
             }
         }
     }
 
-    private static boolean canSeeSky(ICube cube, BlockPos pos) {
-        int topY = ((IColumnInternal) cube.getColumn()).getTopYWithStaging(blockToLocal(pos.getX()), blockToLocal(pos.getZ()));
-        return pos.getY() > topY;
+    private static boolean canSeeSky(ICube cube, int x, int y, int z) {
+        int topY = ((IColumnInternal) cube.getColumn()).getTopYWithStaging(blockToLocal(x), blockToLocal(z));
+        return y > topY;
     }
 
-    private static int getCachedLightFor(ICube cube, ExtendedBlockStorage storage, BlockPos pos, EnumSkyBlock type) {
-        int localX = Coords.blockToLocal(pos.getX());
-        int localY = Coords.blockToLocal(pos.getY());
-        int localZ = Coords.blockToLocal(pos.getZ());
+    private static int getCachedLightFor(ICube cube, ExtendedBlockStorage storage, int x, int y, int z, EnumSkyBlock type) {
+        int localX = blockToLocal(x);
+        int localY = blockToLocal(y);
+        int localZ = blockToLocal(z);
 
-        if (storage == Chunk.NULL_BLOCK_STORAGE) {
-            if (type == EnumSkyBlock.SKY && canSeeSky(cube, pos)) {
+        if (storage == null) {
+            if (type == EnumSkyBlock.Sky && canSeeSky(cube, x, y, z)) {
                 return type.defaultLightValue;
             } else {
                 return 0;
             }
-        } else if (type == EnumSkyBlock.SKY) {
-            if (!cube.getWorld().provider.hasSkyLight()) {
+        } else if (type == EnumSkyBlock.Sky) {
+            if (cube.getWorld().provider.hasNoSky) {
                 return 0;
             } else {
-                return storage.getSkyLight(localX, localY, localZ);
+                return storage.getExtSkylightValue(localX, localY, localZ);
             }
         } else {
-            if (type == EnumSkyBlock.BLOCK) {
-                return storage.getBlockLight(localX, localY, localZ);
+            if (type == EnumSkyBlock.Block) {
+                return storage.getExtSkylightValue(localX, localY, localZ);
             } else {
                 return type.defaultLightValue;
             }
@@ -453,15 +470,15 @@ public class PhosphorLightEngine {
     }
 
     private int calculateNewLightFromCursor(final EnumSkyBlock lightType) {
-        final IBlockState state = LightingEngineHelpers.posToState(this.curPos, this.curCube);
+        final Block block = LightingEngineHelpers.posToBlock(this.curPosX, this.curPosY, this.curPosZ, this.curCube);
 
-        final int luminosity = this.getCursorLuminosity(state, lightType);
+        final int luminosity = this.getCursorLuminosity(block, lightType);
         final int opacity;
 
         if (luminosity >= MAX_LIGHT - 1) {
             opacity = 1;
         } else {
-            opacity = this.getPosOpacity(this.curPos, state);
+            opacity = this.getPosOpacity(this.curPosX, this.curPosY, this.curPosZ, block);
         }
 
         return this.calculateNewLightFromCursor(luminosity, opacity, lightType);
@@ -480,7 +497,7 @@ public class PhosphorLightEngine {
         for (int i = 0; i < infos.length; i++) {
             NeighborInfo info = infos[i];
             if (info.cube == null) {
-                LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPos, lightType, EnumFacing.VALUES[i], EnumBoundaryFacing.IN);
+                LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPosX, this.curPosY, this.curPosZ, lightType, EnumFacing.values()[i], LightingHooks.EnumBoundaryFacing.IN);
                 continue;
             }
 
@@ -501,20 +518,20 @@ public class PhosphorLightEngine {
             final ICube nCube = info.cube;
 
             if (nCube == null) {
-                LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPos, lightType, EnumFacing.VALUES[i], EnumBoundaryFacing.OUT);
+                LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPosX, this.curPosY, this.curPosZ, lightType, EnumFacing.values()[i], LightingHooks.EnumBoundaryFacing.OUT);
                 continue;
             }
 
-            final int newLight = curLight - this.getPosOpacity(info.pos, LightingEngineHelpers.posToState(info.pos, info.section));
+            final int newLight = curLight - this.getPosOpacity(info.posX, info.posY, info.posZ, LightingEngineHelpers.posToBlock(info.posX, info.posY, info.posZ, info.section));
 
             if (newLight > info.light) {
-                this.enqueueBrightening(info.pos, info.blockX, info.blockY, info.blockZ, newLight, nCube, lightType);
+                this.enqueueBrightening(info.posX, info.posY, info.posZ, info.blockX, info.blockY, info.blockZ, newLight, nCube, lightType);
             }
         }
     }
 
     private void enqueueBrighteningFromCursor(final int newLight, final EnumSkyBlock lightType) {
-        this.enqueueBrightening(this.curPos, this.curDataX, this.curDataY, this.curDataZ, newLight, this.curCube, lightType);
+        this.enqueueBrightening(this.curPosX, this.curPosY, this.curPosZ, this.curDataX, this.curDataY, this.curDataZ, newLight, this.curCube, lightType);
     }
 
     /**
@@ -561,14 +578,16 @@ public class PhosphorLightEngine {
         this.queueIt.next();
         this.isNeighborDataValid = false;
 
-        this.curPos.setPos(this.curDataX, this.curDataY, this.curDataZ);
+        this.curPosX = this.curDataX;
+        this.curPosY = this.curDataY;
+        this.curPosZ = this.curDataZ;
 
         final int cubeX = blockToCube(this.curDataX);
         final int cubeY = blockToCube(this.curDataY);
         final int cubeZ = blockToCube(this.curDataZ);
 
         if (this.curCubeIdentifierX != cubeX || this.curCubeIdentifierY != cubeY || this.curCubeIdentifierZ != cubeZ) {
-            this.curCube = this.getCube(this.curPos);
+            this.curCube = this.getCube(this.curPosX, this.curPosY, this.curPosZ);
             this.curCubeIdentifierX = cubeX;
             this.curCubeIdentifierY = cubeY;
             this.curCubeIdentifierZ = cubeZ;
@@ -581,31 +600,31 @@ public class PhosphorLightEngine {
     }
 
     private int getCursorCachedLight(final EnumSkyBlock lightType) {
-        return ((Cube) this.curCube).getCachedLightFor(lightType, this.curPos);
+        return ((Cube) this.curCube).getCachedLightFor(lightType, this.curPosX, this.curPosY, this.curPosZ);
     }
 
     /**
      * Calculates the luminosity for <code>curPos</code>, taking into account <code>lightType</code>
      */
-    private int getCursorLuminosity(final IBlockState state, final EnumSkyBlock lightType) {
-        if (lightType == EnumSkyBlock.SKY) {
-            if (canSeeSky(this.curCube, this.curPos)) {
-                return EnumSkyBlock.SKY.defaultLightValue;
+    private int getCursorLuminosity(final Block state, final EnumSkyBlock lightType) {
+        if (lightType == EnumSkyBlock.Sky) {
+            if (canSeeSky(this.curCube, this.curPosX, this.curPosY, this.curPosZ)) {
+                return EnumSkyBlock.Sky.defaultLightValue;
             } else {
                 return 0;
             }
         }
 
-        return MathHelper.clamp(state.getLightValue(this.world, this.curPos), 0, MAX_LIGHT);
+        return MathHelper.clamp_int(state.getLightValue(this.world, this.curPosX, this.curPosY, this.curPosZ), 0, MAX_LIGHT);
     }
 
-    private int getPosOpacity(final BlockPos pos, final IBlockState state) {
-        return MathHelper.clamp(state.getLightOpacity(this.world, pos), 1, MAX_LIGHT);
+    private int getPosOpacity(final int x, final int y, final int z, final Block block) {
+        return MathHelper.clamp_int(block.getLightOpacity(this.world, x, y, z), 1, MAX_LIGHT);
     }
 
-    private ICube getCube(final BlockPos pos) {
+    private ICube getCube(final int x, final int y, final int z) {
         return ((ICubeProvider) this.world.getChunkProvider())
-            .getLoadedCube(blockToCube(pos.getX()), blockToCube(pos.getY()), blockToCube(pos.getZ()));
+            .getLoadedCube(blockToCube(x), blockToCube(y), blockToCube(z));
     }
 
     private static class NeighborInfo {
@@ -617,13 +636,24 @@ public class PhosphorLightEngine {
 
         int blockX, blockY, blockZ;
 
-        final MutableBlockPos pos = new MutableBlockPos();
+        public int posX;
+        public int posY;
+        public int posZ;
+
+        void setPos(int x, int y, int z)
+        {
+            this.posX = x;
+            this.posY = y;
+            this.posZ = z;
+        }
+
+
     }
 
 
     static class ClientUtils {
         static boolean isCallingFromMainThread() {
-            return Minecraft.getMinecraft().isCallingFromMinecraftThread();
+            return Minecraft.getMinecraft().func_152345_ab();
         }
     }
 }
