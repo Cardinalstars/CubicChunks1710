@@ -1,6 +1,6 @@
-package com.cardinalstar.cubicchunks.core.mixin.early;
+package com.cardinalstar.cubicchunks.mixin.early;
 
-import com.cardinalstar.cubicchunks.core.mixin.api.ICubicWorldSettings;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.storage.WorldInfo;
 import org.spongepowered.asm.mixin.Mixin;

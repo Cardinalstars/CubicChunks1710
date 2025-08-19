@@ -30,8 +30,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.core.server.CubeProviderServer;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.ITicket;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
+import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.World;
 
 @ParametersAreNonnullByDefault
@@ -45,7 +51,7 @@ public class SpawnCubes implements ITicket {
     private int radiusYGenerate = CubicChunksConfig.spawnGenerateDistanceY;
     private int radiusXZForce = CubicChunksConfig.spawnLoadDistanceXZ;
     private int radiusYForce = CubicChunksConfig.spawnLoadDistanceY;
-
+    private ChunkCoordinates spawnPoint;
     public void update(World world) {
         update(world, CubicChunksConfig.spawnGenerateDistanceXZ, CubicChunksConfig.spawnGenerateDistanceY,
             CubicChunksConfig.spawnLoadDistanceXZ, CubicChunksConfig.spawnLoadDistanceY); // radius did not change
@@ -74,9 +80,9 @@ public class SpawnCubes implements ITicket {
 
         ICubeProviderInternal serverCubeCache = (ICubeProviderInternal) world.getChunkProvider();
 
-        int spawnCubeX = Coords.blockToCube(spawnPoint.getX());
-        int spawnCubeY = Coords.blockToCube(spawnPoint.getY());
-        int spawnCubeZ = Coords.blockToCube(spawnPoint.getZ());
+        int spawnCubeX = Coords.blockToCube(spawnPoint.posX);
+        int spawnCubeY = Coords.blockToCube(spawnPoint.posY);
+        int spawnCubeZ = Coords.blockToCube(spawnPoint.posZ);
 
         for (int cubeX = spawnCubeX - radiusXZForce; cubeX <= spawnCubeX + radiusXZForce; cubeX++) {
             for (int cubeZ = spawnCubeZ - radiusXZForce; cubeZ <= spawnCubeZ + radiusXZForce; cubeZ++) {
@@ -96,9 +102,9 @@ public class SpawnCubes implements ITicket {
 
         // load the cubes around the spawn point
         CubicChunks.LOGGER.info("Loading cubes for spawn...");
-        int spawnCubeX = Coords.blockToCube(spawnPoint.getX());
-        int spawnCubeY = Coords.blockToCube(spawnPoint.getY());
-        int spawnCubeZ = Coords.blockToCube(spawnPoint.getZ());
+        int spawnCubeX = Coords.blockToCube(spawnPoint.posX);
+        int spawnCubeY = Coords.blockToCube(spawnPoint.posY);
+        int spawnCubeZ = Coords.blockToCube(spawnPoint.posZ);
 
         AtomicLong lastTime = new AtomicLong(System.currentTimeMillis());
         final int progressReportInterval = 1000;//ms
