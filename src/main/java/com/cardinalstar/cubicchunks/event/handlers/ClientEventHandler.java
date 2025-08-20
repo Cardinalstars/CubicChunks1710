@@ -26,8 +26,13 @@ package com.cardinalstar.cubicchunks.event.handlers;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.mixin.early.client.IGuiCreateWorld;
+import com.cardinalstar.cubicchunks.mixin.early.client.IGuiOptionsRowList;
+import com.cardinalstar.cubicchunks.mixin.early.client.IGuiScreen;
+import com.cardinalstar.cubicchunks.mixin.early.client.IGuiVideoSettings;
 import com.cardinalstar.cubicchunks.server.ICubicPlayerList;
 import com.cardinalstar.cubicchunks.util.MathUtil;
 import cpw.mods.fml.client.FMLClientHandler;
@@ -72,7 +77,7 @@ public class ClientEventHandler {
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         // no need to check side, this is only registered in client proxy
-        ICubicPlayerList playerList = ((ICubicPlayerList) FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList());
+        ICubicPlayerList playerList = ((ICubicPlayerList) FMLCommonHandler.instance().getMinecraftServerInstance().getConfigurationManager().playerEntityList);
         int prevDist = playerList.getVerticalViewDistance();
         int newDist = CubicChunksConfig.verticalCubeLoadDistance;
         if (prevDist != newDist) {
@@ -150,7 +155,7 @@ public class ClientEventHandler {
          * over this button and 2 if it IS hovering over this button.
          */
         @Override
-        protected int getHoverState(boolean mouseOver) {
+        public int getHoverState(boolean mouseOver) {
             return 0;
         }
 
@@ -162,7 +167,7 @@ public class ClientEventHandler {
         protected void mouseDragged(Minecraft mc, int mouseX, int mouseY) {
             if (this.visible) {
                 if (this.dragging) {
-                    this.sliderValue = (float) (mouseX - (this.x + 4)) / (float) (this.width - 8);
+                    this.sliderValue = (float) (mouseX - (this.xPosition + 4)) / (float) (this.width - 8);
                     this.sliderValue = MathHelper.clamp_float(this.sliderValue, 0.0F, 1.0F);
                     CubicChunksConfig.setVerticalViewDistance(
                         Math.round(MathUtil.lerp(this.sliderValue, 2, MAX_VIEW_DIST)));
@@ -170,10 +175,10 @@ public class ClientEventHandler {
                     this.displayString = this.createDisplayString();
                 }
 
-                mc.getTextureManager().bindTexture(BUTTON_TEXTURES);
-                GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-                this.drawTexturedModalRect(this.x + (int) (this.sliderValue * (float) (this.width - 8)), this.y, 0, 66, 4, 20);
-                this.drawTexturedModalRect(this.x + (int) (this.sliderValue * (float) (this.width - 8)) + 4, this.y, 196, 66, 4, 20);
+                mc.getTextureManager().bindTexture(buttonTextures);
+                // GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F); // TODO FIGURE OUT HOW TO DO THIS
+                this.drawTexturedModalRect(this.xPosition + (int) (this.sliderValue * (float) (this.width - 8)), this.yPosition, 0, 66, 4, 20);
+                this.drawTexturedModalRect(this.xPosition + (int) (this.sliderValue * (float) (this.width - 8)) + 4, this.yPosition, 196, 66, 4, 20);
             }
         }
 
@@ -184,7 +189,7 @@ public class ClientEventHandler {
         @Override
         public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
             if (super.mousePressed(mc, mouseX, mouseY)) {
-                this.sliderValue = (float) (mouseX - (this.x + 4)) / (float) (this.width - 8);
+                this.sliderValue = (float) (mouseX - (this.xPosition + 4)) / (float) (this.width - 8);
                 this.sliderValue = MathHelper.clamp_float(this.sliderValue, 0.0F, 1.0F);
                 CubicChunksConfig.setVerticalViewDistance(
                     Math.round(MathUtil.lerp(this.sliderValue, 2, MAX_VIEW_DIST)));
@@ -250,7 +255,10 @@ public class ClientEventHandler {
 
                 refreshText(gui, enableCC);
             }));
-            LIST_OF_GEN_OPTIONS.addAll(VanillaCompatibilityGeneratorProviderBase.REGISTRY.getKeys());
+            for (VanillaCompatibilityGeneratorProviderBase base : VanillaCompatibilityGeneratorProviderBase.REGISTRY.getAll())
+            {
+                LIST_OF_GEN_OPTIONS.add(base.registryName);
+            }
             CURRENT_GEN_OPTION = LIST_OF_GEN_OPTIONS.indexOf(new ResourceLocation(CubicChunksConfig.compatibilityGeneratorType));
         }
 
@@ -260,7 +268,7 @@ public class ClientEventHandler {
                 txt = "cubicchunks.gui.worldmenu.cc_disable";
             } else {
                 VanillaCompatibilityGeneratorProviderBase provider = VanillaCompatibilityGeneratorProviderBase.REGISTRY
-                    .getValue(new ResourceLocation(CubicChunksConfig.compatibilityGeneratorType));
+                    .get(new ResourceLocation(CubicChunksConfig.compatibilityGeneratorType));
                 txt = provider.getUnlocalizedName();
             }
             enableBtn.displayString = I18n.format(txt);
@@ -278,7 +286,7 @@ public class ClientEventHandler {
                     }
                     case MAP_TYPE_ID: {
                         GuiButton enableCC = null, mapType = null;
-                        for (GuiButton b : event.buttonList) {
+                        for (GuiButton b : (List<GuiButton>) event.buttonList) {
                             if (b.id == CC_ENABLE_BUTTON_ID) {
                                 enableCC = b;
                             } else if (b.id == MAP_TYPE_ID) {
@@ -286,7 +294,7 @@ public class ClientEventHandler {
                             }
                         }
                         assert enableCC != null;
-                        boolean isCubicChunksType = WorldType.WORLD_TYPES[((IGuiCreateWorld) gui).getSelectedIndex()] instanceof ICubicWorldType;
+                        boolean isCubicChunksType = WorldType.worldTypes[((IGuiCreateWorld) gui).getSelectedIndex()] instanceof ICubicWorldType;
                         enableCC.visible = mapType != null && !isCubicChunksType && mapType.visible;
                         break;
                     }
