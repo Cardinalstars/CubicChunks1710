@@ -61,7 +61,8 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
     }
 
     @Nullable @Override
-    public Chunk getLoadedColumn(int x, int z) {
+    public Chunk getLoadedColumn(int x, int z)
+    {
         return getLoadedChunk(x, z);
     }
 
@@ -75,25 +76,26 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
         return super.provideChunk(x, z);
     }
 
-    @Nullable @Override
-    public Chunk getLoadedChunk(int x, int z) {
-        return super.getLoadedChunk(x, z);
+    public Chunk getLoadedChunk(int x, int z)
+    {
+        return (Chunk) ((IChunkProviderClient) this).getChunkMapping().getValueByKey(ChunkCoordIntPair.chunkXZ2Int(x, z));
     }
 
     @Override
     public Chunk loadChunk(int cubeX, int cubeZ) {
         Chunk column = new Chunk((World) this.world, cubeX, cubeZ);   // make a new one
-        ((IChunkProviderClient) this).getLoadedChunks().put(ChunkCoordIntPair.chunkXZ2Int(cubeX, cubeZ), column); // add it to the cache
+        ((IChunkProviderClient) this).getChunkMapping().add(ChunkCoordIntPair.chunkXZ2Int(cubeX, cubeZ), column);
+        ((IChunkProviderClient) this).getChunkListing().add(column);
 
         // fire a forge event... make mods happy :)
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Load(column));
 
-        column.markLoaded(true);
+        column.isChunkLoaded = true;
         return column;
     }
 
     @Override
-    public boolean tick() {
+    public boolean unloadQueuedChunks() {
         long i = System.currentTimeMillis();
         for (Cube cube : cubeMap) {
             cube.tickCubeCommon(() -> System.currentTimeMillis() - i > 5L);
@@ -177,16 +179,13 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
         return getLoadedCube(coords.getX(), coords.getY(), coords.getZ());
     }
 
-    public Iterable<Chunk> getLoadedChunks() {
-        return ((IChunkProviderClient) this).getLoadedChunks().values();
-    }
 
     @Override
     public String makeString() {
-        return "MultiplayerChunkCache: " + ((IChunkProviderClient) this).getLoadedChunks().values()
+        return "MultiplayerChunkCache: " + ((IChunkProviderClient) this).getChunkListing()
             .stream()
             .map(c -> ((IColumn) c).getLoadedCubes().size())
             .reduce(Integer::sum)
-            .orElse(-1) + "/" + ((IChunkProviderClient) this).getLoadedChunks().size();
+            .orElse(-1) + "/" + ((IChunkProviderClient) this).getChunkMapping().getNumHashElements();
     }
 }

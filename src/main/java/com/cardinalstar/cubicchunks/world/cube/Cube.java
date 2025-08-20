@@ -30,7 +30,6 @@ import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.ICube;
-
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
@@ -44,6 +43,8 @@ import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
+import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -63,6 +64,8 @@ import net.minecraftforge.event.world.ChunkEvent;
 
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BooleanSupplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -143,6 +146,12 @@ public class Cube implements ICube {
     @Nonnull
     public Map<net.minecraft.world.ChunkPosition, net.minecraft.tileentity.TileEntity> cubeTileEntityMap;
 
+    /**
+     * The positions of tile entities queued for creation
+     */
+    @Nonnull
+    private final ConcurrentLinkedQueue<BlockPos> tileEntityPosQueue;
+
     private final ICubeLightTrackingInfo cubeLightData;
 
     /**
@@ -192,6 +201,7 @@ public class Cube implements ICube {
         this.entities = new ArrayList<Entity>();
 
         this.cubeTileEntityMap = new HashMap<>();
+        this.tileEntityPosQueue = new ConcurrentLinkedQueue<>();
 
         this.cubeLightData = ((ICubicWorldInternal) world).getLightingManager().createLightData(this);
 
@@ -439,22 +449,23 @@ public class Cube implements ICube {
      *
      * @param tryToTickFaster Whether costly calculations should be skipped in order to catch up with ticks
      */
-//    public void tickCubeCommon(BooleanSupplier tryToTickFaster) {
-//        this.ticked = true;
-//        while (!this.tileEntityPosQueue.isEmpty()) {
-//            BlockPos blockpos = this.tileEntityPosQueue.poll();
-//
-//            IBlockState state = this.getBlockState(blockpos);
-//            Block block = state.getBlock();
-//
-//            if (this.getTileEntity(blockpos, Chunk.EnumCreateEntityType.CHECK) == null &&
-//                block.hasTileEntity(state)) {
-//                TileEntity tileentity = this.createTileEntity(blockpos);
-//                this.world.setTileEntity(blockpos, tileentity);
-//                this.world.markBlockRangeForRenderUpdate(blockpos, blockpos);
-//            }
-//        }
-//    }
+    public void tickCubeCommon(BooleanSupplier tryToTickFaster) {
+        this.ticked = true;
+        while (!this.tileEntityPosQueue.isEmpty()) {
+            BlockPos blockpos = this.tileEntityPosQueue.poll();
+            int x = blockpos.getX();
+            int y = blockpos.getY();
+            int z = blockpos.getZ();
+            Block block = this.getBlock(x, y, z);
+            int meta = this.getBlockMetadata(x, y, z);
+
+            if (this.getTileEntityUnsafe(x, y, z) == null && block.hasTileEntity(meta)) {
+                TileEntity tileentity = this.getBlockTileEntityInChunk(x, y, z);
+                this.world.setTileEntity(x, y, z, tileentity);
+                this.world.markBlockRangeForRenderUpdate(x, y, z, x, y, z);
+            }
+        }
+    }
 //
 //    /**
 //     * Tick this cube on server side. Block tick updates launched here.
@@ -771,7 +782,7 @@ public class Cube implements ICube {
 
     /**
      * Mark this cube as populated. This means that this cube was passed as argument to
-     * {@link ICubeGenerator#populate(ICube)}. Check there for more information regarding
+     * {@link com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator#populate(ICube)}. Check there for more information regarding
      * population.
      *
      * @param populated whether this cube was populated
