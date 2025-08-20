@@ -24,18 +24,12 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.client;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import net.minecraft.client.multiplayer.ChunkProviderClient;
-import net.minecraft.util.LongHashMap;
-import net.minecraft.world.chunk.Chunk;
+import net.minecraft.client.gui.GuiListExtended;
+import net.minecraft.client.gui.GuiVideoSettings;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import java.util.List;
-
-@Mixin(ChunkProviderClient.class)
-public interface IChunkProviderClient {
-
-    @Accessor LongHashMap getChunkMapping();
-    @Accessor List<Chunk> getChunkListing();
+@Mixin(GuiVideoSettings.class)
+public interface IGuiVideoSettings extends IGuiScreen {
+    @Accessor GuiListExtended getOptionsRowList();
 }
