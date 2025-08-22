@@ -8,11 +8,16 @@ import com.cardinalstar.cubicchunks.server.CubicAnvilChunkLoader;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
 import net.minecraftforge.common.util.AsynchronousExecutor;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 
@@ -24,6 +29,8 @@ public class CubeIOExecutor
     private static final AsynchronousExecutor<QueuedColumn, ICubeIO.PartialData<IColumn>, Consumer<Chunk>, RuntimeException> columnInstance = new AsynchronousExecutor<QueuedColumn, ICubeIO.PartialData<IColumn>, Consumer<Chunk>, RuntimeException>(new ColumnIOProvider(), BASE_THREADS);
     private static final AsynchronousExecutor<QueuedCube, ICubeIO.PartialData<ICube>, Consumer<Cube>, RuntimeException> cubeInstance = new AsynchronousExecutor<QueuedCube, ICubeIO.PartialData<ICube>, Consumer<Cube>, RuntimeException>(new CubeIOProvider(), BASE_THREADS);
 
+    private static final Multimap<QueuedColumn, QueuedCube> loadingCubesColumnMap =
+        Multimaps.newMultimap(new ConcurrentHashMap<>(), Sets::newConcurrentHashSet);
 
     public static ICubeIO.PartialData<IColumn> syncColumnLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int z) {
         return columnInstance.getSkipQueue(new QueuedColumn(x, z, loader, world, provider));
@@ -49,8 +56,13 @@ public class CubeIOExecutor
 
     public static void queueCubeLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int y, int z, Consumer<Cube> consumer) // DONE I think
     {
+        QueuedCube key = new QueuedCube(x, y, z, loader, world, provider);
+        QueuedColumn columnKey = new QueuedColumn(x, z, loader, world, provider);
+        loadingCubesColumnMap.put(columnKey, key);
+
         QueuedCube cube = new QueuedCube(x, y, z, loader, world, provider);
         cubeInstance.add(cube, consumer);
+        cubeInstance.add(cube, (c -> loadingCubesColumnMap.remove(columnKey, key)));
 
         Chunk loadedIColumn = provider.getLoadedColumn(x, z);
         if (loadedIColumn  == null)
@@ -79,4 +91,27 @@ public class CubeIOExecutor
         columnInstance.finishActive();
         cubeInstance.finishActive();
     }
+
+    public static boolean canDropColumn(World world, ICubeIO loader, CubeProviderServer provider, int x, int z) {
+        return !loadingCubesColumnMap.containsKey(new QueuedColumn(x, z, loader, world, provider));
+    }
+
+//    public static void shutdownNowBlocking() {
+//        // best effort wait for up to 10 seconds each
+//        // shut down cubes first to avoid a cube executor getting stuck waiting for it's column
+//        cubeInstance.();
+//        cubeTasks.clear();
+//        try {
+//            cubeThreadPool.awaitTermination(10, TimeUnit.SECONDS);
+//        } catch (InterruptedException ignored) {
+//        }
+//        columnThreadPool.shutdownNow();
+//        columnTasks.clear();
+//        try {
+//            columnThreadPool.awaitTermination(10, TimeUnit.SECONDS);
+//        } catch (InterruptedException ignored) {
+//        }
+//        // initialize for next use
+//        initExecutors();
+//    }
 }

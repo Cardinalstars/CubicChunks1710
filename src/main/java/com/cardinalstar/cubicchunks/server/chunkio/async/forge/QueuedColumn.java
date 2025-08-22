@@ -23,6 +23,9 @@
  import com.cardinalstar.cubicchunks.server.CubeProviderServer;
  import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
  import net.minecraft.world.World;
+ import net.minecraft.world.chunk.Chunk;
+
+ import java.util.function.Consumer;
 
  public class QueuedColumn {
      final int x;
@@ -31,6 +34,7 @@
      final World world;
      final CubeProviderServer provider;
      net.minecraft.nbt.NBTTagCompound compound;
+     private final Consumer<Chunk> setProviderLoadingColumn;
 
      public QueuedColumn(int x, int z, ICubeIO loader, World world, CubeProviderServer provider) {
          this.x = x;
@@ -38,6 +42,7 @@
          this.loader = loader;
          this.world = world;
          this.provider = provider;
+         this.setProviderLoadingColumn = col -> this.provider.currentlyLoadingColumn = col;
      }
 
      @Override

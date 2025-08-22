@@ -98,7 +98,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
     @Nonnull private final Profiler profiler;
     // some mods will try to access blocks in ChunkDataEvent.Load
     // this needs the column to be already known by the chunk provider so that it can load cubes without trying to load the column again
-    private Chunk currentlyLoadingColumn;
+    public Chunk currentlyLoadingColumn;
 
     public CubeProviderServer(WorldServer worldServer, ICubeGenerator cubeGen) {
         super(worldServer,
@@ -458,7 +458,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
      * @return The generated cube
      */
     private Optional<Cube> generateCube(int cubeX, int cubeY, int cubeZ, Chunk column, boolean forceGenerate) {
-        return cubeGen.tryGenerateCube(cubeX, cubeY, cubeZ, forceGenerate)
+        return cubeGen.tryGenerateCube(column, cubeX, cubeY, cubeZ, forceGenerate)
             .map(cube -> {
                 onCubeLoaded(cube, column);
                 // don't bother resetting the primer if it wasn't used by the generator.
@@ -533,7 +533,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
             box.forEachPoint((x, y, z) -> {
                 Cube columnCube = getCube(cubeX + x, 0, cubeZ + z);
                 if (!columnCube.isPopulated()) {
-                    GameRegistry.generateWorld(cubeX + x, cubeZ + z, worldObj, chunkGenerator, worldObj.getChunkProvider());
+                    GameRegistry.generateWorld(cubeX + x, cubeZ + z, worldObj, currentChunkProvider, worldObj.getChunkProvider());
                     columnCube.setFullyPopulated(true);
                 }
             });
@@ -575,10 +575,10 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
             return;
         }
 
-        CubeIOExecutor.queueColumnLoad(worldServer, cubeIO, columnX, columnZ, col -> {
-            col = postProcessColumn(columnX, columnZ, col, req, false);
-            callback.accept(col);
-        }, col -> currentlyLoadingColumn = col);
+        CubeIOExecutor.queueColumnLoad(worldServer, cubeIO, this, columnX, columnZ, chunk -> {
+            chunk = postProcessColumn(columnX, columnZ, chunk, req, false);
+            callback.accept(chunk);
+        });
     }
 
     @Nullable @Override
@@ -594,7 +594,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
             return column;
         }
 
-        column = CubeIOExecutor.syncColumnLoad(worldServer, cubeIO, columnX, columnZ, col -> currentlyLoadingColumn = col);
+        column = (Chunk) CubeIOExecutor.syncColumnLoad(worldServer, cubeIO, this, columnX, columnZ).getObject();
         column = postProcessColumn(columnX, columnZ, column, req, forceNow);
 
         return column;
@@ -631,7 +631,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
         if (!force && cubeGen.pollAsyncColumnGenerator(columnX, columnZ) != ICubeGenerator.GeneratorReadyState.READY) {
             return emptyColumn;
         }
-        column = cubeGen.tryGenerateColumn(worldObj, columnX, columnZ, new ChunkPrimer(), force).orElse(null);
+        column = cubeGen.tryGenerateColumn(worldObj, columnX, columnZ, null, null, force).orElse(null); // TODO WATCH
         if (column == null) {
             return emptyColumn;
         }
@@ -709,15 +709,15 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
             return false; // It has loaded Cubes in it (Cubes are to Columns, as tickets are to Cubes... in a way)
         }
         // PlayerChunkMap may contain reference to a column that for a while doesn't yet have any cubes generated
-        if (((CubicPlayerManager) worldObj.getPlayerManager()).contains(column.xPosition, column.zPosition)) {
+        if ((worldObj.getPlayerManager().func_152621_a(column.xPosition, column.zPosition))) {
             return false;
         }
         // ask async loader if there are currently any cubes being loaded for this column
         // this should prevent hard to debug issues with columns being unloaded while cubes have reference to them
-        if (!CubeIOExecutor.canDropColumn(worldServer, column.xPosition, column.zPosition)) {
+        if (!CubeIOExecutor.canDropColumn(worldServer, cubeIO, this, column.xPosition, column.zPosition)) {
             return false;
         }
-        column.unloadQueued = true;
+        // column.unloadQueued = true;
 
         // unload the Column!
         column.onChunkUnload();

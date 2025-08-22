@@ -27,6 +27,8 @@ package com.cardinalstar.cubicchunks.server.chunkio;
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.server.chunkio.async.forge.CubeIOExecutor;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -123,9 +125,10 @@ public class AsyncBatchingCubeIO implements ICubeIO {
             if (nbt == null) { //column isn't cached, forward request on to storage
                 nbt = this.storage.readColumn(pos);
             }
-            if (nbt != null) { //fix column data
-                nbt = FMLCommonHandler.instance().getDataFixer().process(FixTypes.CHUNK, nbt);
-            }
+            // TODO PROBABLY DON'T NEED TO DO THIS. WORLDS DON'T CHANGE VERSIONS.
+//            if (nbt != null) { //fix column data
+//                nbt = FMLCommonHandler.instance().getDataFixer().process(FixTypes.CHUNK, nbt);
+//            }
             return new PartialData<>(null, nbt);
         } finally {
             this.lock.readLock().unlock();
@@ -184,7 +187,7 @@ public class AsyncBatchingCubeIO implements ICubeIO {
             // NOTE: this function blocks the world thread, so make it fast
 
             this.pendingCubes.put(cube.getCoords(), IONbtWriter.write(cube));
-            cube.markSaved();
+            // cube.markSaved(); TODO NEEDED?
 
             // signal the IO thread to process the save queue
             ThreadedFileIOBase.threadedIOInstance.queueIO(this);
@@ -240,7 +243,8 @@ public class AsyncBatchingCubeIO implements ICubeIO {
         // shutdown loading executor first
         // has to be done before lock to avoid a deadlock
         // this is a best-effort shutdown, at worst failure will cause a few exceptions in the log
-        AsyncWorldIOExecutor.shutdownNowBlocking();
+        // TODO ??
+        // CubeIOExecutor.shutdownNowBlocking();
 
         this.lock.writeLock().lock();
         try {
@@ -326,7 +330,7 @@ public class AsyncBatchingCubeIO implements ICubeIO {
         }
 
         // restore the cube - async part
-        Cube cube = IONbtReader.readCubeAsyncPart(column, column.x, cubeY, column.z, info.getNbt());
+        Cube cube = IONbtReader.readCubeAsyncPart(column, column.xPosition, cubeY, column.zPosition, info.getNbt());
         info.setObject(cube);
     }
 
