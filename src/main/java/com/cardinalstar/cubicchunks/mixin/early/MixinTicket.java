@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.core.mixin.early;
+package com.cardinalstar.cubicchunks.mixin.early;
 
 public class MixinTicket {
 }

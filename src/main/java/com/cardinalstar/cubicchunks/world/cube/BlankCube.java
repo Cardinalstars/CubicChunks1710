@@ -68,11 +68,11 @@ public class BlankCube extends Cube {
 //    }
 //
     @Override
-    public void onLoad() {
+    public void onCubeLoad() {
     }
 
     @Override
-    public void onUnload() {
+    public void onCubeUnload() {
     }
 //
 //    @Override

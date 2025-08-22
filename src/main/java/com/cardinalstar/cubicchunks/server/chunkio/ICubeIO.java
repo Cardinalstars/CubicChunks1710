@@ -35,6 +35,7 @@ import com.cardinalstar.cubicchunks.api.worldgen.LoadingData;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.storage.IThreadedFileIO;
@@ -48,10 +49,10 @@ public interface ICubeIO extends Flushable, AutoCloseable, IThreadedFileIO {
 
     default PartialData<Chunk> loadColumnAsyncPart(World world, int chunkX, int chunkZ) throws IOException {
         PartialData<Chunk> data = loadColumnNbt(chunkX, chunkZ);
-            Collection<BiConsumer<? super World, ? super LoadingData<ChunkPos>>> asyncCallbacks = CubeGeneratorsRegistry.getColumnAsyncLoadingCallbacks();
+            Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> asyncCallbacks = CubeGeneratorsRegistry.getColumnAsyncLoadingCallbacks();
         if (!asyncCallbacks.isEmpty()) {
-            ChunkPos chunkPos = new ChunkPos(chunkX, chunkZ);
-            LoadingData<ChunkPos> chunkLoadingData = new LoadingData<>(chunkPos, data.getNbt());
+            ChunkCoordIntPair chunkPos = new ChunkCoordIntPair(chunkX, chunkZ);
+            LoadingData<ChunkCoordIntPair> chunkLoadingData = new LoadingData<>(chunkPos, data.getNbt());
             asyncCallbacks.forEach(cons -> cons.accept(world, chunkLoadingData));
             data.setNbt(chunkLoadingData.getNbt());
         }
