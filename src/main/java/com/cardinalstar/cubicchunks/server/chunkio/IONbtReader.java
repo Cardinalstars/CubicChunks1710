@@ -34,6 +34,8 @@ import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
@@ -182,51 +184,82 @@ public class IONbtReader {
             ExtendedBlockStorage ebs = new ExtendedBlockStorage(Coords.cubeToMinBlock(cube.getY()), !cube.getWorld().provider.hasNoSky);
 
             byte[] abyte = nbt.getByteArray("Blocks");
-            NibbleArray data = new NibbleArray(nbt.getByteArray("Data"));
-            NibbleArray add = nbt.hasKey("Add", Constants.NBT.TAG_BYTE_ARRAY) ? new NibbleArray(nbt.getByteArray("Add")) : null;
-            NibbleArray add2neid = nbt.hasKey("Add2", Constants.NBT.TAG_BYTE_ARRAY) ? new NibbleArray(nbt.getByteArray("Add2")) : null;
+            NibbleArray data = new NibbleArray(nbt.getByteArray("Data"), 4);
+            NibbleArray add = nbt.hasKey("Add", Constants.NBT.TAG_BYTE_ARRAY) ? new NibbleArray(nbt.getByteArray("Add"), 4) : null;
+            NibbleArray add2neid = nbt.hasKey("Add2", Constants.NBT.TAG_BYTE_ARRAY) ? new NibbleArray(nbt.getByteArray("Add2"), 4) : null;
 
             for (int i = 0; i < 4096; i++) {
                 int x = i & 15;
                 int y = i >> 8 & 15;
                 int z = i >> 4 & 15;
 
-                int toAdd = add == null ? 0 : add.getFromIndex(i);
-                toAdd = (toAdd & 0xF) | (add2neid == null ? 0 : add2neid.getFromIndex(i) << 4);
-                int id = (toAdd << 12) | ((abyte[i] & 0xFF) << 4) | data.getFromIndex(i);
-                ebs.getData().set(x, y, z, Block.BLOCK_STATE_IDS.getByValue(id));
+                int toAdd = add == null ? 0 : add.get(x, y, z);
+                toAdd = (toAdd & 0xF) | (add2neid == null ? 0 : add2neid.get(x, y, z) << 4);
+                int id = (toAdd << 12) | ((abyte[i] & 0xFF) << 4) | data.get(x, y, z);
+                ebs.func_150818_a(x, y, z, Block.getBlockById(id));
+                ebs.setExtBlockMetadata(x, y, z, data.get(x, y, z));
             }
 
-            ebs.setBlocklightArray(new NibbleArray(nbt.getByteArray("BlockLight")));
+            ebs.setBlocklightArray(new NibbleArray(nbt.getByteArray("BlockLight"), 4));
 
-            if (world.provider.hasSkyLight()) {
-                ebs.setSkylightArray(new NibbleArray(nbt.getByteArray("SkyLight")));
+            if (!world.provider.hasNoSky) {
+                ebs.setSkylightArray(new NibbleArray(nbt.getByteArray("SkyLight"), 4));
             }
 
-            ebs.recalculateRefCounts();
+            ebs.removeInvalidBlocks();
             cube.setStorageFromSave(ebs);
         }
     }
 
-    private static void readEntities(NBTTagCompound nbt, World world, Cube cube) {// entities
-        cube.getEntityContainer().readFromNbt(nbt, "Entities", world, entity -> {
-            // make sure this entity is really in the chunk
-            int entityCubeX = Coords.getCubeXForEntity(entity);
-            int entityCubeY = Coords.getCubeYForEntity(entity);
-            int entityCubeZ = Coords.getCubeZForEntity(entity);
-            if (entityCubeX != cube.getX() || entityCubeY != cube.getY() || entityCubeZ != cube.getZ()) {
-                CubicChunks.LOGGER.warn(String.format("Loaded entity %s in cube (%d,%d,%d) to cube (%d,%d,%d)!", entity.getClass()
-                    .getName(), entityCubeX, entityCubeY, entityCubeZ, cube.getX(), cube.getY(), cube.getZ()));
-            }
+    private static void readEntities(NBTTagCompound cubeNbt, World world, Cube cube) {// entities
+        NBTTagList entityTagList = cubeNbt.getTagList("Entities", 10);
 
-            // The entity needs to know what Cube it is in, this is normally done in Cube.addEntity()
-            // but Cube.addEntity() is not used when loading entities
-            // (unlike vanilla which uses Chunk.addEntity() even when loading entities)
-            entity.addedToChunk = true;
-            entity.chunkCoordX = cube.getX();
-            entity.chunkCoordY = cube.getY();
-            entity.chunkCoordZ = cube.getZ();
-        });
+        if (entityTagList != null)
+        {
+            for (int l = 0; l < entityTagList.tagCount(); ++l)
+            {
+                NBTTagCompound entityNBT = entityTagList.getCompoundTagAt(l);
+                Entity rootEntity = EntityList.createEntityFromNBT(entityNBT, world);
+                cube.hasEntities = true;
+
+                if (rootEntity != null)
+                {
+                    cube.addEntity(rootEntity);
+
+                    int entityCubeX = Coords.getCubeXForEntity(rootEntity);
+                    int entityCubeY = Coords.getCubeYForEntity(rootEntity);
+                    int entityCubeZ = Coords.getCubeZForEntity(rootEntity);
+                    if (entityCubeX != cube.getX() || entityCubeY != cube.getY() || entityCubeZ != cube.getZ()) {
+                        CubicChunks.LOGGER.warn(String.format("Loaded entity %s in cube (%d,%d,%d) to cube (%d,%d,%d)!", rootEntity.getClass()
+                            .getName(), entityCubeX, entityCubeY, entityCubeZ, cube.getX(), cube.getY(), cube.getZ()));
+                    }
+
+                    // The entity needs to know what Cube it is in, this is normally done in Cube.addEntity()
+                    // but Cube.addEntity() is not used when loading entities
+                    // (unlike vanilla which uses Chunk.addEntity() even when loading entities)
+                    rootEntity.addedToChunk = true;
+                    rootEntity.chunkCoordX = cube.getX();
+                    rootEntity.chunkCoordY = cube.getY();
+                    rootEntity.chunkCoordZ = cube.getZ();
+
+                    // Riding stuff
+                    Entity currentEntity = rootEntity;
+
+                    for (NBTTagCompound ridingNBT = entityNBT; ridingNBT.hasKey("Riding", 10); ridingNBT = ridingNBT.getCompoundTag("Riding"))
+                    {
+                        Entity entityThatIsRiding = EntityList.createEntityFromNBT(ridingNBT.getCompoundTag("Riding"), world);
+
+                        if (entityThatIsRiding != null)
+                        {
+                            cube.addEntity(entityThatIsRiding);
+                            currentEntity.mountEntity(entityThatIsRiding);
+                        }
+
+                        currentEntity = entityThatIsRiding;
+                    }
+                }
+            }
+        }
     }
 
     private static void readTileEntities(NBTTagCompound nbt, World world, Cube cube) {// tile entities
@@ -262,7 +295,7 @@ public class IONbtReader {
             if (block == null) {
                 continue;
             }
-            world.scheduleBlockUpdate(
+            world.func_147446_b(
                 nbtScheduledTick.getInteger("x"),
                 nbtScheduledTick.getInteger("y"),
                 nbtScheduledTick.getInteger("z"),

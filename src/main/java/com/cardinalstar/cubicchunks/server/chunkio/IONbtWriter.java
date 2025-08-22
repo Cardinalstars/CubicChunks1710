@@ -35,7 +35,9 @@ import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.FMLLog;
 import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -46,7 +48,9 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.event.world.ChunkDataEvent;
+import org.apache.logging.log4j.Level;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.io.ByteArrayOutputStream;
@@ -69,8 +73,8 @@ class IONbtWriter {
         NBTTagCompound columnNbt = new NBTTagCompound();
         NBTTagCompound level = new NBTTagCompound();
         columnNbt.setTag("Level", level);
-        columnNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
-        FMLCommonHandler.instance().getDataFixer().writeVersionData(columnNbt);
+//        columnNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
+//        FMLCommonHandler.instance().getDataFixer().writeVersionData(columnNbt);
         writeBaseColumn(column, level);
         writeBiomes(column, level);
         writeOpacityIndex(column, level);
@@ -83,8 +87,8 @@ class IONbtWriter {
         //Added to preserve compatibility with vanilla NBT chunk format.
         NBTTagCompound level = new NBTTagCompound();
         cubeNbt.setTag("Level", level);
-        cubeNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
-        FMLCommonHandler.instance().getDataFixer().writeVersionData(cubeNbt);
+//        cubeNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
+//        FMLCommonHandler.instance().getDataFixer().writeVersionData(cubeNbt);
         writeBaseCube(cube, level);
         writeBlocks(cube, level);
         writeEntities(cube, level);
@@ -162,7 +166,7 @@ class IONbtWriter {
         sectionList.appendTag(section);
         cubeNbt.setTag("Sections", sectionList);
         byte[] abyte = new byte[Cube.SIZE * Cube.SIZE * Cube.SIZE];
-        NibbleArray data = new NibbleArray();
+        NibbleArray data = new NibbleArray(new byte[2048], 4);
         NibbleArray add = null;
         NibbleArray add2neid = null;
 
@@ -172,60 +176,82 @@ class IONbtWriter {
             int z = i >> 4 & 15;
 
             @SuppressWarnings("deprecation")
-            int id = Block.BLOCK_STATE_IDS.get(ebs.getData().get(x, y, z));
+            int id = Block.getIdFromBlock(ebs.getBlockByExtId(x, y, z));
 
             int in1 = (id >> 12) & 0xF;
             int in2 = (id >> 16) & 0xF;
 
             if (in1 != 0) {
                 if (add == null) {
-                    add = new NibbleArray();
+                    add = new NibbleArray(new byte[2048], 4);
                 }
-                add.setIndex(i, in1);
+                add.set(x, y, z, in1);
             }
             if (in2 != 0) {
                 if (add2neid == null) {
-                    add2neid = new NibbleArray();
+                    add2neid = new NibbleArray(new byte[2048], 4);
                 }
-                add2neid.setIndex(i, in2);
+                add2neid.set(x, y, z, in2);
             }
 
             abyte[i] = (byte) (id >> 4 & 255);
-            data.setIndex(i, id & 15);
+            data.set(x, y, z, id & 15);
         }
 
         section.setByteArray("Blocks", abyte);
-        section.setByteArray("Data", data.getData());
+        section.setByteArray("Data", data.data);
 
         if (add != null) {
-            section.setByteArray("Add", add.getData());
+            section.setByteArray("Add", add.data);
         }
         if (add2neid != null) {
-            section.setByteArray("Add2", add2neid.getData());
+            section.setByteArray("Add2", add2neid.data);
         }
 
-        section.setByteArray("BlockLight", ebs.getBlockLight().getData());
+        section.setByteArray("BlockLight", ebs.getBlocklightArray().data);
 
-        if (cube.getWorld().provider.hasSkyLight()) {
-            section.setByteArray("SkyLight", ebs.getSkyLight().getData());
+        if (!cube.getWorld().provider.hasNoSky) {
+            section.setByteArray("SkyLight", ebs.getSkylightArray().data);
         }
     }
 
     private static void writeEntities(Cube cube, NBTTagCompound cubeNbt) {// entities
-        cube.getEntityContainer().writeToNbt(cubeNbt, "Entities", entity -> {
-            // make sure this entity is really in the chunk
-            int cubeX = Coords.getCubeXForEntity(entity);
-            int cubeY = Coords.getCubeYForEntity(entity);
-            int cubeZ = Coords.getCubeZForEntity(entity);
-            if (cubeX != cube.getX() || cubeY != cube.getY() || cubeZ != cube.getZ()) {
-                CubicChunks.LOGGER.warn(String.format("Saved entity %s in cube (%d,%d,%d) to cube (%d,%d,%d)! Entity thinks its in (%d,%d,%d)",
-                    entity.getClass().getName(),
-                    cubeX, cubeY, cubeZ,
-                    cube.getX(), cube.getY(), cube.getZ(),
-                    entity.chunkCoordX, entity.chunkCoordY, entity.chunkCoordZ
-                ));
+        cube.hasEntities = false;
+        NBTTagList entityTagList = new NBTTagList();
+        NBTTagCompound entityCompound;
+        for (Entity entity : cube.getEntityContainer())
+        {
+            entityCompound = new NBTTagCompound();
+
+
+            try
+            {
+                if (entity.writeToNBTOptional(entityCompound))
+                {
+                    cube.hasEntities = true;
+                    entityTagList.appendTag(entityCompound);
+
+                    int cubeX = Coords.getCubeXForEntity(entity);
+                    int cubeY = Coords.getCubeYForEntity(entity);
+                    int cubeZ = Coords.getCubeZForEntity(entity);
+                    if (cubeX != cube.getX() || cubeY != cube.getY() || cubeZ != cube.getZ()) {
+                        CubicChunks.LOGGER.warn(String.format("Saved entity %s in cube (%d,%d,%d) to cube (%d,%d,%d)! Entity thinks its in (%d,%d,%d)",
+                            entity.getClass().getName(),
+                            cubeX, cubeY, cubeZ,
+                            cube.getX(), cube.getY(), cube.getZ(),
+                            entity.chunkCoordX, entity.chunkCoordY, entity.chunkCoordZ
+                        ));
+                    }
+                }
             }
-        });
+            catch (Exception e)
+            {
+                FMLLog.log(Level.ERROR, e,
+                    "An Entity type %s has thrown an exception trying to write state. It will not persist. Report this to the mod author",
+                    entity.getClass().getName());
+            }
+        }
+        cubeNbt.setTag("Entities", entityTagList);
     }
 
     private static void writeTileEntities(Cube cube, NBTTagCompound cubeNbt) {// tile entities
@@ -246,8 +272,7 @@ class IONbtWriter {
         cubeNbt.setTag("TileTicks", nbtTicks);
         for (NextTickListEntry scheduledTick : scheduledTicks) {
             NBTTagCompound nbtScheduledTick = new NBTTagCompound();
-            ResourceLocation resourcelocation = Block.REGISTRY.getNameForObject(scheduledTick.getBlock());
-            nbtScheduledTick.setString("i", resourcelocation.toString());
+            nbtScheduledTick.setInteger("i", Block.getIdFromBlock(scheduledTick.func_151351_a()));
             nbtScheduledTick.setInteger("x", scheduledTick.xCoord);
             nbtScheduledTick.setInteger("y", scheduledTick.yCoord);
             nbtScheduledTick.setInteger("z", scheduledTick.zCoord);

@@ -48,9 +48,9 @@ public class VanillaCubicWorldType extends WorldType implements ICubicWorldType 
         return new VanillaCubicWorldType();
     }
 
-    @Override public boolean canBeCreated() {
-        return CubicChunks.DEBUG_ENABLED;
-    }
+//    @Override public boolean canBeCreated() {
+//        return CubicChunks.DEBUG_ENABLED;
+//    }
 
     @Nullable @Override
     public ICubeGenerator createCubeGenerator(World world) {

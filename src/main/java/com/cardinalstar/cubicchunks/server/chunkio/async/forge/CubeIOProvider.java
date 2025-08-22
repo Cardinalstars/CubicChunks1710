@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 public class CubeIOProvider implements AsynchronousExecutor.CallBackProvider<QueuedCube, ICubeIO.PartialData<ICube>, Consumer<Cube>, RuntimeException>
 {
     private final AtomicInteger threadNumber = new AtomicInteger(1);
+
     @Override
     public ICubeIO.PartialData<ICube> callStage1(QueuedCube queuedCube) throws RuntimeException // In 1.12 this is something like run
     {
@@ -55,7 +56,7 @@ public class CubeIOProvider implements AsynchronousExecutor.CallBackProvider<Que
     {
         if (cubeData == null)
         {
-            queuedCube.provider.originalLoadCube(queuedCube.x, queuedCube.y, queuedCube.z);
+            queuedCube.provider.getCube(queuedCube.x, queuedCube.y, queuedCube.z); // TODO ESPECIALLY WATCH THIS
             return;
         }
         queuedCube.loader.loadCubeSyncPart(cubeData);

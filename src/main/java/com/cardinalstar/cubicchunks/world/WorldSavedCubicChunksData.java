@@ -25,6 +25,7 @@
 package com.cardinalstar.cubicchunks.world;
 
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.world.storage.StorageFormatProviderBase;
 import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
@@ -48,7 +49,7 @@ public class WorldSavedCubicChunksData extends WorldSavedData {
             this.maxHeight = maxHeight;
             isCubicChunks = true;
             compatibilityGeneratorType = new ResourceLocation(CubicChunksConfig.compatibilityGeneratorType);
-            storageFormat = StorageFormatProviderBase.defaultStorageFormatProviderName(CubicChunksConfig.storageFormat);
+            storageFormat = StorageFormatProviderBase.DEFAULT;
         }
     }
 
@@ -70,13 +71,12 @@ public class WorldSavedCubicChunksData extends WorldSavedData {
     }
 
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public void writeToNBT(NBTTagCompound compound) {
         compound.setInteger("minHeight", minHeight);
         compound.setInteger("maxHeight", maxHeight);
         compound.setBoolean("isCubicChunks", isCubicChunks);
         compound.setString("compatibilityGeneratorType", compatibilityGeneratorType.toString());
         compound.setString("storageFormat", storageFormat.toString());
-        return compound;
     }
 
 }
