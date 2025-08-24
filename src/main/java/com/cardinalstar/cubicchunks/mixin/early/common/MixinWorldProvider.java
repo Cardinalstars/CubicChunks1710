@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.mixin.early;
+package com.cardinalstar.cubicchunks.mixin.early.common;
 
 import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;

@@ -1,11 +1,8 @@
 {
   "required": true,
   "minVersion": "0.8.5-GTNH",
-  "package": "com.cardinalstar.cubicworlds.mixin.early",
+  "package": "com.cardinalstar.cubicchunks.mixin.early",
   "refmap": "mixins.cubicworlds.refmap.json",
   "target": "@env(DEFAULT)",
-  "compatibilityLevel": "JAVA_8",
-  "mixins": [
-    "com.cardinalstar.cubicchunks.core.mixin.early.MixinAnvilSaveHandler"
-  ]
+  "compatibilityLevel": "JAVA_8"
 }
