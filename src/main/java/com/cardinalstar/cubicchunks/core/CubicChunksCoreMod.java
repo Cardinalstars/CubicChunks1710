@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.cardinalstar.cubicchunks.core.mixin.Mixins;
-import com.gtnewhorizon.gtnhlib.mixin.IMixins;
+import com.cardinalstar.cubicchunks.mixin.Mixins;
 import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
 
+import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import cpw.mods.fml.common.DummyModContainer;
 import cpw.mods.fml.common.ModMetadata;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;

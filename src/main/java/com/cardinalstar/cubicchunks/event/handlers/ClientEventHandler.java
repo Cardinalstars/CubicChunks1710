@@ -77,7 +77,7 @@ public class ClientEventHandler {
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         // no need to check side, this is only registered in client proxy
-        ICubicPlayerList playerList = ((ICubicPlayerList) FMLCommonHandler.instance().getMinecraftServerInstance().getConfigurationManager().playerEntityList);
+        ICubicPlayerList playerList = ((ICubicPlayerList) FMLCommonHandler.instance().getMinecraftServerInstance().getConfigurationManager());
         int prevDist = playerList.getVerticalViewDistance();
         int newDist = CubicChunksConfig.verticalCubeLoadDistance;
         if (prevDist != newDist) {
