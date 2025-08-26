@@ -1,0 +1,50 @@
+You're going to have to Mixin NetHandlerPlayerServer processPlayerBlockPlacement.
+(Might already be done)
+
+Seems like ICPacketTabComplete isn't needed.
+
+=====================================
+ChunkProviderClient
+provideChunk -> provideChunk
+loadChunk -> loadChunk
+
+
+=====================================
+...
+getTileEntityUnsafe -> getTileEntityUnsafe
+createTileEntity -> getTileEntityInChunk
+=====================================
+PlayerManager
+contains -> func_152621_a
+=====================================
+ExtendedBlockStorage
+setBlock -> func_150818_a
+=====================================
+WorldServer
+getMinecraftServer -> func_73046_m
+updateBlocks -> func_147456_g
+=====================================
+EntityTrackerEntry
+updatePlayerEntity -> tryStartWatchingThis
+=====================================
+StructureStart
+chunkPosX -> field_143024_c
+chunkPosZ -> field_143023_d
+
+getChunkPosX -> func_143019_e
+getChunkPosZ -> func_143018_f
+
+readStructureComponentsFromNBT -> func_143020_a
+writeStructureComponentsToNBT -> func_143021_a
+
+=====================================
+EntityLiving
+isNotColliding -> getCanSpawnHere
+
+=====================================
+World
+spawnEntity -> spawnEntityInWorld
+
+=====================================
+chunk
+onTick -> func_150804_b
