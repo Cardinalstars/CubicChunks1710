@@ -22,26 +22,18 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.api;
+package com.cardinalstar.cubicchunks.world.chunkloader;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
-import net.minecraft.world.ChunkCoordIntPair;
 
-import java.util.Map;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import cpw.mods.fml.common.eventhandler.Event;
+import net.minecraftforge.common.ForgeChunkManager;
 
-/**
- * A CubicChunks chunkloading ticket. It's a cubic chunks ticket when the ticket's world is a cubic chunks world.
- * This interface is implemented by {@link net.minecraftforge.common.ForgeChunkManager.Ticket}.
- *
- * Use {@link ICubicWorldServer} methods to force load/unload cubes.
- */
-public interface ICubicTicket {
-    /**
-     * Returns an unmodifiable view of all forced cubes, in the form of map from column position,
-     * to set of cube Y positions in that column. An implementation is allowed to return a copy
-     * instead of a live view.
-     *
-     * @return unmodifiable view of forced cubes grouped by column position
-     */
-    Map<ChunkCoordIntPair, IntSet> getAllForcedChunkCubes();
+import javax.annotation.ParametersAreNonnullByDefault;
+
+@ParametersAreNonnullByDefault
+public class ForceCubeEvent extends Event {
+
+    public ForceCubeEvent(ForgeChunkManager.Ticket ticket, CubePos pos) {
+    }
 }

@@ -22,60 +22,17 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.world.core;
+package com.cardinalstar.cubicchunks.world.chunkloader;
 
-import com.cardinalstar.cubicchunks.api.ICubicTicket;
-import com.cardinalstar.cubicchunks.core.CubicChunksCoreMod;
 import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.util.ITicket;
-import it.unimi.dsi.fastutil.ints.IntSet;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ChunkCoordinates;
-import net.minecraft.world.ChunkCoordIntPair;
-
-import java.util.Map;
-import java.util.Set;
+import cpw.mods.fml.common.eventhandler.Event;
+import net.minecraftforge.common.ForgeChunkManager;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-// this is internal interface, most of it shouldn't be in API
 @ParametersAreNonnullByDefault
-public interface ICubicTicketInternal extends ICubicTicket, ITicket {
+public class UnforceCubeEvent extends Event {
 
-    void addRequestedCube(CubePos pos);
-
-    void removeRequestedCube(CubePos pos);
-
-    // handling of forge forced chunks
-
-    void setForcedChunkCubes(ChunkCoordIntPair location, IntSet yCoords);
-
-    void clearForcedChunkCubes(ChunkCoordIntPair location);
-
-    void setAllForcedChunkCubes(Map<ChunkCoordIntPair, IntSet> cubePosMap);
-
-    // setters and getters for private data, because no ATs for forge classes
-    void setModData(NBTTagCompound modData);
-
-    void setPlayer(String player);
-
-    void setEntityChunkX(int chunkX);
-
-    void setEntityChunkY(int cubeY);
-
-    void setEntityChunkZ(int chunkZ);
-
-    int getEntityChunkX();
-
-    int getEntityChunkY();
-
-    int getEntityChunkZ();
-
-    int getMaxCubeDepth();
-
-    @Override default boolean shouldTick() {
-        return true;
+    public UnforceCubeEvent(ForgeChunkManager.Ticket ticket, CubePos pos) {
     }
-
-    Set<CubePos> requestedCubes();
 }
