@@ -22,26 +22,27 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.api;
+package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
-import net.minecraft.world.ChunkCoordIntPair;
+import cubicchunks.regionlib.lib.provider.SharedCachedRegionProvider;
+import net.minecraft.world.chunk.storage.RegionFileCache;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Map;
+import java.io.IOException;
 
-/**
- * A CubicChunks chunkloading ticket. It's a cubic chunks ticket when the ticket's world is a cubic chunks world.
- * This interface is implemented by {@link net.minecraftforge.common.ForgeChunkManager.Ticket}.
- *
- * Use {@link ICubicWorldServer} methods to force load/unload cubes.
- */
-public interface ICubicTicket {
-    /**
-     * Returns an unmodifiable view of all forced cubes, in the form of map from column position,
-     * to set of cube Y positions in that column. An implementation is allowed to return a copy
-     * instead of a live view.
-     *
-     * @return unmodifiable view of forced cubes grouped by column position
-     */
-    Map<ChunkCoordIntPair, IntSet> getAllForcedChunkCubes();
+import javax.annotation.ParametersAreNonnullByDefault;
+
+// a hook for flush()
+// many mods already assume AnvilSaveHandler is always used, so we assume the same and hope for the best
+@ParametersAreNonnullByDefault
+@Mixin(RegionFileCache.class)
+public class MixinRegionFileCache {
+
+    @Inject(method = "clearRegionFileReferences", at = @At("HEAD"))
+    private static void onClearRefs(CallbackInfo cbi) throws IOException {
+        SharedCachedRegionProvider.clearRegions();
+    }
 }

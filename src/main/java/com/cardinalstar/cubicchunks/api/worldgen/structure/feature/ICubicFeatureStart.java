@@ -22,26 +22,35 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.api;
+package com.cardinalstar.cubicchunks.api.worldgen.structure.feature;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
-import net.minecraft.world.ChunkCoordIntPair;
-
-import java.util.Map;
+import com.cardinalstar.cubicchunks.api.XYZAddressable;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import net.minecraft.world.World;
 
 /**
- * A CubicChunks chunkloading ticket. It's a cubic chunks ticket when the ticket's world is a cubic chunks world.
- * This interface is implemented by {@link net.minecraftforge.common.ForgeChunkManager.Ticket}.
- *
- * Use {@link ICubicWorldServer} methods to force load/unload cubes.
+ * Interface implemented by
+ * {@link net.minecraft.world.gen.structure.StructureStart} class when cubic chunks is installed.
+ * Allows to access CubicChunks-specific behavior of StructureStart
  */
-public interface ICubicTicket {
+public interface ICubicFeatureStart extends XYZAddressable {
+    int getChunkPosY();
+
     /**
-     * Returns an unmodifiable view of all forced cubes, in the form of map from column position,
-     * to set of cube Y positions in that column. An implementation is allowed to return a copy
-     * instead of a live view.
+     * Called to mark this StructureStart as a part of cubic chunks structure,
+     * and provide necessary cubic chunks specific data.
+     * Must be called immediately after constructing the StructureStart.
      *
-     * @return unmodifiable view of forced cubes grouped by column position
+     * @param world world instance for initialization
+     * @param cubeY cube Y coordinate of this structure start
      */
-    Map<ChunkCoordIntPair, IntSet> getAllForcedChunkCubes();
+    void initCubic(World world, int cubeY);
+
+    CubePos getCubePos();
+
+    /**
+     * @return {@code true} when instance has been initialized by initCubic(..) method called
+     *         by one of cubic chunks structure generators.
+     */
+    boolean isCubic();
 }
