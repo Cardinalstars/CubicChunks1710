@@ -111,7 +111,7 @@ public class CubicChunks {
     public void preInit(FMLPreInitializationEvent e) {
         LOGGER = e.getModLog();
 
-        registerVanillaCompatibilityGeneratorProvider();
+        // registerVanillaCompatibilityGeneratorProvider();
         registerAnvil3dStorageFormatProvider();
         FMLCommonHandler.instance().registerCrashCallable(new ICrashCallable() {
             @Override public String getLabel() {
@@ -168,19 +168,19 @@ public class CubicChunks {
         );
     }
 
-    @SubscribeEvent
-    public static void registerVanillaCompatibilityGeneratorProvider()
-    {
-        VanillaCompatibilityGeneratorProviderBase.REGISTRY.register(
-            VanillaCompatibilityGeneratorProviderBase.DEFAULT,
-            new VanillaCompatibilityGeneratorProviderBase() {
-                @Override
-                public VanillaCompatibilityGenerator provideGenerator(IChunkProvider vanillaChunkGenerator, World world) {
-                    return new VanillaCompatibilityGenerator(vanillaChunkGenerator, world);
-                }
-            }.setRegistryName(VanillaCompatibilityGeneratorProviderBase.DEFAULT)
-         .setUnlocalizedName("cubicchunks.gui.worldmenu.cc_default"));
-    }
+//    @SubscribeEvent
+//    public static void registerVanillaCompatibilityGeneratorProvider()
+//    {
+//        VanillaCompatibilityGeneratorProviderBase.REGISTRY.register(
+//            VanillaCompatibilityGeneratorProviderBase.DEFAULT,
+//            new VanillaCompatibilityGeneratorProviderBase() {
+//                @Override
+//                public VanillaCompatibilityGenerator provideGenerator(IChunkProvider vanillaChunkGenerator, World world) {
+//                    return new VanillaCompatibilityGenerator(vanillaChunkGenerator, world);
+//                }
+//            }.setRegistryName(VanillaCompatibilityGeneratorProviderBase.DEFAULT)
+//         .setUnlocalizedName("cubicchunks.gui.worldmenu.cc_default"));
+//    }
 
     @SubscribeEvent
     public static void registerAnvil3dStorageFormatProvider() {

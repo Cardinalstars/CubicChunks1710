@@ -72,13 +72,13 @@ public abstract class MixinChunk_Column {
     private boolean isColumn;
 
 
-    @Shadow @Final public int z;
+    @Shadow @Final public int zPosition;
 
-    @Shadow @Final public int x;
+    @Shadow @Final public int xPosition;
 
-    @Shadow @Final private World world;
+    @Shadow @Final private World worldObj;
 
-    @Shadow public boolean unloadQueued;
+    // @Shadow public boolean unloadQueued;
 
     @Shadow @Final private int[] heightMap;
 
@@ -86,7 +86,7 @@ public abstract class MixinChunk_Column {
         if (cachedCube != null && cachedCube.getY() == cubeY) {
             return cachedCube;
         }
-        return getCubicWorld().getCubeCache().getLoadedCube(x, cubeY, z);
+        return getCubicWorld().getCubeCache().getLoadedCube(xPosition, cubeY, zPosition);
     }
 
 
@@ -94,7 +94,7 @@ public abstract class MixinChunk_Column {
         if (cachedCube != null && cachedCube.getY() == cubeY) {
             return cachedCube;
         }
-        return getCubicWorld().getCubeCache().getCube(x, cubeY, z);
+        return getCubicWorld().getCubeCache().getCube(xPosition, cubeY, zPosition);
     }
 
 
@@ -137,7 +137,7 @@ public abstract class MixinChunk_Column {
 
     @Unique @SuppressWarnings({"unchecked", "AddedMixinMembersNamePattern"})
     public <T extends World & ICubicWorldInternal> T getCubicWorld() {
-        return (T) this.world;
+        return (T) this.worldObj;
     }
 
     public boolean chunk$shouldTick() {
@@ -168,11 +168,11 @@ public abstract class MixinChunk_Column {
     }
 
     @Intrinsic public int chunk$getX() {
-        return x;
+        return xPosition;
     }
 
     @Intrinsic public int chunk$getZ() {
-        return z;
+        return zPosition;
     }
 
     public int chunk$getHeightValue(int localX, int blockY, int localZ) {
