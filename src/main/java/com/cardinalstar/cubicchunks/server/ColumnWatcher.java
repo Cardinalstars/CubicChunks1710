@@ -291,4 +291,9 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
     @Override public void setBucketEntryData(long[] data) {
         bucketDataEntry = data;
     }
+
+    public List<EntityPlayerMP> getWatchingPlayers()
+    {
+        return playersWatchingChunk;
+    }
 }

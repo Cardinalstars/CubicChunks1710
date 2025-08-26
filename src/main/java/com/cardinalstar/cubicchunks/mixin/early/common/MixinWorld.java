@@ -50,6 +50,7 @@ import net.minecraft.world.WorldProvider;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.gen.structure.StructureBoundingBox;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.WorldInfo;
 import org.spongepowered.asm.mixin.Final;
@@ -118,7 +119,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Shadow public abstract int getPrecipitationHeight(int blockX, int blockY);
 
 
-    // @Shadow public abstract boolean isAreaLoaded(StructureBoundingBox box);
+     @Shadow public abstract boolean isAreaLoaded(StructureBoundingBox box);
 
     @Shadow public abstract boolean canBlockFreeze(int x, int y, int z, boolean byWater);
 
@@ -144,7 +145,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
      * As World#spawnEntity method is not getting overridden in CraftBukkit WorldServer class,
      * shadowing spawnEntity in WorldServer will break Bukkit compatibility.
      */
-    @Shadow public abstract boolean spawnEntity(Entity entityIn);
+    @Shadow public abstract boolean spawnEntityInWorld(Entity entityIn);
 
     protected void initCubicWorld(IntRange heightRange, IntRange generationRange) {
         ((ICubicWorldSettings) worldInfo).setCubic(true);

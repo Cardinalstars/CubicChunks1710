@@ -176,8 +176,9 @@ public class CubicChunkManager {
         Map<ChunkCoordIntPair, IntSet> coordsMap = new HashMap<>();
 
         NBTTagList chunkMap = cubicNBT.getTagList("chunkMap", Constants.NBT.TAG_COMPOUND);
-        for (NBTBase entryTagBase : chunkMap) {
-            NBTTagCompound entry = (NBTTagCompound) entryTagBase;
+        for (int i = 0; i < chunkMap.tagCount(); i++)
+        {
+            NBTTagCompound entry = chunkMap.getCompoundTagAt(i);
             int x = entry.getInteger("x");
             int z = entry.getInteger("z");
             IntSet cubes = new IntArraySet(entry.getIntArray("cubes"));

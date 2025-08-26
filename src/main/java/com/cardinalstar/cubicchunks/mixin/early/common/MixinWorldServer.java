@@ -115,7 +115,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     @Shadow @Mutable @Final private Set<NextTickListEntry> pendingTickListEntriesHashSet;
     @Shadow @Mutable @Final private List<NextTickListEntry> pendingTickListEntriesThisTick;
 
-    @Shadow public abstract PlayerManager getThePlayerManager();
+    @Shadow public abstract PlayerManager getPlayerManager();
 
     @Shadow protected abstract boolean canAddEntity(Entity entityIn);
 
@@ -123,7 +123,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         super.initCubicWorld(heightRange, generationRange);
         this.isCubicWorld = true;
         ISpawnerAnimals spawner = new CubeSpawnerAnimals();
-        ISpawnerAnimals.Handler spawnHandler = cast(entitySpawner);
+        ISpawnerAnimals.Handler spawnHandler = cast(animalSpawner);
         spawnHandler.setEntitySpawner(spawner);
 
         this.chunkProvider = new CubeProviderServer((WorldServer) (Object) this,
@@ -362,7 +362,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
                     skeletonHorse.setGrowingAge(0);
                     skeletonHorse.setPosition((double) strikePos.getX(), (double) strikePos.getY(), (double) strikePos.getZ());
                     if (this.canAddEntity(skeletonHorse)) {
-                        this.spawnEntity(skeletonHorse);
+                        this.spawnEntityInWorld(skeletonHorse);
                     }
                     this.addWeatherEffect(new EntityLightningBolt((World) (Object) this,
                         (double) strikePos.getX(), (double) strikePos.getY(), (double) strikePos.getZ(), true));
