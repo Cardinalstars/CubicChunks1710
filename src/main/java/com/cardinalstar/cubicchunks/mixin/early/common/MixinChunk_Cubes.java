@@ -103,14 +103,13 @@ import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
 public abstract class MixinChunk_Cubes {
 
     @Shadow @Final private ExtendedBlockStorage[] storageArrays;
-    @Shadow @Final public static ExtendedBlockStorage NULL_BLOCK_STORAGE;
 
     @Shadow private boolean hasEntities;
     @Shadow @Final public int xPosition;
     @Shadow @Final public int zPosition;
     @Shadow @Final private List<Entity>[] entityLists;
 
-    @Shadow @Final @Mutable public Map<net.minecraft.world.ChunkPosition, net.minecraft.tileentity.TileEntity> tileEntities;
+    @Shadow @Final @Mutable public Map<net.minecraft.world.ChunkPosition, net.minecraft.tileentity.TileEntity> chunkTileEntityMap;
 
     @Shadow @Final private int[] heightMap;
     @Shadow @Final private World worldObj;
@@ -216,7 +215,7 @@ public abstract class MixinChunk_Cubes {
         }
         this.stagingHeightMap = new StagingHeightMap();
         // instead of redirecting access to this map, just make the map do the work
-        this.tileEntities = new ColumnTileEntityMap((IColumn) this);
+        this.chunkTileEntityMap = new ColumnTileEntityMap((IColumn) this);
 
         // this.chunkSections = null;
         // this.skylightUpdateMap = null;
@@ -974,7 +973,7 @@ public abstract class MixinChunk_Cubes {
     // ==============================================
 
     // TODO: check if we are out of time earlier?
-    @Inject(method = "onTick", at = @At(value = "RETURN"))
+    @Inject(method = "func_150804_b", at = @At(value = "RETURN"))
     private void onTick_CubicChunks_TickCubes(boolean tryToTickFaster, CallbackInfo cbi) {
         if (!isColumn) {
             return;
@@ -1008,7 +1007,7 @@ public abstract class MixinChunk_Cubes {
         for (int i = startY; i <= endY; i += Cube.SIZE) {
             ExtendedBlockStorage extendedblockstorage = getEBS_CubicChunks(blockToCube(i));
 
-            if (extendedblockstorage != NULL_BLOCK_STORAGE && !extendedblockstorage.isEmpty()) {
+            if (extendedblockstorage != null && !extendedblockstorage.isEmpty()) {
                 return false;
             }
         }

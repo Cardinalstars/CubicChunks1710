@@ -25,6 +25,7 @@
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
 
+import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IntRange;
 import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
@@ -85,8 +86,8 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     // these have to be here because of mixin limitation, they are used by MixinWorldServer
     @Shadow public abstract ISaveHandler getSaveHandler();
     // TODO FIGURE OUT WHERE THESE GO
-//    @Shadow public abstract boolean isAreaLoaded(BlockPos blockpos1, BlockPos blockpos2);
-//    @Shadow public abstract boolean isAreaLoaded(BlockPos center, int radius);
+    @Shadow public abstract boolean checkChunksExist(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
+    @Shadow public abstract boolean doChunksNearChunkExist(int x, int y, int z, int radius);
 
     @Shadow protected IChunkProvider chunkProvider;
     @Shadow @Final @Mutable public WorldProvider provider;
@@ -118,13 +119,14 @@ public abstract class MixinWorld implements ICubicWorldInternal {
 
     @Shadow public abstract int getPrecipitationHeight(int blockX, int blockY);
 
-
-     @Shadow public abstract boolean isAreaLoaded(StructureBoundingBox box);
+    @Shadow protected abstract void setActivePlayerChunksAndCheckLight();
+    @Shadow public abstract boolean canLightningStrikeAt(int x, int y, int z);
 
     @Shadow public abstract boolean canBlockFreeze(int x, int y, int z, boolean byWater);
 
+    @Shadow public abstract boolean setBlock(int x, int y, int z, Block blockIn);
     @Shadow public abstract boolean setBlock(int x, int y, int z, Block blockIn, int metaIn, int flags);
-
+    @Shadow public abstract boolean isBlockFreezableNaturally(int x, int y, int z);
     // canSnowAt
     @Shadow public abstract boolean func_147478_e(int x, int y, int z, boolean checkLight);
 
@@ -310,9 +312,19 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         if (this.isCubicWorld) {
             ICube cube = ((ICubeProviderInternal) this.chunkProvider)
                 .getCube(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z));
+            if (cube == null)
+            {
+                CubicChunks.LOGGER.info("NULL cube found at {}, {}, {}, returning Blocks.air", x, y, z);
+                return Blocks.air;
+            }
             return cube.getBlock(x, y, z);
         } else {
             Chunk chunk = this.getChunkFromBlockCoords(x, z);
+            if (chunk == null)
+            {
+                CubicChunks.LOGGER.info("NULL chunk found at {}, {}, {}, returning Blocks.air", x, y, z);
+                return Blocks.air;
+            }
             return chunk.getBlock(x, y, z);
         }
     }

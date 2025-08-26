@@ -11,13 +11,24 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinAnvilSaveHandler")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_WORLD_PROVIDER(new MixinBuilder("Implementing ICubicWorldProvider")
+    MIXIN_WORLD_PROVIDER(new MixinBuilder("Implementing ICubicWorldProvider.")
         .addCommonMixins("common.MixinWorldProvider")
         .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)
-        ),
-    MIXIN_WORLD(new MixinBuilder("Implementing ICubicWorld")
+        .setApplyIf(() -> true)),
+    MIXIN_WORLD(new MixinBuilder("Implementing ICubicWorld.")
         .addCommonMixins("common.MixinWorld")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+    MIXIN_IGUI_VIDEO_SETTINGS(new MixinBuilder("Allows access to the getOptionsRowList field.")
+        .addClientMixins("client.IGuiVideoSettings")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+    MIXIN_IGUI_OPTIONS_ROW_LIST(new MixinBuilder("Allows access to the field_148184_k (getOptions) field.")
+        .addClientMixins("client.IGuiOptionsRowList")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+    MIXIN_IGUI_SCREEN(new MixinBuilder("Allows access to the buttonList field.")
+        .addClientMixins("client.IGuiScreen")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true));
 

@@ -22,58 +22,28 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.world.core;
+package com.cardinalstar.cubicchunks.mixin.early.server;
 
-import com.cardinalstar.cubicchunks.api.ICubicTicket;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.util.ITicket;
-import it.unimi.dsi.fastutil.ints.IntSet;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.ChunkCoordIntPair;
-
-import java.util.Map;
-import java.util.Set;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import net.minecraft.server.dedicated.DedicatedServer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.Constant;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-// this is internal interface, most of it shouldn't be in API
+/**
+ * Fix height limits in {@code DedicatedServer}
+ */
 @ParametersAreNonnullByDefault
-public interface ICubicTicketInternal extends ICubicTicket, ITicket {
+@Mixin(DedicatedServer.class)
+public class MixinDedicatedServer_HeightLimits {
 
-    void addRequestedCube(CubePos pos);
-
-    void removeRequestedCube(CubePos pos);
-
-    // handling of forge forced chunks
-
-    void setForcedChunkCubes(ChunkCoordIntPair location, IntSet yCoords);
-
-    void clearForcedChunkCubes(ChunkCoordIntPair location);
-
-    void setAllForcedChunkCubes(Map<ChunkCoordIntPair, IntSet> cubePosMap);
-
-    // setters and getters for private data, because no ATs for forge classes
-    void setModData(NBTTagCompound modData);
-
-    void setPlayer(String player);
-
-    void setEntityChunkX(int chunkX);
-
-    void setEntityChunkY(int cubeY);
-
-    void setEntityChunkZ(int chunkZ);
-
-    int getEntityChunkX();
-
-    int getEntityChunkY();
-
-    int getEntityChunkZ();
-
-    int getMaxCubeDepth();
-
-    @Override default boolean shouldTick() {
-        return true;
+    /**
+     * Replace the default build height (256).
+     */
+    @ModifyConstant(method = "startServer", constant = @Constant(intValue = 256), require = 2)
+    private int getDefaultBuildHeight(int oldValue) {
+        return CubicChunks.MAX_SUPPORTED_BLOCK_Y + 1;
     }
-
-    Set<CubePos> requestedCubes();
 }

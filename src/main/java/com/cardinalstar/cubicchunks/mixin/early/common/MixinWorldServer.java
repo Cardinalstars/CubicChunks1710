@@ -58,11 +58,13 @@ import net.minecraft.entity.effect.EntityLightningBolt;
 import net.minecraft.init.Blocks;
 import net.minecraft.server.management.PlayerManager;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.SpawnerAnimals;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.common.ForgeChunkManager;
@@ -107,8 +109,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     private SpawnCubes spawnArea;
     private boolean runningCompatibilityGenerator;
     // private VanillaNetworkHandler vanillaNetworkHandler;
-
-    @Shadow protected abstract void playerCheckLight();
 
     @Shadow public abstract boolean addWeatherEffect(Entity entityIn);
 
@@ -265,18 +265,17 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
      * @param cbi callback info
      * @author Barteks2x
      */
-    @Inject(method = "updateBlocks", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "func_147456_g", at = @At("HEAD"), cancellable = true)
     private void updateBlocksCubicChunks(CallbackInfo cbi) {
         if (!isCubicWorld()) {
             return;
         }
         cbi.cancel();
-        this.playerCheckLight();
+        this.setActivePlayerChunksAndCheckLight();
 
-        int tickSpeed = this.getGameRules().getInt("randomTickSpeed");
-        boolean raining = this.isRaining();
-        boolean thundering = this.isThundering();
-        this.theProfiler.startSection("pollingChunks");
+          boolean raining = this.isRaining();
+          boolean thundering = this.isThundering();
+          this.theProfiler.startSection("pollingChunks");
 
         // CubicChunks - iterate over PlayerCubeMap.TickableChunkContainer instead of Chunks, getTickableChunks already includes forced chunks
         CubicPlayerManager.TickableChunkContainer chunks = ((CubicPlayerManager) this.thePlayerManager).getTickableChunks();
@@ -285,24 +284,23 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         }
         this.theProfiler.endStartSection("pollingCubes");
 
-        if (tickSpeed > 0) {
-            long worldTime = worldInfo.getWorldTotalTime();
-            // CubicChunks - iterate over cubes instead of storage array from Chunk
-            for (ICube cube : chunks.forcedCubes()) {
-                tickCube(tickSpeed, cube, worldTime);
+
+        long worldTime = worldInfo.getWorldTotalTime();
+        // CubicChunks - iterate over cubes instead of storage array from Chunk
+        for (ICube cube : chunks.forcedCubes()) {
+            tickCube(cube, worldTime);
+        }
+        for (ICube cube : chunks.playerTickableCubes()) {
+            if (cube == null) { // this is the internal array from the arraylist, anything beyond the size is null
+                break;
             }
-            for (ICube cube : chunks.playerTickableCubes()) {
-                if (cube == null) { // this is the internal array from the arraylist, anything beyond the size is null
-                    break;
-                }
-                tickCube(tickSpeed, cube, worldTime);
-            }
+            tickCube(cube, worldTime);
         }
 
         this.theProfiler.endSection();
     }
 
-    private void tickCube(int tickSpeed, ICube cube, long worldTime) {
+    private void tickCube(ICube cube, long worldTime) {
         if (!((Cube) cube).checkAndUpdateTick(worldTime)) {
             return;
         }
@@ -311,8 +309,8 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
         this.theProfiler.startSection("tickBlocks");
         ExtendedBlockStorage ebs = cube.getStorage();
-        if (ebs != null && ebs.needsRandomTick()) {
-            for (int i = 0; i < tickSpeed; ++i) {
+        if (ebs != null && ebs.getNeedsRandomTick()) {
+            for (int i = 0; i < 3; ++i) {
                 tickNextBlock(chunkBlockX, chunkBlockZ, ebs);
             }
         }
@@ -325,13 +323,11 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         int localX = rand & 15;
         int localZ = rand >> 8 & 15;
         int localY = rand >> 16 & 15;
-        IBlockState state = ebs.get(localX, localY, localZ);
-        Block block = state.getBlock();
+        Block block = ebs.getBlockByExtId(localX, localY, localZ);
         this.theProfiler.startSection("randomTick");
 
         if (block.getTickRandomly()) {
-            block.randomTick((World) (Object) this,
-                new BlockPos(localX + chunkBlockX, localY + ebs.getYLocation(), localZ + chunkBlockZ), state, this.rand);
+            block.updateTick((World) (Object) this, localX + chunkBlockX, localY + ebs.getYLocation(), localZ + chunkBlockZ, this.rand);
         }
 
         this.theProfiler.endSection();
@@ -346,85 +342,83 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         chunk.func_150804_b(false);
         this.theProfiler.endStartSection("thunder");
 
-        if (this.provider.canDoLightning(chunk) && raining && thundering && this.rand.nextInt(100000) == 0) {
+        int i1;
+        int x;
+        int z;
+        int y;
+
+        if (provider.canDoLightning(chunk) && this.rand.nextInt(100000) == 0 && this.isRaining() && this.isThundering())
+        {
             this.updateLCG = this.updateLCG * 3 + 1013904223;
-            int rand = this.updateLCG >> 2;
-            BlockPos strikePos =
-                this.adjustPosToNearbyEntityCubicChunks(new BlockPos(chunkBlockX + (rand & 15), 0, chunkBlockZ + (rand >> 8 & 15)));
+            i1 = this.updateLCG >> 2;
+            x = chunkBlockX + (i1 & 15);
+            z = chunkBlockZ + (i1 >> 8 & 15);
+            y = this.getPrecipitationHeight(x, z);
 
-            if (strikePos != null && this.isRainingAt(strikePos)) {
-                DifficultyInstance difficultyinstance = this.getDifficultyForLocation(strikePos);
-
-                if (this.getGameRules().getBoolean("doMobSpawning")
-                    && this.rand.nextDouble() < (double) difficultyinstance.getAdditionalDifficulty() * 0.01D) {
-                    EntitySkeletonHorse skeletonHorse = new EntitySkeletonHorse((World) (Object) this);
-                    skeletonHorse.setTrap(true);
-                    skeletonHorse.setGrowingAge(0);
-                    skeletonHorse.setPosition((double) strikePos.getX(), (double) strikePos.getY(), (double) strikePos.getZ());
-                    if (this.canAddEntity(skeletonHorse)) {
-                        this.spawnEntityInWorld(skeletonHorse);
-                    }
-                    this.addWeatherEffect(new EntityLightningBolt((World) (Object) this,
-                        (double) strikePos.getX(), (double) strikePos.getY(), (double) strikePos.getZ(), true));
-                } else {
-                    this.addWeatherEffect(new EntityLightningBolt((World) (Object) this,
-                        (double) strikePos.getX(), (double) strikePos.getY(), (double) strikePos.getZ(), false));
-                }
+            if (this.canLightningStrikeAt(x, y, z))
+            {
+                this.addWeatherEffect(new EntityLightningBolt((World) (Object) this, x, y, z));
             }
         }
 
         this.theProfiler.endStartSection("iceandsnow");
 
-        if (this.provider.canDoRainSnowIce(chunk) && this.rand.nextInt(16) == 0) {
+        if (provider.canDoRainSnowIce(chunk) && this.rand.nextInt(16) == 0)
+        {
             this.updateLCG = this.updateLCG * 3 + 1013904223;
-            int j2 = this.updateLCG >> 2;
-            BlockPos block = this.getPrecipitationHeight(new BlockPos(chunkBlockX + (j2 & 15), 0, chunkBlockZ + (j2 >> 8 & 15)));
-            BlockPos blockBelow = block.down();
+            i1 = this.updateLCG >> 2;
+            x = i1 & 15;
+            z = i1 >> 8 & 15;
+            y = this.getPrecipitationHeight(x + chunkBlockX, z + chunkBlockZ);
 
-            if (this.isAreaLoaded(blockBelow, 1)) { // Forge: check area to avoid loading neighbors in unloaded chunks
-                if (this.canBlockFreezeNoWater(blockBelow)) {
-                    this.setBlockState(blockBelow, Blocks.ICE.getDefaultState());
+            if (this.isBlockFreezableNaturally(x + chunkBlockX, y - 1, z + chunkBlockZ))
+            {
+                this.setBlock(x + chunkBlockX, y - 1, z + chunkBlockZ, Blocks.ice);
+            }
+
+            if (this.isRaining() && this.func_147478_e(x + chunkBlockX, y, z + chunkBlockZ, true))
+            {
+                this.setBlock(x + chunkBlockX, y, z + chunkBlockZ, Blocks.snow_layer);
+            }
+
+            if (this.isRaining())
+            {
+                BiomeGenBase biomegenbase = this.getBiomeGenForCoords(x + chunkBlockX, z + chunkBlockZ);
+
+                if (biomegenbase.canSpawnLightningBolt())
+                {
+                    this.getBlock(x + chunkBlockX, y - 1, z + chunkBlockZ).fillWithRain((World)(Object) this, x + chunkBlockX, y - 1, z + chunkBlockZ);
                 }
-            }
-
-            // CubicChunks - isBlockLoaded check
-            if (raining && isBlockLoaded(block) && this.canSnowAt(block, true)) {
-                this.setBlockState(block, Blocks.SNOW_LAYER.getDefaultState());
-            }
-
-            // CubicChunks - isBlockLoaded check
-            if (raining && isBlockLoaded(blockBelow) && this.getBiome(blockBelow).canRain()) {
-                this.getBlockState(blockBelow).getBlock().fillWithRain((World) (Object) this, blockBelow);
             }
         }
         this.theProfiler.endSection();
     }
 
-    private BlockPos adjustPosToNearbyEntityCubicChunks(BlockPos strikeTarget) {
-        Chunk column = this.getCubeCache().getColumn(Coords.blockToCube(strikeTarget.getX()), Coords.blockToCube(strikeTarget.getZ()),
-            ICubeProviderServer.Requirement.GET_CACHED);
-        strikeTarget = column.getPrecipitationHeight(strikeTarget);
-        Cube cube = this.getCubeCache().getLoadedCube(CubePos.fromBlockCoords(strikeTarget));
-        if (cube == null) {
-            return null;
-        }
-        AxisAlignedBB aabb = (AxisAlignedBB.getBoundingBox(strikeTarget.getX(), strikeTarget.getY(), strikeTarget.getZ(), strikeTarget.getX() + 1, strikeTarget.getY() + 1, strikeTarget.getZ() + 1)).expand(3.0D);
-
-        Iterable<EntityLivingBase> setOfLiving = cube.getEntityContainer().getEntitySet().getByClass(EntityLivingBase.class);
-        for (EntityLivingBase entity : setOfLiving) {
-            if (!entity.isEntityAlive()) {
-                continue;
-            }
-            double entityPosX = entity.posX;
-            double entityPosY = entity.posY;
-            double entityPosZ = entity.posZ;
-            if (entityPosY < column.getHeightValue(Coords.blockToLocal(entityPosX), Coords.blockToLocal(entityPosZ))) {
-                continue;
-            }
-            if (entity.getEntityBoundingBox().intersects(aabb)) {
-                return entityPos;
-            }
-        }
-        return strikeTarget;
-    }
+//    private BlockPos adjustPosToNearbyEntityCubicChunks(BlockPos strikeTarget) {
+//        Chunk column = this.getCubeCache().getColumn(Coords.blockToCube(strikeTarget.getX()), Coords.blockToCube(strikeTarget.getZ()),
+//            ICubeProviderServer.Requirement.GET_CACHED);
+//        int strikeHeight = column.getPrecipitationHeight(strikeTarget.getZ(), strikeTarget.getZ());
+//        strikeTarget = new BlockPos(strikeTarget.getZ(), strikeHeight, strikeTarget.getZ());
+//        Cube cube = this.getCubeCache().getLoadedCube(CubePos.fromBlockCoords(strikeTarget));
+//        if (cube == null) {
+//            return null;
+//        }
+//        AxisAlignedBB aabb = (AxisAlignedBB.getBoundingBox(strikeTarget.getX(), strikeTarget.getY(), strikeTarget.getZ(), strikeTarget.getX() + 1, strikeTarget.getY() + 1, strikeTarget.getZ() + 1)).expand(3.0D);
+//
+//        for (Entity entity : cube.getEntityContainer()) {
+//            if (!entity.isEntityAlive() || !(entity instanceof EntityLivingBase)) {
+//                continue;
+//            }
+//            int entityPosX = MathHelper.floor_double(entity.posX);
+//            int entityPosY = MathHelper.floor_double(entity.posY + 0.5D);
+//            int entityPosZ = MathHelper.floor_double(entity.posZ);
+//            if (entityPosY < column.getHeightValue(Coords.blockToLocal(entityPosX), Coords.blockToLocal(entityPosZ))) {
+//                continue;
+//            }
+//            if (entity.getBoundingBox().intersectsWith(aabb)) {
+//                return new BlockPos(entityPosX, entityPosY, entityPosZ);
+//            }
+//        }
+//        return strikeTarget;
+//    }
 }

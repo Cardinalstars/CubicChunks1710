@@ -27,6 +27,7 @@ package com.cardinalstar.cubicchunks.world;
 import com.cardinalstar.cubicchunks.server.CubeWatcher;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.MathUtil;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import cpw.mods.fml.common.eventhandler.Event;
@@ -175,23 +176,18 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                     float entityX = (float) entityBlockX + 0.5F;
                     float entityZ = (float) entityBlockZ + 0.5F;
 
-                    if (world.isAnyPlayerWithinRangeAt(entityX, entityY, entityZ, 24.0D) ||
-                        spawnPoint.distanceSq(entityX, entityY, entityZ) < 576.0D) {
+                    if (world.getClosestPlayer(entityX, entityY, entityZ, 24.0D) != null ||
+                        MathUtil.distanceSq(entityX, entityY, entityZ, spawnPoint) < 576.0D) {
                         continue;
                     }
                     if (biomeMobs == null) {
-                        biomeMobs = world.getSpawnListEntryForTypeAt(mobType, blockPos);
+                        biomeMobs = world.spawnRandomCreature(mobType, posX, posY, posZ);
 
                         if (biomeMobs == null) {
                             break;
                         }
                     }
 
-                    if (!world.canCreatureTypeSpawnHere(mobType, biomeMobs, blockPos) ||
-                        !SpawnerAnimals.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry
-                            .getPlacementForEntity(biomeMobs.entityClass), world, blockPos)) {
-                        continue;
-                    }
                     EntityLiving toSpawn;
 
                     try {
@@ -206,12 +202,12 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
 
                     toSpawn.setLocationAndAngles(entityX, entityY, entityZ, rand.nextFloat() * 360.0F, 0.0F);
 
-                    Event.Result canSpawn = ForgeEventFactory.canEntitySpawn(toSpawn, world, entityX, entityY, entityZ, null);
+                    Event.Result canSpawn = ForgeEventFactory.canEntitySpawn(toSpawn, world, entityX, entityY, entityZ);
                     if (canSpawn == Event.Result.ALLOW ||
                         (canSpawn == Event.Result.DEFAULT && toSpawn.getCanSpawnHere() &&
                             toSpawn.getCanSpawnHere())) {
-                        if (!ForgeEventFactory.doSpecialSpawn(toSpawn, world, entityX, entityY, entityZ, null)) {
-                            entityData = toSpawn.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(toSpawn)), entityData);
+                        if (!ForgeEventFactory.doSpecialSpawn(toSpawn, world, entityX, entityY, entityZ)) {
+                            entityData = toSpawn.onSpawnWithEgg(entityData);
                         }
 
                         if (toSpawn.getCanSpawnHere()) {
