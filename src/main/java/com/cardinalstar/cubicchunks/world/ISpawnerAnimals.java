@@ -22,26 +22,24 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.api;
+package com.cardinalstar.cubicchunks.world;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
-import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.WorldServer;
 
-import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
- * A CubicChunks chunkloading ticket. It's a cubic chunks ticket when the ticket's world is a cubic chunks world.
- * This interface is implemented by {@link net.minecraftforge.common.ForgeChunkManager.Ticket}.
- *
- * Use {@link ICubicWorldServer} methods to force load/unload cubes.
+ * An interface for custom entity spawner. Because vanilla entity spawner is final, an instance of class implementing this interface is added as a
+ * field to WorldEntitySpawner, and can optionally replace the whole vanilla behavior.
  */
-public interface ICubicTicket {
+public interface ISpawnerAnimals {
+    int findChunksForSpawning(WorldServer world, boolean hostileEnable, boolean peacefulEnable, boolean spawnOnSetTickRate);
+
     /**
-     * Returns an unmodifiable view of all forced cubes, in the form of map from column position,
-     * to set of cube Y positions in that column. An implementation is allowed to return a copy
-     * instead of a live view.
-     *
-     * @return unmodifiable view of forced cubes grouped by column position
+     * This interface will be injected using Mixin on top of vanilla WorldEntitySpawner
      */
-    Map<ChunkCoordIntPair, IntSet> getAllForcedChunkCubes();
+    interface Handler {
+        void setEntitySpawner(@Nullable ISpawnerAnimals spawner);
+        @Nullable ISpawnerAnimals getEntitySpawner();
+    }
 }

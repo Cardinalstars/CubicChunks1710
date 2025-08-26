@@ -22,26 +22,24 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.cardinalstar.cubicchunks.api;
+package com.cardinalstar.cubicchunks.mixin.early.common.forge;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
-import net.minecraft.world.ChunkCoordIntPair;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
+import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeChunkManager;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
 import java.util.Map;
 
-/**
- * A CubicChunks chunkloading ticket. It's a cubic chunks ticket when the ticket's world is a cubic chunks world.
- * This interface is implemented by {@link net.minecraftforge.common.ForgeChunkManager.Ticket}.
- *
- * Use {@link ICubicWorldServer} methods to force load/unload cubes.
- */
-public interface ICubicTicket {
-    /**
-     * Returns an unmodifiable view of all forced cubes, in the form of map from column position,
-     * to set of cube Y positions in that column. An implementation is allowed to return a copy
-     * instead of a live view.
-     *
-     * @return unmodifiable view of forced cubes grouped by column position
-     */
-    Map<ChunkCoordIntPair, IntSet> getAllForcedChunkCubes();
+@Mixin(value = ForgeChunkManager.class, remap = false)
+public interface IForgeChunkManager {
+    @Accessor static Map<World, Multimap<String, ForgeChunkManager.Ticket>> getTickets() {
+        throw new Error("IForgeChunkManager failed to apply");
+    }
+
+    @Accessor static SetMultimap<String, ForgeChunkManager.Ticket> getPlayerTickets() {
+        throw new Error("IForgeChunkManager failed to apply");
+    }
 }
