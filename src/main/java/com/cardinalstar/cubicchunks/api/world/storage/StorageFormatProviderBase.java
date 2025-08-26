@@ -33,7 +33,7 @@ import java.nio.file.Path;
 
 public abstract class StorageFormatProviderBase implements ICubicChunksRegistryEntry<StorageFormatProviderBase> {
     public static final ResourceLocation DEFAULT = new ResourceLocation("cubicchunks", "anvil3d");
-    public static CubicChunksRegistry<StorageFormatProviderBase> REGISTRY;
+    public static CubicChunksRegistry<StorageFormatProviderBase> REGISTRY = new CubicChunksRegistry<>();;
 
 
     public ResourceLocation registryName;

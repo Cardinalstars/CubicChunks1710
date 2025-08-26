@@ -24,6 +24,8 @@
  */
 package com.cardinalstar.cubicchunks.util;
 
+import net.minecraft.entity.Entity;
+import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.util.MathHelper;
 
 import static java.lang.Math.exp;
@@ -168,5 +170,13 @@ public class MathUtil {
      */
     public static int to8bitComponent(float value) {
         return MathHelper.clamp_int(Math.round(value * 255), 0, 255);
+    }
+
+    public static double distanceSq(double toX, double toY, double toZ, ChunkCoordinates coords)
+    {
+        double d0 = coords.posX - toX;
+        double d1 = coords.posY - toY;
+        double d2 = coords.posZ - toZ;
+        return d0 * d0 + d1 * d1 + d2 * d2;
     }
 }
