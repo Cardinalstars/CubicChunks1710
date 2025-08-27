@@ -41,7 +41,7 @@ import java.io.File;
 public abstract class MixinAnvilSaveHandler {
 
     @Redirect(method = "getChunkLoader",
-                at = @At(value = "NEW", target = "net/minecraft/world/chunk/storage/AnvilChunkLoader"),
+                at = @At(value = "NEW", target = "(Ljava/io/File;)Lnet/minecraft/world/chunk/storage/AnvilChunkLoader;"),
                 remap = false)
     private AnvilChunkLoader getChunkLoader(File file, WorldProvider provider) {
         ICubicWorld world = ((ICubicWorld) ((ICubicWorldProvider) provider).getWorld());
