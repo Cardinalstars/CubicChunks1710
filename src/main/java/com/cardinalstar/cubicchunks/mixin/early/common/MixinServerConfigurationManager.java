@@ -25,15 +25,27 @@
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
 import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
 import com.cardinalstar.cubicchunks.server.ICubicPlayerList;
+import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.ServerConfigurationManager;
+import net.minecraft.util.MathHelper;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -67,4 +79,38 @@ public abstract class MixinServerConfigurationManager implements ICubicPlayerLis
             }
         }
     }
+
+//    @Redirect(method = "playerLoggedOut",
+//        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;setChunkModifiedV", ordinal = 0),
+//        require = 1)
+//    private void setChunkModifiedOnPlayerLoggedOut(Chunk chunkIn, EntityPlayerMP playerIn) {
+//        ICubicWorldInternal world = (ICubicWorldInternal) playerIn.getServerForPlayer();
+//        if (world.isCubicWorld()) {
+//            world.getCubeFromCubeCoords(playerIn.chunkCoordX, playerIn.chunkCoordY, playerIn.chunkCoordZ).markDirty();
+//        } else {
+//            ((World) world).getChunkFromBlockCoords(playerIn.chunkCoordX, playerIn.chunkCoordZ).setChunkModified();
+//        }
+//    }
+
+    @Inject(method = "respawnPlayer", at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/world/gen/ChunkProviderServer;loadChunk(II)Lnet/minecraft/world/chunk/Chunk;"))
+    private void createPlayerChunk(EntityPlayerMP playerIn, int dimension, boolean conqueredEnd, CallbackInfoReturnable<EntityPlayerMP> cir) {
+        if (!((ICubicWorld) playerIn.worldObj).isCubicWorld()) {
+            return;
+        }
+        for (int dCubeY = -8; dCubeY <= 8; dCubeY++) {
+            ((ICubicWorld) playerIn.worldObj).getCubeFromBlockCoords(playerIn.chunkCoordX, MathHelper.floor_double(playerIn.chunkCoordY + 0.5) + Coords.cubeToMinBlock(dCubeY), playerIn.chunkCoordZ);
+        }
+    }
+
+//    @ModifyConstant(method = "respawnPlayer",
+//        constant = @Constant(doubleValue = 256))
+//    private double getMaxHeight(double _256, EntityPlayerMP playerIn, int dimension, boolean conqueredEnd) {
+//        // +/- 8 chunks around the original position are loaded because of an inject above
+//        if (!playerIn.worldObj.isBlockLoaded(new BlockPos(playerIn))) {
+//            return Double.NEGATIVE_INFINITY;
+//        }
+//        return ((ICubicWorld) playerIn.worldObj).getMaxHeight();
+//    }
+
 }

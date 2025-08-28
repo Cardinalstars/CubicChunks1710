@@ -2,6 +2,7 @@ package com.cardinalstar.cubicchunks.mixin;
 
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
+import scala.tools.nsc.transform.Mixin;
 
 import javax.annotation.Nonnull;
 
@@ -19,6 +20,20 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinWorld")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+
+    MIXIN_INTEGRATED_SERVER_ACCESSOR(new MixinBuilder("Allows access to the worldsettings field.")
+        .addCommonMixins("common.IIntegratedServer")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+
+    MIXIN_WORLD_SETTINGS(new MixinBuilder("Mixin for world settings allowing cubes.")
+        .addCommonMixins("common.MixinWorldSettings")
+        .setApplyIf(() -> true)),
+
+    //  =============================================================
+    //                        Client Mixins
+    //  =============================================================
+
     MIXIN_IGUI_VIDEO_SETTINGS(new MixinBuilder("Allows access to the getOptionsRowList field.")
         .addClientMixins("client.IGuiVideoSettings")
         .setPhase(Phase.EARLY)
@@ -31,6 +46,8 @@ public enum Mixins implements IMixins {
         .addClientMixins("client.IGuiScreen")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true));
+
+
 
 
     private final MixinBuilder builder;

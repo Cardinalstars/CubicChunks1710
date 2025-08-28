@@ -117,7 +117,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Shadow public abstract PlayerManager getPlayerManager();
 
-    @Shadow protected abstract boolean canAddEntity(Entity entityIn);
+    // @Shadow protected abstract boolean canAddEntity(Entity entityIn);
 
     @Override public void initCubicWorldServer(IntRange heightRange, IntRange generationRange) {
         super.initCubicWorld(heightRange, generationRange);
