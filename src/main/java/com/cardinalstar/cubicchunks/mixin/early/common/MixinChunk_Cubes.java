@@ -58,6 +58,7 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkEvent.Load;
 
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
@@ -193,6 +194,25 @@ public abstract class MixinChunk_Cubes {
     }
 
     // modify vanilla:
+
+    @ModifyConstant(method = "<init>(Lnet/minecraft/world/World;II)V", constant = @Constant(intValue = 16),
+        slice = @Slice(to = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+            opcode = Opcodes.PUTFIELD
+        )),
+        allow = 1, require = 1)
+    private int modifySectionArrayLength(int sixteen, World worldIn, int x, int z) {
+        if (worldIn == null) {
+            // Some mods construct chunks with null world, ignore them
+            return sixteen;
+        }
+        if (!((ICubicWorld) worldIn).isCubicWorld()) {
+            IMinMaxHeight y = (IMinMaxHeight) worldIn;
+            return Coords.blockToCube(y.getMaxHeight()) - Coords.blockToCube(y.getMinHeight());
+        }
+        return sixteen;
+    }
 
     @Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At(value = "RETURN"))
     private void cubicChunkColumn_construct(World world, int x, int z, CallbackInfo cbi) {
@@ -368,16 +388,14 @@ public abstract class MixinChunk_Cubes {
     //                 relightBlock
     // ==============================================
 
+    // TODO is this too brittle?
     /**
      * Modifies the flag variable so that the code always gets into the branch with Chunk.relightBlock redirected below
      */
     @ModifyVariable(
         method = "func_150807_a",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;setExtBlockMetadata(IIII)V"
-        ),
-        index = 7,
+        at = @At(value = "STORE"),
+        ordinal = 0,
         name = "flag"
     )
     private boolean setBlockStateInjectGenerateSkylightMapVanilla(boolean generateSkylight) {
@@ -389,7 +407,7 @@ public abstract class MixinChunk_Cubes {
 
     @Inject(method = "func_150807_a", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;relightBlock(III)V"),
         locals = LocalCapture.CAPTURE_FAILHARD)
-    private void setBlockState_CubicChunks_relightBlockReplace(int localX, int localY, int localZ, Block p_150807_4_, CallbackInfoReturnable<Boolean> cir,
+    private void setBlockState_CubicChunks_relightBlockReplace(int localX, int localY, int localZ, Block p_150807_4_, int newMeta, CallbackInfoReturnable<Boolean> cir,
                                                                int packedXZ, int oldHeightValue, Block oldBlock, int oldMeta,
                                                                ExtendedBlockStorage ebs, boolean createdNewEbsAboveTop, int globalX, int globalZ,
                                                                int oldOpacity, int newOpacity) {
@@ -518,25 +536,26 @@ public abstract class MixinChunk_Cubes {
         return getEBS_CubicChunks(index);
     }
 
-    @Redirect(method = "func_150807_a", at = @At(
-        value = "FIELD",
-        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-        args = "array=set"
-    ))
-    private void setBlockWithMeta_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage val) {
-        setEBS_CubicChunks(index, val);
-    }
-
-    @Inject(method = "func_150807_a", at = @At(
-        value = "FIELD",
-        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-        args = "array=set"
-    ), cancellable = true)
-    private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta, CallbackInfoReturnable<Boolean> cir) {
-        if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
-            cir.setReturnValue(null);
-        }
-    }
+    // TODO Not sure how these got here.
+//    @Redirect(method = "func_150807_a", at = @At(
+//        value = "FIELD",
+//        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+//        args = "array=set"
+//    ))
+//    private void setBlockWithMeta_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage val) {
+//        setEBS_CubicChunks(index, val);
+//    }
+//
+//    @Inject(method = "func_150807_a", at = @At(
+//        value = "FIELD",
+//        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+//        args = "array=set"
+//    ), cancellable = true)
+//    private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta, CallbackInfoReturnable<Boolean> cir) {
+//        if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
+//            cir.setReturnValue(null);
+//        }
+//    }
 
     @Redirect(method = "func_150807_a", at = @At(value = "FIELD", target = "Lnet/minecraft/world/chunk/Chunk;isModified:Z"))
     private void setIsModifiedFromSetBlockWithMeta_Field(Chunk chunk, boolean isModifiedIn, int x, int y, int z, Block block, int meta) {
@@ -576,28 +595,30 @@ public abstract class MixinChunk_Cubes {
         return getEBS_CubicChunks(index);
     }
 
-    @Redirect(method = "setBlockMetadata", at = @At(
-        value = "FIELD",
-        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-        args = "array=set"
-    ))
-    private void setBlockMetadata_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage val) {
-        setEBS_CubicChunks(index, val);
-    }
+    // TODO Not sure how these got here.
 
-    @Inject(method = "setBlockMetadata", at = @At(
-        value = "FIELD",
-        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-        args = "array=set"
-    ), cancellable = true)
-    private void setBlockMetadata_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta, CallbackInfoReturnable<Boolean> cir) {
-        if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
-            cir.setReturnValue(null);
-        }
-    }
+//    @Redirect(method = "setBlockMetadata", at = @At(
+//        value = "FIELD",
+//        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+//        args = "array=set"
+//    ))
+//    private void setBlockMetadata_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage val) {
+//        setEBS_CubicChunks(index, val);
+//    }
+//
+//    @Inject(method = "setBlockMetadata", at = @At(
+//        value = "FIELD",
+//        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+//        args = "array=set"
+//    ), cancellable = true)
+//    private void setBlockMetadata_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta, CallbackInfoReturnable<Boolean> cir) {
+//        if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
+//            cir.setReturnValue(null);
+//        }
+//    }
 
     @Redirect(method = "setBlockMetadata", at = @At(value = "FIELD", target = "Lnet/minecraft/world/chunk/Chunk;isModified:Z"))
-    private void setIsModifiedFromSetBlockMetadata_Field(Chunk chunk, boolean isModifiedIn, int x, int y, int z, Block block, int meta) {
+    private void setIsModifiedFromSetBlockMetadata_Field(Chunk chunk, boolean isModifiedIn, int x, int y, int z, int meta) {
         if (isColumn) {
             getWorldObj().getCubeFromBlockCoords(x, y, z).markDirty();
         } else {
@@ -655,14 +676,14 @@ public abstract class MixinChunk_Cubes {
         return getEBS_CubicChunks(index);
     }
 
-    @Redirect(method = "setLightValue", at = @At(
-        value = "FIELD",
-        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-        args = "array=set"
-    ))
-    private void setLightValue_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage ebs) {
-        setEBS_CubicChunks(index, ebs);
-    }
+//    @Redirect(method = "setLightValue", at = @At(
+//        value = "FIELD",
+//        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+//        args = "array=set"
+//    ))
+//    private void setLightValue_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage ebs) {
+//        setEBS_CubicChunks(index, ebs);
+//    }
 
     @Redirect(method = "setLightValue", at = @At(value = "FIELD", target = "Lnet/minecraft/world/chunk/Chunk;isModified:Z"))
     private void setIsModifiedFromSetLightValue_Field(Chunk chunk, boolean isModifiedIn, EnumSkyBlock type, int x, int y, int z, int value) {
@@ -693,14 +714,6 @@ public abstract class MixinChunk_Cubes {
 
     @ModifyConstant(method = "addEntity",
         constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, intValue = 0),
-        slice = @Slice(
-            from = @At(
-                value = "INVOKE:LAST",
-                target = "Lnet/minecraft/util/math/MathHelper;floor(D)I"),
-            to = @At(
-                value = "FIELD:FIRST",
-                target = "Lnet/minecraft/world/chunk/Chunk;entityLists:[Ljava/util/List;")
-        ),
         require = 1
     )
     private int addEntity_getMinY(int zero) {
@@ -844,7 +857,7 @@ public abstract class MixinChunk_Cubes {
     //                  onLoad
     // ==============================================
 
-    @Inject(method = "onLoad", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "onChunkLoad", at = @At("HEAD"), cancellable = true)
     private void onChunkLoad_CubicChunks(CallbackInfo cbi) {
         if (!isColumn) {
             return;
@@ -861,7 +874,7 @@ public abstract class MixinChunk_Cubes {
     //                onUnload
     // ==============================================
 
-    @Inject(method = "onUnload", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "onChunkUnload", at = @At("HEAD"), cancellable = true)
     private void onChunkUnload_CubicChunks(CallbackInfo cbi) {
         if (!isColumn) {
             return;
