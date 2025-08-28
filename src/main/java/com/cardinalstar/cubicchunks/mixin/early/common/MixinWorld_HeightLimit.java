@@ -32,6 +32,7 @@ import net.minecraft.block.Block;
 import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
@@ -260,7 +261,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     }
 
     @ModifyConstant(method = "getSavedLightValue",
-        constant = @Constant(intValue = 0, ordinal = 1))
+        constant = @Constant(intValue = 0, ordinal = 0))
     private int getSavedLightValue_heightLimits_minDefault(int original)
     {
         return getMinHeight();
@@ -442,13 +443,13 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
      */
     @Group(name = "exists", max = 1)
     @Inject(method = "checkChunksExist(IIIIII)Z", at = @At(value = "HEAD"), cancellable = true, require = 1)
-    private void checkChunksExistInject(int xStart, int yStart, int zStart, int xEnd, int yEnd, int zEnd, boolean allowEmpty,
+    private void checkChunksExistInject(int xStart, int yStart, int zStart, int xEnd, int yEnd, int zEnd,
                                     @Nonnull CallbackInfoReturnable<Boolean> cbi) {
         if (!this.isCubicWorld()) {
             return;
         }
 
-        boolean ret = (this.isRemote && allowEmpty) || // on the client all cubes count as loaded if allowEmpty
+        boolean ret = (this.isRemote) || // on the client all cubes count as loaded if allowEmpty
             this.testForCubes(
                 xStart, yStart, zStart,
                 xEnd, yEnd, zEnd,
@@ -505,7 +506,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;chunkExists(II)Z", ordinal = 0),
         locals = LocalCapture.CAPTURE_FAILHARD,
         require = 1)
-    private void updateEntities_chunkExists0_getLocals(CallbackInfo cbi, int i, Entity entity, CrashReport crashreport, CrashReportCategory crashreportcategory, int chunkX, int chunkZ) {
+    private void updateEntities_chunkExists0_getLocals(CallbackInfo cbi, int i, Entity entity, int chunkX, int chunkZ) {
         updateEntities_enityChunkBlockY = cubeToMinBlock(entity.chunkCoordY);
     }
 
@@ -513,7 +514,23 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;chunkExists(II)Z", ordinal = 1),
         locals = LocalCapture.CAPTURE_FAILHARD,
         require = 1)
-    private void updateEntities_chunkExists1_getLocals(CallbackInfo cbi, int i, Entity entity, CrashReport crashreport, CrashReportCategory crashreportcategory, int chunkX, int chunkZ) {
+    private void updateEntities_chunkExists1_getLocals(CallbackInfo ci, int i, Entity entity, CrashReport crashreport, CrashReportCategory crashreportcategory, int j, int l) {
+        updateEntities_enityChunkBlockY = cubeToMinBlock(entity.chunkCoordY);
+    }
+
+    @Inject(method = "updateEntities",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;chunkExists(II)Z", ordinal = 2),
+        locals = LocalCapture.CAPTURE_FAILHARD,
+        require = 1)
+    private void updateEntities_chunkExists2_getLocals(CallbackInfo cbi, int i, Entity entity, CrashReport crashreport, CrashReportCategory crashreportcategory, int chunkX, int chunkZ) {
+        updateEntities_enityChunkBlockY = cubeToMinBlock(entity.chunkCoordY);
+    }
+
+    @Inject(method = "updateEntities",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;chunkExists(II)Z", ordinal = 3),
+        locals = LocalCapture.CAPTURE_FAILHARD,
+        require = 1)
+    private void updateEntities_chunkExists3_getLocals(CallbackInfo cbi, int i, Entity entity, CrashReport crashreport, CrashReportCategory crashreportcategory, int chunkX, int chunkZ) {
         updateEntities_enityChunkBlockY = cubeToMinBlock(entity.chunkCoordY);
     }
 
@@ -528,22 +545,23 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         }
     }
 
-    @Inject(method = "getBiomeGenAt", at = @At("HEAD"), cancellable = true)
-    private void getBiome(int x, int y, int z, CallbackInfoReturnable<BiomeGenBase> ci) {
-        if (!this.isCubicWorld())
-            return;
-        ICube cube = this.getCubeCache().getLoadedCube(Coords.blockToCube(x),Coords.blockToCube(y),Coords.blockToCube(z));
-        /*
-         * Using return here function will keep callback not cancelled,
-         * therefore "vanilla" function, which will get biome from chunk, will
-         * be called. Since cube is null there is no way to retrieve chunk
-         * faster, than using vanilla way.
-         */
-        if (cube == null)
-            return;
-        BiomeGenBase biome = cube.getBiome(x, y, z);
-        ci.setReturnValue(biome);
-    }
+    // TODO If we want 3D biomes this needs to get Y as well. I don't think this will be good for compat.
+//    @Inject(method = "getBiomeGenForCoords", at = @At("HEAD"), cancellable = true)
+//    private void getBiome(int x, int y, int z, CallbackInfoReturnable<BiomeGenBase> ci) {
+//        if (!this.isCubicWorld())
+//            return;
+//        ICube cube = this.getCubeCache().getLoadedCube(Coords.blockToCube(x),Coords.blockToCube(y),Coords.blockToCube(z));
+//        /*
+//         * Using return here function will keep callback not cancelled,
+//         * therefore "vanilla" function, which will get biome from chunk, will
+//         * be called. Since cube is null there is no way to retrieve chunk
+//         * faster, than using vanilla way.
+//         */
+//        if (cube == null)
+//            return;
+//        BiomeGenBase biome = cube.getBiome(x, y, z);
+//        ci.setReturnValue(biome);
+//    }
 
     @ModifyConstant(method = {"canSnowAtBody", "canBlockFreezeBody"}, constant = @Constant(intValue = 256), remap = false)
     private int canSnowAt_getMaxHeight(int _256) {
@@ -555,5 +573,17 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         remap = false)
     private int canSnowAt_getMinHeight(int zero) {
         return getMinHeight();
+    }
+
+    // @Shadow public abstract boolean isBlockLoaded(BlockPos pos, boolean allowEmpty);
+
+    @Redirect(method = "spawnEntityInWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;chunkExists(II)Z"))
+    private boolean spawnEntity_isChunkLoaded(World world, int chunkX, int chunkZ, Entity ent) {
+        assert this == (Object) world;
+        if (isCubicWorld()) {
+            return this.blockExists(cubeToMinBlock(chunkX), MathHelper.floor_double(ent.posY + 0.5D), cubeToMinBlock(chunkZ));
+        } else {
+            return this.chunkExists(chunkX, chunkZ);
+        }
     }
 }

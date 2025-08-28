@@ -58,7 +58,7 @@ public class MixinEntityTracker implements ICubicEntityTracker {
 
     @Redirect(method = "addEntityToTracker(Lnet/minecraft/entity/Entity;IIZ)V",
         at = @At(value = "NEW",
-        target = "net/minecraft/entity/EntityTrackerEntry"))
+        target = "(Lnet/minecraft/entity/Entity;IIZ)Lnet/minecraft/entity/EntityTrackerEntry;"))
     private EntityTrackerEntry onCreateEntry(Entity entityIn, int rangeIn, int updateFrequencyIn, boolean sendVelocityUpdatesIn) {
         EntityTrackerEntry e = new EntityTrackerEntry(entityIn, rangeIn, updateFrequencyIn, sendVelocityUpdatesIn);
         //noinspection ConstantConditions

@@ -42,13 +42,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EntityTrackerEntry.class)
 public class MixinEntityTrackerEntry implements ICubicEntityTracker.Entry {
 
-    @Shadow
-    public int blocksDistanceThreshold;
-    @Shadow
-    public long lastScaledYPosition;
+    @Shadow public int blocksDistanceThreshold;
+    @Shadow public long lastScaledYPosition;
 
-    @Shadow
-    public Entity myEntity;
+    @Shadow public Entity myEntity;
     @Unique
     private int cubic_chunks$maxVertRange;
 
