@@ -60,6 +60,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkEvent;
 
 import java.util.*;
@@ -302,6 +303,34 @@ public class Cube implements ICube {
             }
         }
     }
+
+    /**
+     * Constructor to be used from subclasses to provide all field values
+     *
+     * @param tickets cube ticket list
+     * @param world the world instance
+     * @param column the column this cube belongs to
+     * @param coords position of this cube
+     * @param storage block storage
+     * @param entities entity container
+     * @param tileEntityMap tile entity storage
+     * @param tileEntityPosQueue queue for updating tile entities
+     * @param cubeLightData cube light tracking data
+     */
+    protected Cube(TicketList tickets, World world, Chunk column, CubePos coords, ExtendedBlockStorage storage,
+                   List<Entity> entities, Map<net.minecraft.world.ChunkPosition, net.minecraft.tileentity.TileEntity> tileEntityMap,
+                   ConcurrentLinkedQueue<BlockPos> tileEntityPosQueue, ICubeLightTrackingInfo cubeLightData) {
+        this.tickets = tickets;
+        this.world = world;
+        this.column = column;
+        this.coords = coords;
+        this.storage = storage;
+        this.entities = entities;
+        this.cubeTileEntityMap = tileEntityMap;
+        this.tileEntityPosQueue = tileEntityPosQueue;
+        this.cubeLightData = cubeLightData;
+    }
+
 
     //======================================
     //========Chunk vanilla methods=========

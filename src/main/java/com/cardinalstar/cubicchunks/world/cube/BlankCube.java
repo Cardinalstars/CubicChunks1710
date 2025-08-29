@@ -25,11 +25,18 @@
 
 package com.cardinalstar.cubicchunks.world.cube;
 
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.TicketList;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import net.minecraft.entity.Entity;
 import net.minecraft.world.chunk.Chunk;
 
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * A blank cube, containing no blocks. Any operation on this cube will have no effect. Trying to retrieve blocks will
@@ -39,7 +46,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 public class BlankCube extends Cube {
 
     public BlankCube(Chunk column) {
-        super(column, 0);
+        super(new TicketList(null), column.worldObj, column, new CubePos(0, 0, 0),
+            null, new ArrayList<>(), new HashMap<>(), new ConcurrentLinkedQueue<>(), null);
     }
 
     @Override

@@ -137,6 +137,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         this.lightingManager = new LightingManager((World) (Object) this);
     }
 
+
 //    @Override public VanillaNetworkHandler getVanillaNetworkHandler() {
 //        return vanillaNetworkHandler;
 //    }

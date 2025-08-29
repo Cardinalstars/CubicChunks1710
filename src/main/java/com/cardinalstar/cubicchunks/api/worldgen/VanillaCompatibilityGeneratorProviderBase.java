@@ -33,7 +33,7 @@ import net.minecraft.world.chunk.IChunkProvider;
 public abstract class VanillaCompatibilityGeneratorProviderBase implements ICubicChunksRegistryEntry<VanillaCompatibilityGeneratorProviderBase> {
 
     public static final ResourceLocation DEFAULT = new ResourceLocation("cubicchunks", "default");
-    public static CubicChunksRegistry<VanillaCompatibilityGeneratorProviderBase> REGISTRY;
+    public static CubicChunksRegistry<VanillaCompatibilityGeneratorProviderBase> REGISTRY = new CubicChunksRegistry<>();
 
     public ResourceLocation registryName;
     public String unlocalizedName;
