@@ -25,7 +25,6 @@
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
 import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import net.minecraft.block.Block;
@@ -33,14 +32,11 @@ import net.minecraft.crash.CrashReport;
 import net.minecraft.crash.CrashReportCategory;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
-import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
-import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
@@ -48,7 +44,6 @@ import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
@@ -68,9 +63,9 @@ import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
 @Mixin(World.class)
 public abstract class MixinWorld_HeightLimit implements ICubicWorld {
 
-    @Shadow private int skylightSubtracted;
+    @Shadow public int skylightSubtracted;
 
-    @Shadow @Final public boolean isRemote;
+    @Shadow public boolean isRemote;
 
     @Shadow @Final public WorldProvider provider;
 
