@@ -63,7 +63,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public class CommonEventHandler {
     @SubscribeEvent // this event is fired early enough to replace world with cubic chunks without any issues
-    public void onWorldLoad(WorldEvent.Load event) {
+    public void onWorldLoad(WorldEvent.CreateSpawnPosition event) {
         if (event.world.isRemote || !(event.world instanceof WorldServer)) {
             return; // we will send packet to the client when it joins, client shouldn't change world types as it wants
         }
