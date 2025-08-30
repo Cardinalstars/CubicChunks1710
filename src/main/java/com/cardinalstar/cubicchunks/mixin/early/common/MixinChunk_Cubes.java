@@ -1055,7 +1055,7 @@ public abstract class MixinChunk_Cubes {
 
         for (Cube cube : cubeMap.cubes(minY, maxY)) {
             for (Entity entity : cube.getEntityContainer()) {
-                if (entityClass.isAssignableFrom(entity.getClass()) && entity.getBoundingBox()
+                if (entityClass.isAssignableFrom(entity.getClass()) && entity.getBoundingBox() != null && entity.getBoundingBox()
                     .intersectsWith(aabb) && (filter == null || filter.isEntityApplicable(entity))) {
                     listToFill.add((T) entity);
                 }
