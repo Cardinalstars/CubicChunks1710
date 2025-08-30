@@ -1,26 +1,22 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.cardinalstar.cubicchunks.server;
@@ -30,6 +26,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import net.minecraft.util.ChunkCoordinates;
+import net.minecraft.world.World;
+
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.util.Coords;
@@ -37,12 +36,9 @@ import com.cardinalstar.cubicchunks.util.ITicket;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
-import net.minecraft.util.ChunkCoordinates;
-import net.minecraft.world.World;
 
 @ParametersAreNonnullByDefault
 public class SpawnCubes implements ITicket {
-
 
     private int spawnX;
     private int spawnY;
@@ -52,17 +48,23 @@ public class SpawnCubes implements ITicket {
     private int radiusXZForce = CubicChunksConfig.spawnLoadDistanceXZ;
     private int radiusYForce = CubicChunksConfig.spawnLoadDistanceY;
     private ChunkCoordinates spawnPoint;
+
     public void update(World world) {
-        update(world, CubicChunksConfig.spawnGenerateDistanceXZ, CubicChunksConfig.spawnGenerateDistanceY,
-            CubicChunksConfig.spawnLoadDistanceXZ, CubicChunksConfig.spawnLoadDistanceY); // radius did not change
+        update(
+            world,
+            CubicChunksConfig.spawnGenerateDistanceXZ,
+            CubicChunksConfig.spawnGenerateDistanceY,
+            CubicChunksConfig.spawnLoadDistanceXZ,
+            CubicChunksConfig.spawnLoadDistanceY); // radius did not change
     }
 
-    public void update(World world, int newRadiusXZGenerate, int newRadiusYGenerate, int newRadiusXZForce, int newRadiusYForce) {
-        if (!world.getSpawnPoint().equals(spawnPoint) ||
-            radiusXZGenerate != newRadiusXZGenerate ||
-            radiusYGenerate != newRadiusYGenerate ||
-            radiusXZForce != newRadiusXZForce ||
-            radiusYForce != newRadiusYForce) {
+    public void update(World world, int newRadiusXZGenerate, int newRadiusYGenerate, int newRadiusXZForce,
+        int newRadiusYForce) {
+        if (!world.getSpawnPoint()
+            .equals(spawnPoint) || radiusXZGenerate != newRadiusXZGenerate
+            || radiusYGenerate != newRadiusYGenerate
+            || radiusXZForce != newRadiusXZForce
+            || radiusYForce != newRadiusYForce) {
             removeTickets(world);
             spawnPoint = world.getSpawnPoint();
             radiusXZGenerate = newRadiusXZGenerate;
@@ -87,7 +89,9 @@ public class SpawnCubes implements ITicket {
         for (int cubeX = spawnCubeX - radiusXZForce; cubeX <= spawnCubeX + radiusXZForce; cubeX++) {
             for (int cubeZ = spawnCubeZ - radiusXZForce; cubeZ <= spawnCubeZ + radiusXZForce; cubeZ++) {
                 for (int cubeY = spawnCubeY + radiusYForce; cubeY >= spawnCubeY - radiusYForce; cubeY--) {
-                    serverCubeCache.getCube(cubeX, cubeY, cubeZ).getTickets().remove(this);
+                    serverCubeCache.getCube(cubeX, cubeY, cubeZ)
+                        .getTickets()
+                        .remove(this);
                 }
             }
         }
@@ -107,14 +111,21 @@ public class SpawnCubes implements ITicket {
         int spawnCubeZ = Coords.blockToCube(spawnPoint.posZ);
 
         AtomicLong lastTime = new AtomicLong(System.currentTimeMillis());
-        final int progressReportInterval = 1000;//ms
+        final int progressReportInterval = 1000;// ms
         int totalToGenerate = (radiusXZGenerate * 2 + 1) * (radiusXZGenerate * 2 + 1) * (radiusYGenerate * 2 + 1);
         AtomicInteger generated = new AtomicInteger();
 
         int r = Math.max(radiusXZGenerate, radiusXZForce);
         int ry = Math.max(radiusYGenerate, radiusYForce);
 
-        forEachCube(spawnCubeX, spawnCubeY, spawnCubeZ, r, ry, (cubeX, cubeY, cubeZ) -> serverCubeCache.asyncGetCube(cubeX, cubeY, cubeZ, ICubeProviderServer.Requirement.LOAD, c -> {}));
+        forEachCube(
+            spawnCubeX,
+            spawnCubeY,
+            spawnCubeZ,
+            r,
+            ry,
+            (cubeX, cubeY, cubeZ) -> serverCubeCache
+                .asyncGetCube(cubeX, cubeY, cubeZ, ICubeProviderServer.Requirement.LOAD, c -> {}));
         forEachCube(spawnCubeX, spawnCubeY, spawnCubeZ, r, ry, (cubeX, cubeY, cubeZ) -> {
             ICubeProviderServer.Requirement req;
 
@@ -133,7 +144,8 @@ public class SpawnCubes implements ITicket {
             assert cube != null;
 
             if (dx <= radiusXZForce && dz <= radiusXZForce) {
-                cube.getTickets().add(this);
+                cube.getTickets()
+                    .add(this);
             }
             generated.incrementAndGet();
             if (System.currentTimeMillis() >= lastTime.get() + progressReportInterval) {
@@ -155,11 +167,14 @@ public class SpawnCubes implements ITicket {
         }
     }
 
-    @Override public boolean shouldTick() {
+    @Override
+    public boolean shouldTick() {
         return false;
     }
 
-    @FunctionalInterface private interface XYZConsumer {
+    @FunctionalInterface
+    private interface XYZConsumer {
+
         void accept(int x, int y, int z);
     }
 }

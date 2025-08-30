@@ -1,45 +1,31 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.event.handlers;
 
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.CubicChunksConfig;
-import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
-import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.mixin.early.client.IGuiCreateWorld;
-import com.cardinalstar.cubicchunks.mixin.early.client.IGuiOptionsRowList;
-import com.cardinalstar.cubicchunks.mixin.early.client.IGuiScreen;
-import com.cardinalstar.cubicchunks.mixin.early.client.IGuiVideoSettings;
-import com.cardinalstar.cubicchunks.server.ICubicPlayerList;
-import com.cardinalstar.cubicchunks.util.MathUtil;
-import cpw.mods.fml.client.FMLClientHandler;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.TickEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiCreateWorld;
@@ -53,20 +39,33 @@ import net.minecraft.world.WorldType;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
+import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.mixin.early.client.IGuiCreateWorld;
+import com.cardinalstar.cubicchunks.mixin.early.client.IGuiOptionsRowList;
+import com.cardinalstar.cubicchunks.mixin.early.client.IGuiScreen;
+import com.cardinalstar.cubicchunks.mixin.early.client.IGuiVideoSettings;
+import com.cardinalstar.cubicchunks.server.ICubicPlayerList;
+import com.cardinalstar.cubicchunks.util.MathUtil;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import cpw.mods.fml.client.FMLClientHandler;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 
 @ParametersAreNonnullByDefault
 public class ClientEventHandler {
 
     @SubscribeEvent
     public void onWorldClientTickEvent(TickEvent.ClientTickEvent evt) {
-        ICubicWorldInternal world = (ICubicWorldInternal) FMLClientHandler.instance().getWorldClient();
-        //does the world exist? Is the game paused?
-        if (world == null || Minecraft.getMinecraft().isGamePaused()) {
+        ICubicWorldInternal world = (ICubicWorldInternal) FMLClientHandler.instance()
+            .getWorldClient();
+        // does the world exist? Is the game paused?
+        if (world == null || Minecraft.getMinecraft()
+            .isGamePaused()) {
             return;
         }
         if (evt.phase == TickEvent.Phase.END && world.isCubicWorld()) {
@@ -77,7 +76,9 @@ public class ClientEventHandler {
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         // no need to check side, this is only registered in client proxy
-        ICubicPlayerList playerList = ((ICubicPlayerList) FMLCommonHandler.instance().getMinecraftServerInstance().getConfigurationManager());
+        ICubicPlayerList playerList = ((ICubicPlayerList) FMLCommonHandler.instance()
+            .getMinecraftServerInstance()
+            .getConfigurationManager());
         int prevDist = playerList.getVerticalViewDistance();
         int newDist = CubicChunksConfig.verticalCubeLoadDistance;
         if (prevDist != newDist) {
@@ -92,15 +93,22 @@ public class ClientEventHandler {
         GuiScreen currentGui = event.gui;
         if (currentGui instanceof GuiVideoSettings) {
             GuiVideoSettings gvs = (GuiVideoSettings) currentGui;
-            if (!FMLClientHandler.instance().hasOptifine()) {
+            if (!FMLClientHandler.instance()
+                .hasOptifine()) {
                 IGuiOptionsRowList gowl = (IGuiOptionsRowList) ((IGuiVideoSettings) gvs).getOptionsRowList();
                 GuiOptionsRowList.Row row = this.createRow(100, gvs.width);
-                gowl.getOptions().add(1, row);
+                gowl.getOptions()
+                    .add(1, row);
             } else {
                 int idx = 3;
                 int btnSpacing = 20;
                 ((IGuiScreen) gvs).getButtonList()
-                    .add(idx, new VertViewDistanceSlider(100, gvs.width / 2 - 155 + 160, gvs.height / 6 + btnSpacing * (idx / 2) - 12));
+                    .add(
+                        idx,
+                        new VertViewDistanceSlider(
+                            100,
+                            gvs.width / 2 - 155 + 160,
+                            gvs.height / 6 + btnSpacing * (idx / 2) - 12));
                 List<GuiButton> buttons = ((IGuiScreen) gvs).getButtonList();
                 // reposition all buttons except the last 4 (last 3 and done)
                 for (int i = 0; i < buttons.size() - 4; i++) {
@@ -137,10 +145,9 @@ public class ClientEventHandler {
         return new GuiOptionsRowList.Row(slider, null);
     }
 
-
     private class VertViewDistanceSlider extends GuiButton {
 
-        private final int MAX_VIEW_DIST = CubicChunks.hasOptifine() ?  64 : 32;
+        private final int MAX_VIEW_DIST = CubicChunks.hasOptifine() ? 64 : 32;
         private float sliderValue;
         public boolean dragging;
 
@@ -169,16 +176,29 @@ public class ClientEventHandler {
                 if (this.dragging) {
                     this.sliderValue = (float) (mouseX - (this.xPosition + 4)) / (float) (this.width - 8);
                     this.sliderValue = MathHelper.clamp_float(this.sliderValue, 0.0F, 1.0F);
-                    CubicChunksConfig.setVerticalViewDistance(
-                        Math.round(MathUtil.lerp(this.sliderValue, 2, MAX_VIEW_DIST)));
+                    CubicChunksConfig
+                        .setVerticalViewDistance(Math.round(MathUtil.lerp(this.sliderValue, 2, MAX_VIEW_DIST)));
                     this.sliderValue = MathUtil.unlerp(CubicChunksConfig.verticalCubeLoadDistance, 2, MAX_VIEW_DIST);
                     this.displayString = this.createDisplayString();
                 }
 
-                mc.getTextureManager().bindTexture(buttonTextures);
+                mc.getTextureManager()
+                    .bindTexture(buttonTextures);
                 // GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F); // TODO FIGURE OUT HOW TO DO THIS
-                this.drawTexturedModalRect(this.xPosition + (int) (this.sliderValue * (float) (this.width - 8)), this.yPosition, 0, 66, 4, 20);
-                this.drawTexturedModalRect(this.xPosition + (int) (this.sliderValue * (float) (this.width - 8)) + 4, this.yPosition, 196, 66, 4, 20);
+                this.drawTexturedModalRect(
+                    this.xPosition + (int) (this.sliderValue * (float) (this.width - 8)),
+                    this.yPosition,
+                    0,
+                    66,
+                    4,
+                    20);
+                this.drawTexturedModalRect(
+                    this.xPosition + (int) (this.sliderValue * (float) (this.width - 8)) + 4,
+                    this.yPosition,
+                    196,
+                    66,
+                    4,
+                    20);
             }
         }
 
@@ -191,8 +211,8 @@ public class ClientEventHandler {
             if (super.mousePressed(mc, mouseX, mouseY)) {
                 this.sliderValue = (float) (mouseX - (this.xPosition + 4)) / (float) (this.width - 8);
                 this.sliderValue = MathHelper.clamp_float(this.sliderValue, 0.0F, 1.0F);
-                CubicChunksConfig.setVerticalViewDistance(
-                    Math.round(MathUtil.lerp(this.sliderValue, 2, MAX_VIEW_DIST)));
+                CubicChunksConfig
+                    .setVerticalViewDistance(Math.round(MathUtil.lerp(this.sliderValue, 2, MAX_VIEW_DIST)));
                 this.sliderValue = MathUtil.unlerp(CubicChunksConfig.verticalCubeLoadDistance, 2, MAX_VIEW_DIST);
                 this.displayString = this.createDisplayString();
                 this.dragging = true;
@@ -203,7 +223,9 @@ public class ClientEventHandler {
         }
 
         private String createDisplayString() {
-            return I18n.format(CubicChunks.MODID + ".gui.vertical_cube_load_distance", CubicChunksConfig.verticalCubeLoadDistance);
+            return I18n.format(
+                CubicChunks.MODID + ".gui.vertical_cube_load_distance",
+                CubicChunksConfig.verticalCubeLoadDistance);
         }
 
         /**
@@ -255,11 +277,12 @@ public class ClientEventHandler {
 
                 refreshText(gui, enableCC);
             }));
-            for (VanillaCompatibilityGeneratorProviderBase base : VanillaCompatibilityGeneratorProviderBase.REGISTRY.getAll())
-            {
+            for (VanillaCompatibilityGeneratorProviderBase base : VanillaCompatibilityGeneratorProviderBase.REGISTRY
+                .getAll()) {
                 LIST_OF_GEN_OPTIONS.add(base.registryName);
             }
-            CURRENT_GEN_OPTION = LIST_OF_GEN_OPTIONS.indexOf(new ResourceLocation(CubicChunksConfig.compatibilityGeneratorType));
+            CURRENT_GEN_OPTION = LIST_OF_GEN_OPTIONS
+                .indexOf(new ResourceLocation(CubicChunksConfig.compatibilityGeneratorType));
         }
 
         private static void refreshText(GuiCreateWorld gui, GuiButton enableBtn) {
@@ -294,7 +317,8 @@ public class ClientEventHandler {
                             }
                         }
                         assert enableCC != null;
-                        boolean isCubicChunksType = WorldType.worldTypes[((IGuiCreateWorld) gui).getSelectedIndex()] instanceof ICubicWorldType;
+                        boolean isCubicChunksType = WorldType.worldTypes[((IGuiCreateWorld) gui)
+                            .getSelectedIndex()] instanceof ICubicWorldType;
                         enableCC.visible = mapType != null && !isCubicChunksType && mapType.visible;
                         break;
                     }
@@ -318,7 +342,9 @@ public class ClientEventHandler {
         }
 
         private static Optional<GuiButton> getButton(List<GuiButton> buttons, int id) {
-            return buttons.stream().filter(b -> b.id == id).findFirst();
+            return buttons.stream()
+                .filter(b -> b.id == id)
+                .findFirst();
         }
     }
 }

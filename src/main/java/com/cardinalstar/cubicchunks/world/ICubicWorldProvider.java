@@ -1,9 +1,10 @@
 package com.cardinalstar.cubicchunks.world;
 
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+import javax.annotation.Nullable;
+
 import net.minecraft.world.World;
 
-import javax.annotation.Nullable;
+import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 
 public interface ICubicWorldProvider {
 

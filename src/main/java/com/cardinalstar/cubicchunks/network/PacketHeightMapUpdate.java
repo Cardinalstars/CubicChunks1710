@@ -1,28 +1,34 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.network;
+
+import java.util.BitSet;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.EmptyChunk;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
@@ -33,6 +39,7 @@ import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.google.common.base.Preconditions;
+
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
@@ -41,15 +48,6 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TByteArrayList;
 import gnu.trove.list.array.TIntArrayList;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.world.ChunkCoordIntPair;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.EmptyChunk;
-
-import java.util.BitSet;
-
-import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 public class PacketHeightMapUpdate implements IMessage {
@@ -58,8 +56,7 @@ public class PacketHeightMapUpdate implements IMessage {
     private TByteList updates;
     private TIntList heights;
 
-    public PacketHeightMapUpdate() {
-    }
+    public PacketHeightMapUpdate() {}
 
     public PacketHeightMapUpdate(BitSet updates, Chunk chunk) {
         this.chunk = chunk.getChunkCoordIntPair();
@@ -67,7 +64,8 @@ public class PacketHeightMapUpdate implements IMessage {
         this.heights = new TIntArrayList();
         for (int i = updates.nextSetBit(0); i >= 0; i = updates.nextSetBit(i + 1)) {
             this.updates.add((byte) i);
-            this.heights.add(((IColumnInternal) chunk).getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
+            this.heights.add(
+                ((IColumnInternal) chunk).getTopYWithStaging(AddressTools.getLocalX(i), AddressTools.getLocalZ(i)));
         }
     }
 
@@ -113,7 +111,8 @@ public class PacketHeightMapUpdate implements IMessage {
     public static class Handler extends AbstractClientMessageHandler<PacketHeightMapUpdate> {
 
         @Override
-        public void handleClientMessage(World world, EntityPlayer player, PacketHeightMapUpdate message, MessageContext ctx) {
+        public void handleClientMessage(World world, EntityPlayer player, PacketHeightMapUpdate message,
+            MessageContext ctx) {
             ICubicWorldInternal.Client worldClient = (ICubicWorldInternal.Client) world;
             CubeProviderClient cubeCache = worldClient.getCubeCache();
 
@@ -129,13 +128,16 @@ public class PacketHeightMapUpdate implements IMessage {
             ClientHeightMap index = (ClientHeightMap) ((IColumn) column).getOpacityIndex();
             ILightingManager lm = worldClient.getLightingManager();
 
-            int size = message.getUpdates().size();
+            int size = message.getUpdates()
+                .size();
 
             for (int i = 0; i < size; i++) {
-                int packed = message.getUpdates().get(i) & 0xFF;
+                int packed = message.getUpdates()
+                    .get(i) & 0xFF;
                 int x = AddressTools.getLocalX(packed);
                 int z = AddressTools.getLocalZ(packed);
-                int height = message.getHeights().get(i);
+                int height = message.getHeights()
+                    .get(i);
 
                 int oldHeight = index.getTopBlockY(x, z);
                 index.setHeight(x, z, height);

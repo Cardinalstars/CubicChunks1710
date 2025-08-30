@@ -1,32 +1,24 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.util;
-
-import com.cardinalstar.cubicchunks.CubicChunks;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.entity.player.EntityPlayer;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,12 +27,18 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.entity.player.EntityPlayer;
+
+import com.cardinalstar.cubicchunks.CubicChunks;
+
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+
 /**
  * Helper class to delay removing of elements. Created and used to reduce CPU
  * load during removing elements from this list on event of player movement as
  * replacement of {@code ArrayList}.
  */
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({ "unchecked" })
 public class WatchersSortingList2D<T extends BucketSorterEntry & XZAddressable> implements Iterable<T> {
 
     private static final int BUCKET_COUNT = (int) (CubicChunks.MAX_RENDER_DISTANCE * Math.sqrt(2)) + 1;
@@ -136,13 +134,15 @@ public class WatchersSortingList2D<T extends BucketSorterEntry & XZAddressable> 
      *
      * @return iterator over elements
      */
-    @Nonnull @Override
+    @Nonnull
+    @Override
     public Iterator<T> iterator() {
         return iteratorUpToDistance(BUCKET_COUNT - 1);
     }
 
     public Iterator<T> iteratorUpToDistance(int maxDistance) {
         return new Iterator<T>() {
+
             int bucket = 0;
             int idx = 0;
 
@@ -165,6 +165,7 @@ public class WatchersSortingList2D<T extends BucketSorterEntry & XZAddressable> 
 
                 return next = buckets[bucket].get(idx++);
             }
+
             @Override
             public boolean hasNext() {
                 return peekNext() != null;
@@ -187,7 +188,8 @@ public class WatchersSortingList2D<T extends BucketSorterEntry & XZAddressable> 
                     idx = bucketSizes[bucket] - 1;
                 }
                 WatchersSortingList2D.this.remove(buckets[bucket].get(idx));
-                // if we removed the last element from this bucket, there is nothing to replace it with, so actually go to the next bucket
+                // if we removed the last element from this bucket, there is nothing to replace it with, so actually go
+                // to the next bucket
                 if (idx >= bucketSizes[bucket]) {
                     bucket++;
                     idx = 0;
@@ -218,7 +220,6 @@ public class WatchersSortingList2D<T extends BucketSorterEntry & XZAddressable> 
         replacementElement.setSorterStorage(intrusiveCollectionId, replacementData | ((long) index << 32));
     }
 
-
     /**
      * Remove such elements {@code a} whom return {@code true} on call
      * {@code predicate.test(a)} from that list immediately.
@@ -227,7 +228,7 @@ public class WatchersSortingList2D<T extends BucketSorterEntry & XZAddressable> 
      */
     public void removeIf(Predicate<T> predicate) {
         // TODO: optimize
-        for (Iterator<T> iterator = this.iterator(); iterator.hasNext(); ) {
+        for (Iterator<T> iterator = this.iterator(); iterator.hasNext();) {
             T t = iterator.next();
             if (predicate.test(t)) {
                 iterator.remove();
@@ -256,11 +257,11 @@ public class WatchersSortingList2D<T extends BucketSorterEntry & XZAddressable> 
 
         int dx = x - playerPositions[0];
         int dz = z - playerPositions[1];
-        int distSqMin = dx*dx + dz*dz;
+        int distSqMin = dx * dx + dz * dz;
         for (int i = 2; i < playerPositions.length; i += 2) {
             dx = x - playerPositions[i];
-            dz = z - playerPositions[i+1];
-            int distSq = dx*dx + dz*dz;
+            dz = z - playerPositions[i + 1];
+            int distSq = dx * dx + dz * dz;
             if (distSq < distSqMin) {
                 distSqMin = distSq;
             }

@@ -1,29 +1,40 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.cardinalstar.cubicchunks.lighting;
+
+import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
+import static com.cardinalstar.cubicchunks.util.Coords.localToBlock;
+
+import java.util.Arrays;
+
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.EnumSkyBlock;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.ICube;
@@ -32,33 +43,19 @@ import com.cardinalstar.cubicchunks.lighting.phosphor.PhosphorLightEngine;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
 import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.EnumSkyBlock;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
-import java.util.Arrays;
-
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-
-import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
-import static com.cardinalstar.cubicchunks.util.Coords.localToBlock;
-
-//TODO: extract interfaces when it's done
+// TODO: extract interfaces when it's done
 @ParametersAreNonnullByDefault
 public class LightingManager implements ILightingManager {
 
     public static final int MAX_CLIENT_LIGHT_SCAN_DEPTH = 64;
     private final World world;
     private final PhosphorLightEngine lightEngine;
-    @Nullable private final FirstLightProcessor firstLightProcessor;
+    @Nullable
+    private final FirstLightProcessor firstLightProcessor;
 
     public LightingManager(World world) {
         this.world = world;
@@ -74,14 +71,16 @@ public class LightingManager implements ILightingManager {
         return (CubeLightData) ((Cube) cube).getCubeLightData();
     }
 
-    @Override public void updateLightBetween(Chunk column, int localX, int y1, int y2, int localZ) {
+    @Override
+    public void updateLightBetween(Chunk column, int localX, int y1, int y2, int localZ) {
         if (CubicChunksConfig.disableLighting) {
             return;
         }
         LightingHooks.relightSkylightColumn(this.world, column, localX, localZ, y1, y2);
     }
 
-    @Override public void onCubeLoad(ICube cube) {
+    @Override
+    public void onCubeLoad(ICube cube) {
         if (CubicChunksConfig.disableLighting) {
             return;
         }
@@ -89,12 +88,13 @@ public class LightingManager implements ILightingManager {
         tryScheduleOnLoadHeightChangeRelight(cube);
     }
 
-    @Override public void onCreateCubeStorage(ICube cube, ExtendedBlockStorage storage) {
+    @Override
+    public void onCreateCubeStorage(ICube cube, ExtendedBlockStorage storage) {
         LightingHooks.initSkylightForSection(world, cube.getColumn(), storage);
     }
 
-    @Override public boolean checkLightFor(EnumSkyBlock lightType, int x, int y, int z)
-    {
+    @Override
+    public boolean checkLightFor(EnumSkyBlock lightType, int x, int y, int z) {
         if (CubicChunksConfig.disableLighting) {
             return true;
         }
@@ -102,33 +102,39 @@ public class LightingManager implements ILightingManager {
         return true;
     }
 
-    @Override public void processUpdates() {
+    @Override
+    public void processUpdates() {
         if (CubicChunksConfig.disableLighting) {
             return;
         }
         lightEngine.processLightUpdates();
     }
 
-    @Override public void processUpdatesOnAccess() {
+    @Override
+    public void processUpdatesOnAccess() {
         // don't do onAccess light updates on the client, only update on tick
         if (!world.isRemote) {
             processUpdates();
         }
     }
 
-    @Override public String getId() {
+    @Override
+    public String getId() {
         return "phosphor_cc";
     }
 
-    @Override public void writeToNbt(ICube cube, NBTTagCompound lightingInfo) {
+    @Override
+    public void writeToNbt(ICube cube, NBTTagCompound lightingInfo) {
         int[] lastHeightmap = cube.getColumn().heightMap;
         lightingInfo.setIntArray("LastHeightMap", lastHeightmap);
         LightingHooks.writeNeighborLightChecksToNBT(cube, lightingInfo);
     }
 
-    @Override public void readFromNbt(ICube cube, NBTTagCompound lightingInfo) {
+    @Override
+    public void readFromNbt(ICube cube, NBTTagCompound lightingInfo) {
         CubeLightData lightData = getLightData(cube);
-        lightData.lastHeightMap = lightingInfo.hasKey("LastHeightMap") ? lightingInfo.getIntArray("LastHeightMap") : null;
+        lightData.lastHeightMap = lightingInfo.hasKey("LastHeightMap") ? lightingInfo.getIntArray("LastHeightMap")
+            : null;
         if (lightData.lastHeightMap != null) {
             Arrays.fill(lightData.lastSaveHeightMapInfo, 0L);
             for (int i = 0; i < lightData.lastHeightMap.length; i++) {
@@ -150,35 +156,43 @@ public class LightingManager implements ILightingManager {
         LightingHooks.readNeighborLightChecksFromNBT(cube, lightingInfo);
     }
 
-    @Override public Cube.ICubeLightTrackingInfo createLightData(ICube cube) {
+    @Override
+    public Cube.ICubeLightTrackingInfo createLightData(ICube cube) {
         return new CubeLightData();
     }
 
-    @Override public boolean hasPendingLightUpdates(ICube cube) {
+    @Override
+    public boolean hasPendingLightUpdates(ICube cube) {
         if (CubicChunksConfig.disableLighting) {
             return false;
         }
         return lightEngine.hasLightUpdates();
     }
 
-    @Override public void onHeightUpdate(int x, int y, int z) {
+    @Override
+    public void onHeightUpdate(int x, int y, int z) {
         if (!world.isRemote) {
             ((CubicPlayerManager) ((WorldServer) world).getPlayerManager()).heightUpdated(x, z);
         }
     }
 
-    @Override public void onTrackCubeSurface(ICube cube) {
+    @Override
+    public void onTrackCubeSurface(ICube cube) {
         if (!world.isRemote) {
-            BlockPos min = cube.getCoords().getMinBlockPos();
-            BlockPos max = cube.getCoords().getMaxBlockPos();
-            for (BlockPos pos : BlockPos.getAllInBox(min.getY(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ())) {
+            BlockPos min = cube.getCoords()
+                .getMinBlockPos();
+            BlockPos max = cube.getCoords()
+                .getMaxBlockPos();
+            for (BlockPos pos : BlockPos
+                .getAllInBox(min.getY(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ())) {
                 ((CubicPlayerManager) ((WorldServer) world).getPlayerManager()).heightUpdated(pos.getX(), pos.getZ());
             }
             tryScheduleOnLoadHeightChangeRelight(cube);
         }
     }
 
-    @Override public void doFirstLight(ICube cube) {
+    @Override
+    public void doFirstLight(ICube cube) {
         if (CubicChunksConfig.disableLighting) {
             return;
         }
@@ -191,8 +205,8 @@ public class LightingManager implements ILightingManager {
      */
     private void tryScheduleOnLoadHeightChangeRelight(ICube cube) {
         CubeLightData data = (CubeLightData) ((Cube) cube).getCubeLightData();
-        //checking isSurfaceTracked because external tools could set it, and the heightmap could be wrong
-        if(data.lastHeightMap == null || !cube.isSurfaceTracked()) {
+        // checking isSurfaceTracked because external tools could set it, and the heightmap could be wrong
+        if (data.lastHeightMap == null || !cube.isSurfaceTracked()) {
             return;
         }
 
@@ -228,13 +242,19 @@ public class LightingManager implements ILightingManager {
             if (minCubeY == cubeY) {
                 minLocal = blockToLocal(minUpdateY);
             }
-            lightManager.updateLightBetween(cube.getColumn(), localX, localToBlock(cubeY, minLocal), localToBlock(cubeY, maxLocal), localZ);
+            lightManager.updateLightBetween(
+                cube.getColumn(),
+                localX,
+                localToBlock(cubeY, minLocal),
+                localToBlock(cubeY, maxLocal),
+                localZ);
         }
 
         data.lastHeightMap = null;
     }
 
     public static class CubeLightData implements Cube.ICubeLightTrackingInfo {
+
         public long neighborLightChecksBlock, neighborLightChecksSky;
         /**
          * null value means no update from height change from last save
@@ -247,7 +267,8 @@ public class LightingManager implements ILightingManager {
         // 11 -> height was in the current cube, no need to save, if saving is needed the cube will be modified
         public long[] lastSaveHeightMapInfo = new long[8]; // xSize*zSize * 2 bits per entry / Long.SIZE
 
-        @Override public boolean needsSaving(ICube cube) {
+        @Override
+        public boolean needsSaving(ICube cube) {
             int[] heightmap = cube.getColumn().heightMap;
             for (int i = 0; i < heightmap.length; i++) {
                 int cy = Coords.blockToCube(heightmap[i] - 1);
@@ -271,7 +292,8 @@ public class LightingManager implements ILightingManager {
             return false;
         }
 
-        @Override public void markSaved(ICube cube) {
+        @Override
+        public void markSaved(ICube cube) {
             Arrays.fill(lastSaveHeightMapInfo, 0L);
             int[] heightmap = cube.getColumn().heightMap;
             for (int i = 0; i < heightmap.length; i++) {

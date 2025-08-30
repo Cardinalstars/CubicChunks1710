@@ -1,26 +1,22 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.server.chunkio;
 
@@ -29,18 +25,20 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
-import com.cardinalstar.cubicchunks.api.worldgen.LoadingData;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.storage.IThreadedFileIO;
 
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
+import com.cardinalstar.cubicchunks.api.worldgen.LoadingData;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 public interface ICubeIO extends Flushable, AutoCloseable, IThreadedFileIO {
+
     @Override
     void flush() throws IOException;
 
@@ -49,7 +47,8 @@ public interface ICubeIO extends Flushable, AutoCloseable, IThreadedFileIO {
 
     default PartialData<Chunk> loadColumnAsyncPart(World world, int chunkX, int chunkZ) throws IOException {
         PartialData<Chunk> data = loadColumnNbt(chunkX, chunkZ);
-            Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> asyncCallbacks = CubeGeneratorsRegistry.getColumnAsyncLoadingCallbacks();
+        Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> asyncCallbacks = CubeGeneratorsRegistry
+            .getColumnAsyncLoadingCallbacks();
         if (!asyncCallbacks.isEmpty()) {
             ChunkCoordIntPair chunkPos = new ChunkCoordIntPair(chunkX, chunkZ);
             LoadingData<ChunkCoordIntPair> chunkLoadingData = new LoadingData<>(chunkPos, data.getNbt());
@@ -68,7 +67,8 @@ public interface ICubeIO extends Flushable, AutoCloseable, IThreadedFileIO {
 
     default PartialData<ICube> loadCubeAsyncPart(Chunk column, int cubeY) throws IOException {
         PartialData<ICube> data = loadCubeNbt(column, cubeY);
-        Collection<BiConsumer<? super World, ? super LoadingData<CubePos>>> asyncCallbacks = CubeGeneratorsRegistry.getCubeAsyncLoadingCallbacks();
+        Collection<BiConsumer<? super World, ? super LoadingData<CubePos>>> asyncCallbacks = CubeGeneratorsRegistry
+            .getCubeAsyncLoadingCallbacks();
         if (!asyncCallbacks.isEmpty()) {
             CubePos cubePos = new CubePos(column.xPosition, cubeY, column.zPosition);
             LoadingData<CubePos> chunkLoadingData = new LoadingData<>(cubePos, data.getNbt());
@@ -101,6 +101,7 @@ public interface ICubeIO extends Flushable, AutoCloseable, IThreadedFileIO {
      * Stores partially read cube, before sync read but after async read
      */
     class PartialData<T> {
+
         NBTTagCompound nbt;
         T object;
 

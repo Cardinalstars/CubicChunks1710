@@ -1,41 +1,39 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.cardinalstar.cubicchunks.world.core;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.lighting.LightingManager;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.world.chunk.Chunk;
-
-import javax.annotation.ParametersAreNonnullByDefault;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 
 @ParametersAreNonnullByDefault
 public class ClientHeightMap implements IHeightMap {
@@ -55,26 +53,27 @@ public class ClientHeightMap implements IHeightMap {
     }
 
     private void writeNewTopBlockY(int localX, int changeY, int localZ, int newOpacity, int oldTopY) {
-        //to avoid unnecessary delay when breaking blocks client needs to figure out new height before
-        //server tells the client what it is
-        //common cases first
+        // to avoid unnecessary delay when breaking blocks client needs to figure out new height before
+        // server tells the client what it is
+        // common cases first
         if (addedTopBlock(changeY, newOpacity, oldTopY)) {
-            //added new block, so it's correct. Server update will be ignored
+            // added new block, so it's correct. Server update will be ignored
             this.setHeight(localX, localZ, changeY);
             return;
         }
         if (!changedTopToTransparent(changeY, newOpacity, oldTopY)) {
-            //if not breaking the top block - no changes
+            // if not breaking the top block - no changes
             return;
         }
         assert !(newOpacity == 0 && oldTopY < changeY) : "Changed transparent block into transparent!";
 
-        //changed the top block
+        // changed the top block
         int newTop = oldTopY - 1;
-        while ((column.getBlock(localX, newTop, localZ).getLightOpacity()) == 0 && newTop > oldTopY - LightingManager.MAX_CLIENT_LIGHT_SCAN_DEPTH){
+        while ((column.getBlock(localX, newTop, localZ)
+            .getLightOpacity()) == 0 && newTop > oldTopY - LightingManager.MAX_CLIENT_LIGHT_SCAN_DEPTH) {
             newTop--;
         }
-        //update the heightmap. If this update it not accurate - it will be corrected when server sends block update
+        // update the heightmap. If this update it not accurate - it will be corrected when server sends block update
         this.setHeight(localX, localZ, newTop);
     }
 

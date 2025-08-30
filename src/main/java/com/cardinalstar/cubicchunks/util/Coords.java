@@ -1,36 +1,34 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.cardinalstar.cubicchunks.util;
 
-import com.cardinalstar.cubicchunks.api.ICube;
+import java.util.Random;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
 
-import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Random;
+import com.cardinalstar.cubicchunks.api.ICube;
 
 @ParametersAreNonnullByDefault
 public class Coords {
@@ -42,12 +40,12 @@ public class Coords {
      */
     public static final int BIOMES_PER_CUBE = 8 * 1 * 8;
 
-//    public static BlockPos midPos(BlockPos p1, BlockPos p2) {
-//        //bitshifting each number and then adding the result - this rounds the number down and prevents overflow
-//        return new BlockPos((p1.getX() >> 1) + (p2.getX() >> 1) + (p1.getX() & p2.getX() & 1),
-//            (p1.getY() >> 1) + (p2.getY() >> 1) + (p1.getY() & p2.getY() & 1),
-//            (p1.getZ() >> 1) + (p2.getZ() >> 1) + (p1.getZ() & p2.getZ() & 1));
-//    }
+    // public static BlockPos midPos(BlockPos p1, BlockPos p2) {
+    // //bitshifting each number and then adding the result - this rounds the number down and prevents overflow
+    // return new BlockPos((p1.getX() >> 1) + (p2.getX() >> 1) + (p1.getX() & p2.getX() & 1),
+    // (p1.getY() >> 1) + (p2.getY() >> 1) + (p1.getY() & p2.getY() & 1),
+    // (p1.getZ() >> 1) + (p2.getZ() >> 1) + (p1.getZ() & p2.getZ() & 1));
+    // }
 
     public static int blockToLocal(int val) {
         return val & 0xf;
@@ -60,7 +58,6 @@ public class Coords {
     public static int blockCeilToCube(int val) {
         return -((-val) >> 4);
     }
-
 
     /**
      * @deprecated Use {@link #blockToLocalBiome3d(int)}
@@ -111,13 +108,13 @@ public class Coords {
         return blockToCube(MathHelper.floor_double(entity.posY));
     }
 
-//    public static BlockPos getCubeCenter(ICube cube) {
-//        return new BlockPos(
-//            cubeToMinBlock(cube.getX()) | 8,
-//            cubeToMinBlock(cube.getY()) | 8,
-//            cubeToMinBlock(cube.getZ()) | 8
-//        );
-//    }
+    // public static BlockPos getCubeCenter(ICube cube) {
+    // return new BlockPos(
+    // cubeToMinBlock(cube.getX()) | 8,
+    // cubeToMinBlock(cube.getY()) | 8,
+    // cubeToMinBlock(cube.getZ()) | 8
+    // );
+    // }
 
     public static int blockToCube(double blockPos) {
         return blockToCube(MathHelper.floor_double(blockPos));
@@ -141,9 +138,9 @@ public class Coords {
      * Return a seed for random number generation, based on initial seed and 3 coordinates.
      *
      * @param seed the world seed
-     * @param x the x coordinate
-     * @param y the y coordinate
-     * @param z the zPosition coordinate
+     * @param x    the x coordinate
+     * @param y    the y coordinate
+     * @param z    the zPosition coordinate
      * @return A seed value based on world seed, x, y and zPosition coordinates
      */
     public static long coordsSeedHash(long seed, int x, int y, int z) {

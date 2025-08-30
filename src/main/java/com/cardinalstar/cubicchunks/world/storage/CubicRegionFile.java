@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.BitSet;
 
-public class CubicRegionFile
-{
+public class CubicRegionFile {
+
     private final int[] chunkTimestamps;
     private long lastModified;
     private final File file;
@@ -15,25 +15,20 @@ public class CubicRegionFile
     private BitSet sectorUsed;
     private final int SECTOR_SIZE = 4096;
 
-    public CubicRegionFile(File file, IStorageFormat format)
-    {
+    public CubicRegionFile(File file, IStorageFormat format) {
         this.file = file;
         this.format = format;
         this.chunkTimestamps = new int[format.getNumEntries()];
-        try
-        {
-            if (file.exists())
-            {
+        try {
+            if (file.exists()) {
                 this.lastModified = file.lastModified();
             }
 
             this.dataFile = new RandomAccessFile(file, "rw");
 
             // Write header if there is none
-            if (dataFile.length() < 4096L)
-            {
-                for (int i = 0; i < this.format.getNumEntries() / 4; ++i)
-                {
+            if (dataFile.length() < 4096L) {
+                for (int i = 0; i < this.format.getNumEntries() / 4; ++i) {
                     this.dataFile.writeInt(0);
                 }
             }
@@ -48,28 +43,24 @@ public class CubicRegionFile
             }
 
             // Set header sectors to used
-            this.sectorUsed = new BitSet((int)this.dataFile.length() / SECTOR_SIZE);
-            for (int i = 0; i < ((this.format.getHeaderEntrySizeBytes() * this.format.getNumEntries())/SECTOR_SIZE); i ++)
-            {
+            this.sectorUsed = new BitSet((int) this.dataFile.length() / SECTOR_SIZE);
+            for (int i = 0; i
+                < ((this.format.getHeaderEntrySizeBytes() * this.format.getNumEntries()) / SECTOR_SIZE); i++) {
                 this.sectorUsed.set(i);
             }
 
             // Begin to read header in
             this.dataFile.seek(0L);
-            for (int i = 0; i < this.format.getNumEntries(); i++)
-            {
+            for (int i = 0; i < this.format.getNumEntries(); i++) {
                 IStorageFormat.Entry entry = this.format.parseEntry(this.dataFile.readInt());
                 sectorUsed.set(entry.locationOffset, entry.locationSize);
             }
 
-            for (int i  = 0; i < this.format.getNumEntries(); i++)
-            {
+            for (int i = 0; i < this.format.getNumEntries(); i++) {
                 this.chunkTimestamps[i] = this.dataFile.readInt();
             }
 
-        }
-        catch (IOException ioexception)
-        {
+        } catch (IOException ioexception) {
             ioexception.printStackTrace();
         }
     }
