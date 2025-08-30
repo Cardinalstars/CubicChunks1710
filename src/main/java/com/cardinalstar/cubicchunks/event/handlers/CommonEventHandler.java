@@ -147,7 +147,7 @@ public class CommonEventHandler {
     }
 
     @SubscribeEvent
-    void onWorldLoad(WorldEvent.Load event) {
+    public void onWorldLoad(WorldEvent.Load event) {
         if (event.world.isRemote || !(event.world instanceof WorldServer world)) {
             return; // we will send packet to the client when it joins, client shouldn't change world types as it wants
         }
