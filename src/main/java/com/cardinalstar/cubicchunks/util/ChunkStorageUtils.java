@@ -4,7 +4,7 @@ public class ChunkStorageUtils
 {
     public static int getBlockIndex(int x, int y, int z)
     {
-        return x << 12 | z << 8 | y;
+        return x << 8 | z << 4 | y;
     }
 
     public static int getCubeBlockIndexFromChunkData(int x, int y, int z, int cubeY)

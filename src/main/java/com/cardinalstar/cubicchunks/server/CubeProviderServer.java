@@ -116,7 +116,9 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
             }
 
             //use the save format stored in the server's default world as the global world storage type
-            World overworld = worldServer.func_73046_m().getEntityWorld();
+            // TODO THIS IS DEFINITELY WRONG RIGHT NOW
+            World overworld = worldServer.provider.worldObj;
+            // World overworld = worldServer.func_73046_m().getEntityWorld();
 
             WorldSavedCubicChunksData savedData =
                 (WorldSavedCubicChunksData) overworld.perWorldStorage.loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
@@ -439,9 +441,9 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
         if (!cube.isInitialLightingDone() || !cube.isSurfaceTracked()) {
             calculateDiffuseSkylight(cube);
         }
-        if (!cube.isSurfaceTracked()) {
-            cube.trackSurface();
-        }
+//        if (!cube.isSurfaceTracked()) {
+//            cube.trackSurface();
+//        }
 
         return cube;
     }
@@ -594,7 +596,7 @@ public class CubeProviderServer extends ChunkProviderServer implements ICubeProv
             return column;
         }
 
-        column = (Chunk) CubeIOExecutor.syncColumnLoad(worldServer, cubeIO, this, columnX, columnZ).getObject();
+        column = CubeIOExecutor.syncColumnLoad(worldServer, cubeIO, this, columnX, columnZ).getObject();
         column = postProcessColumn(columnX, columnZ, column, req, forceNow);
 
         return column;

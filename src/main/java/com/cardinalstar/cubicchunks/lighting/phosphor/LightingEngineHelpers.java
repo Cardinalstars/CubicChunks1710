@@ -1,6 +1,7 @@
 package com.cardinalstar.cubicchunks.lighting.phosphor;
 
 import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.util.Coords;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.chunk.Chunk;
@@ -17,7 +18,7 @@ public class LightingEngineHelpers {
     static Block posToBlock(final int x, final int y, final int z, final ExtendedBlockStorage section) {
 
         if (section != null) {
-            Block block = section.getBlockByExtId(x, y, z);
+            Block block = section.getBlockByExtId(Coords.blockToLocal(x), Coords.blockToLocal(y), Coords.blockToLocal(z));
             if (block != null) {
                 return block;
             }

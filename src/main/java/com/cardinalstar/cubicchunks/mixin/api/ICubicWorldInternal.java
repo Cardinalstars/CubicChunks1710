@@ -106,7 +106,9 @@ public interface ICubicWorldInternal extends ICubicWorld {
          * @param heightRange     world height range
          * @param generationRange expected height range for world generation. Maximum Y should be above 0.
          */
-        void initCubicWorldServer(IntRange heightRange, IntRange generationRange);
+        void initCubicWorldServerPart1(IntRange heightRange, IntRange generationRange);
+
+        void initCubicWorldServerPart2();
 
         @Override
         CubeProviderServer getCubeCache();

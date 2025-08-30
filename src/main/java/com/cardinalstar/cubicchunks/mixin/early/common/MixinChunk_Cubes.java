@@ -43,6 +43,7 @@ import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.base.Predicate;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.block.Block;
 import net.minecraft.command.IEntitySelector;
 import net.minecraft.entity.Entity;
@@ -536,11 +537,11 @@ public abstract class MixinChunk_Cubes {
         return getEBS_CubicChunks(index);
     }
 
-    // TODO Not sure how these got here.
+    // TODO How the fuck do you mixin this?
 //    @Redirect(method = "func_150807_a", at = @At(
 //        value = "FIELD",
 //        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-//        args = "array=set"
+//        args = "array=put"
 //    ))
 //    private void setBlockWithMeta_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage val) {
 //        setEBS_CubicChunks(index, val);
@@ -576,7 +577,7 @@ public abstract class MixinChunk_Cubes {
         if (!isColumn) {
             return;
         }
-        Block block = getEBS_CubicChunks(blockToCube(y)).getBlockByExtId(x, y, z); // TODO WATCH
+        Block block = getEBS_CubicChunks(blockToCube(y)).getBlockByExtId(Coords.blockToLocal(x), Coords.blockToLocal(y), Coords.blockToLocal(z)); // TODO WATCH
         this.isModified = true;
         if (((IColumn) this).getCube(blockToCube(y)).isSurfaceTracked()) {
             opacityIndex.onOpacityChange(blockToLocal(x), y, blockToLocal(z), block.getLightOpacity());

@@ -35,6 +35,7 @@ import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubeWatcher;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
+import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.TicketList;
 import com.cardinalstar.cubicchunks.util.AddressTools;
@@ -258,7 +259,7 @@ public class Cube implements ICube {
                 {
                     for (int x = 0; x < Cube.SIZE; x++)
                     {
-                        int blockIter = x << 11 | z << 7 | y;
+                        int blockIter = x << 8 | z << 4 | y;
                         Block block = blocks[blockIter];
 
                         if (block != null && block != Blocks.air)
@@ -367,7 +368,7 @@ public class Cube implements ICube {
 
     @Override
     public void setLightFor(EnumSkyBlock lightType, int x, int y, int z, int light) {
-        column.setLightValue(lightType, x, y, z, light);
+        column.setLightValue(lightType, Coords.blockToLocal(x), Coords.blockToLocal(y), Coords.blockToLocal(z), light);
     }
 
     /**
@@ -403,7 +404,7 @@ public class Cube implements ICube {
         {
             try
             {
-                block = storage.getBlockByExtId(x, y, z);
+                block = storage.getBlockByExtId(blockToLocal(x), blockToLocal(y), blockToLocal(z));
             }
             catch (Throwable throwable)
             {

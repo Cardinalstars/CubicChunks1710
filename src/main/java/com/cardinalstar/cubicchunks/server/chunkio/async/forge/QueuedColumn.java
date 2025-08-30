@@ -25,6 +25,7 @@
  import net.minecraft.world.World;
  import net.minecraft.world.chunk.Chunk;
 
+ import javax.annotation.Nullable;
  import java.util.function.Consumer;
 
  public class QueuedColumn {
@@ -35,6 +36,9 @@
      final CubeProviderServer provider;
      net.minecraft.nbt.NBTTagCompound compound;
      private final Consumer<Chunk> setProviderLoadingColumn;
+
+     @Nullable
+     public Exception exception;
 
      public QueuedColumn(int x, int z, ICubeIO loader, World world, CubeProviderServer provider) {
          this.x = x;
