@@ -46,7 +46,7 @@ public final class SpawnPlaceFinder {
 
     private static final int MIN_FREE_SPACE_SPAWN = 32;
 
-    public static BlockPos getRandomizedSpawnPoint(World world) {
+    public static ChunkCoordinates getRandomizedSpawnPoint(World world) {
         // TODO: uses getTopSolidOrLiquidBlock() ... not good
         ChunkCoordinates spawnPoint = world.getSpawnPoint();
         BlockPos ret = new BlockPos(spawnPoint.posX, spawnPoint.posY, spawnPoint.posZ);
@@ -88,7 +88,7 @@ public final class SpawnPlaceFinder {
             }
         }
 
-        return ret;
+        return new ChunkCoordinates(ret.x, ret.y, ret.z);
     }
 
     @Nullable
