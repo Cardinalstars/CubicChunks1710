@@ -1,35 +1,32 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.world;
+
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.WorldSavedData;
 
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.world.storage.StorageFormatProviderBase;
 import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.WorldSavedData;
 
 public class WorldSavedCubicChunksData extends WorldSavedData {
 
@@ -55,17 +52,17 @@ public class WorldSavedCubicChunksData extends WorldSavedData {
 
     @Override
     public void readFromNBT(NBTTagCompound nbt) {
-        minHeight = nbt.getInteger("minHeight") & ~0xF; // set 4 least significant bits to zero to ensure they are always multiples of 16
+        minHeight = nbt.getInteger("minHeight") & ~0xF; // set 4 least significant bits to zero to ensure they are
+                                                        // always multiples of 16
         maxHeight = nbt.getInteger("maxHeight") & ~0xF;
         isCubicChunks = !nbt.hasKey("isCubicChunks") || nbt.getBoolean("isCubicChunks");
-        if(nbt.hasKey("compatibilityGeneratorType"))
+        if (nbt.hasKey("compatibilityGeneratorType"))
             compatibilityGeneratorType = new ResourceLocation(nbt.getString("compatibilityGeneratorType"));
+        else compatibilityGeneratorType = VanillaCompatibilityGeneratorProviderBase.DEFAULT;
+        if (nbt.hasKey("storageFormat")) storageFormat = new ResourceLocation(nbt.getString("storageFormat"));
         else
-            compatibilityGeneratorType = VanillaCompatibilityGeneratorProviderBase.DEFAULT;
-        if(nbt.hasKey("storageFormat"))
-            storageFormat = new ResourceLocation(nbt.getString("storageFormat"));
-        else
-            //if no storage format is set, we should assume that this world was created before the custom storage API. therefore, it
+            // if no storage format is set, we should assume that this world was created before the custom storage API.
+            // therefore, it
             // must be using anvil3d.
             storageFormat = StorageFormatProviderBase.DEFAULT;
     }

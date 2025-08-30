@@ -1,40 +1,37 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.cardinalstar.cubicchunks.world.core;
-
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.api.IHeightMap;
-import com.cardinalstar.cubicchunks.api.ICube;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
+
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.IHeightMap;
+import com.cardinalstar.cubicchunks.util.Coords;
 
 public class StagingHeightMap implements IHeightMap {
 
@@ -49,7 +46,10 @@ public class StagingHeightMap implements IHeightMap {
     public void addStagedCube(ICube cube) {
         stagedCubes.add(cube);
         // top-to-bottom order
-        stagedCubes.sort(Comparator.comparingInt(c -> -c.getCoords().getY()));
+        stagedCubes.sort(
+            Comparator.comparingInt(
+                c -> -c.getCoords()
+                    .getY()));
         // TODO: optimize
         if (!cube.isEmpty()) {
             dirtyFlag.set(0, heightmap.length);
@@ -65,12 +65,13 @@ public class StagingHeightMap implements IHeightMap {
         }
     }
 
-    @Override public void onOpacityChange(int localX, int blockY, int localZ, int opacity) {
+    @Override
+    public void onOpacityChange(int localX, int blockY, int localZ, int opacity) {
         if (opacity > 0) {
             if (blockY > getTopBlockY(localX, localZ)) {
                 heightmap[index(localX, localZ)] = blockY;
             }
-        } else if(blockY == getTopBlockY(localX, localZ)) {
+        } else if (blockY == getTopBlockY(localX, localZ)) {
             dirtyFlag.set(index(localX, localZ));
         }
     }
@@ -79,7 +80,8 @@ public class StagingHeightMap implements IHeightMap {
         return (localZ << 4) | localX;
     }
 
-    @Override public int getTopBlockY(int localX, int localZ) {
+    @Override
+    public int getTopBlockY(int localX, int localZ) {
         int idx = index(localX, localZ);
         if (!dirtyFlag.get(idx)) {
             return heightmap[idx];
@@ -96,7 +98,8 @@ public class StagingHeightMap implements IHeightMap {
                 continue;
             }
             for (int i = 15; i >= 0; i--) {
-                if (ebs.getBlockByExtId(localX, i, localZ).getLightOpacity() > 0) {
+                if (ebs.getBlockByExtId(localX, i, localZ)
+                    .getLightOpacity() > 0) {
                     return Coords.localToBlock(stagedCube.getY(), i);
                 }
             }
@@ -104,11 +107,14 @@ public class StagingHeightMap implements IHeightMap {
         return Coords.NO_HEIGHT;
     }
 
-    @SuppressWarnings("deprecation") @Override public int getTopBlockYBelow(int localX, int localZ, int blockY) {
+    @SuppressWarnings("deprecation")
+    @Override
+    public int getTopBlockYBelow(int localX, int localZ, int blockY) {
         throw new UnsupportedOperationException("Not implemented for staging heightmap");
     }
 
-    @Override public int getLowestTopBlockY() {
+    @Override
+    public int getLowestTopBlockY() {
         throw new UnsupportedOperationException("Not implemented for staging heightmap");
     }
 }

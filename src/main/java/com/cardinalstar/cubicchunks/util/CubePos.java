@@ -1,34 +1,26 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.util;
 
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.XYZAddressable;
-import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-import net.minecraft.entity.Entity;
-import net.minecraft.world.ChunkCoordIntPair;
+import static com.cardinalstar.cubicchunks.util.Coords.*;
 
 import java.util.Random;
 import java.util.function.Consumer;
@@ -36,7 +28,12 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import static com.cardinalstar.cubicchunks.util.Coords.*;
+import net.minecraft.entity.Entity;
+import net.minecraft.world.ChunkCoordIntPair;
+
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.XYZAddressable;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 /**
  * Position of a cube.
@@ -122,7 +119,7 @@ public class CubePos {
      * Compares the CubeCoordinate against the given object.
      *
      * @return True if the cube matches the given object, but false if it doesn't match, or is null, or not a
-     * CubeCoordinate object.
+     *         CubeCoordinate object.
      */
     @Override
     public boolean equals(@Nullable Object obj) {
@@ -146,9 +143,9 @@ public class CubePos {
      */
     @Override
     public int hashCode() {
-        return Long.hashCode(Bits.packSignedToLong(cubeX, Y_BITS, Y_BIT_OFFSET)
-            | Bits.packSignedToLong(cubeY, X_BITS, X_BIT_OFFSET)
-            | Bits.packSignedToLong(cubeZ, Z_BITS, Z_BIT_OFFSET));
+        return Long.hashCode(
+            Bits.packSignedToLong(cubeX, Y_BITS, Y_BIT_OFFSET) | Bits.packSignedToLong(cubeY, X_BITS, X_BIT_OFFSET)
+                | Bits.packSignedToLong(cubeZ, Z_BITS, Z_BIT_OFFSET));
     }
 
     /**
@@ -279,16 +276,15 @@ public class CubePos {
     }
 
     public boolean containsBlock(BlockPos pos) {
-        return this.cubeX == blockToCube(pos.getX()) && this.cubeY == blockToCube(pos.getY()) && this.cubeZ == blockToCube(pos.getZ());
+        return this.cubeX == blockToCube(pos.getX()) && this.cubeY == blockToCube(pos.getY())
+            && this.cubeZ == blockToCube(pos.getZ());
     }
 
-    public boolean containsBlock(int x, int y, int z)
-    {
+    public boolean containsBlock(int x, int y, int z) {
         return this.cubeX == blockToCube(x) && this.cubeY == blockToCube(y) && this.cubeZ == blockToCube(z);
     }
 
-    public static long cubeXYZToLong(int x, int y, int z)
-    {
-        return (long)x & 4294967295L | ((long)y & 4294967295L) | ((long)x & 4294967295L) << 32;
+    public static long cubeXYZToLong(int x, int y, int z) {
+        return (long) x & 4294967295L | ((long) y & 4294967295L) | ((long) x & 4294967295L) << 32;
     }
 }

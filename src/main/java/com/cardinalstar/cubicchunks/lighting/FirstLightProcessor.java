@@ -1,28 +1,37 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.lighting;
+
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import static com.cardinalstar.cubicchunks.util.Coords.cubeToMaxBlock;
+import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
+
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.world.EnumSkyBlock;
+import net.minecraft.world.IBlockAccess;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
@@ -31,17 +40,6 @@ import com.cardinalstar.cubicchunks.util.MathUtil;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-import net.minecraft.world.EnumSkyBlock;
-import net.minecraft.world.IBlockAccess;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-
-import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
-import static com.cardinalstar.cubicchunks.util.Coords.cubeToMaxBlock;
-import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
 
 /**
  * Notes on world.checkLightFor(): Decreasing light value: Light is recalculated starting from 0 ONLY for blocks where
@@ -56,8 +54,8 @@ import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
 @ParametersAreNonnullByDefault
 public class FirstLightProcessor {
 
-    //Iteration state data
-    //Cache position to avoid allocation of new object each time
+    // Iteration state data
+    // Cache position to avoid allocation of new object each time
     private int curPosX = 0;
     private int curPosY = 0;
     private int curPosZ = 0;
@@ -69,15 +67,15 @@ public class FirstLightProcessor {
      */
     public void diffuseSkylight(ICube cube) {
         ILightingManager lm = ((ICubicWorldInternal) cube.getWorld()).getLightingManager();
-        BlockPos minPos = cube.getCoords().getMinBlockPos();
-        BlockPos maxPos = cube.getCoords().getMaxBlockPos();
+        BlockPos minPos = cube.getCoords()
+            .getMinBlockPos();
+        BlockPos maxPos = cube.getCoords()
+            .getMaxBlockPos();
 
-        Iterable<BlockPos> allBlocks = BlockPos.getAllInBox(
-            minPos.x, minPos.y, minPos.z,
-            maxPos.x, maxPos.y, maxPos.z
-        );
+        Iterable<BlockPos> allBlocks = BlockPos.getAllInBox(minPos.x, minPos.y, minPos.z, maxPos.x, maxPos.y, maxPos.z);
         for (BlockPos pos : allBlocks) {
-            if (cube.getBlock(pos.x, pos.y,pos.z).getLightValue(cube.getWorld(), pos.x, pos.y, pos.z) > 0) {
+            if (cube.getBlock(pos.x, pos.y, pos.z)
+                .getLightValue(cube.getWorld(), pos.x, pos.y, pos.z) > 0) {
                 lm.checkLightFor(EnumSkyBlock.Block, pos.x, pos.y, pos.z);
             }
         }
@@ -107,29 +105,42 @@ public class FirstLightProcessor {
         for (int localX = 0; localX < Cube.SIZE; ++localX) {
             for (int localZ = 0; localZ < Cube.SIZE; ++localZ) {
                 int height = column.getTopYWithStaging(localX, localZ);
-                int maxY = cube.getCoords().getMaxBlockY();
-                int maxCubeBlockY = cube.getCoords().getMaxBlockY();
+                int maxY = cube.getCoords()
+                    .getMaxBlockY();
+                int maxCubeBlockY = cube.getCoords()
+                    .getMaxBlockY();
 
-                int minCubeBlockX = cube.getCoords().getMinBlockX();
-                int minCubeBlockZ = cube.getCoords().getMinBlockZ();
+                int minCubeBlockX = cube.getCoords()
+                    .getMinBlockX();
+                int minCubeBlockZ = cube.getCoords()
+                    .getMinBlockZ();
 
                 curPosX = minCubeBlockX + localX;
                 curPosY = 0;
                 curPosZ = minCubeBlockZ + localZ;
 
                 int minInstantFill = Integer.MIN_VALUE, maxInstantFill = Integer.MIN_VALUE;
-                if (cube.getStorage() != null && localX != 0 && localX != 15 && localZ != 0 && localZ != 15 && maxCubeBlockY > height) {
+                if (cube.getStorage() != null && localX != 0
+                    && localX != 15
+                    && localZ != 0
+                    && localZ != 15
+                    && maxCubeBlockY > height) {
                     int h1 = column.getTopYWithStaging(localX + 1, localZ);
                     int h2 = column.getTopYWithStaging(localX - 1, localZ);
                     int h3 = column.getTopYWithStaging(localX, localZ + 1);
                     int h4 = column.getTopYWithStaging(localX, localZ - 1);
                     int maxNeighbor = MathUtil.max(h1, h2, h3, h4) + 1;
                     int maxCurr = height + 2;
-                    minInstantFill = MathUtil.max(maxCurr, maxNeighbor, cube.getCoords().getMinBlockY());
+                    minInstantFill = MathUtil.max(
+                        maxCurr,
+                        maxNeighbor,
+                        cube.getCoords()
+                            .getMinBlockY());
                     maxInstantFill = maxCubeBlockY;
                 }
                 if (height < maxY) {
-                    int minCubeBlockY = cube.getCoords().getMinBlockY();
+                    int minCubeBlockY = cube.getCoords()
+                        .getMinBlockY();
                     int minY = Math.max(height, minCubeBlockY);
                     for (int yPos = minY; yPos <= maxY; yPos++) {
                         curPosY = yPos;
@@ -152,10 +163,13 @@ public class FirstLightProcessor {
         }
 
         // Iterate over all affected cubes.
-        Iterable<? extends ICube> cubes = column.getLoadedCubes(blockToCube(maxMaxHeight), blockToCube(/*minMinHeight*/Integer.MIN_VALUE));
+        Iterable<? extends ICube> cubes = column
+            .getLoadedCubes(blockToCube(maxMaxHeight), blockToCube(/* minMinHeight */Integer.MIN_VALUE));
         for (ICube otherCube : cubes) {
-            int minCubeBlockY = otherCube.getCoords().getMinBlockY();
-            int maxCubeBlockY = otherCube.getCoords().getMaxBlockY();
+            int minCubeBlockY = otherCube.getCoords()
+                .getMinBlockY();
+            int maxCubeBlockY = otherCube.getCoords()
+                .getMaxBlockY();
             for (int blockX = minBlockX; blockX <= maxBlockX; blockX++) {
                 for (int blockZ = minBlockZ; blockZ <= maxBlockZ; blockZ++) {
                     int minBlockY = minBlockYArr[blockX - minBlockX][blockZ - minBlockZ];
@@ -177,8 +191,22 @@ public class FirstLightProcessor {
                     this.curPosX = blockX;
                     this.curPosZ = blockZ;
                     // Update the block column in this cube.
-                    if (!diffuseSkylightInBlockColumn(lm, otherCube, this.curPosX, this.curPosY, this.curPosZ, minBlockY, maxBlockY)) {
-                        throw new IllegalStateException("Check light failed at (" + this.curPosX + ", " + this.curPosY + ", " + this.curPosZ + ")" + "!");
+                    if (!diffuseSkylightInBlockColumn(
+                        lm,
+                        otherCube,
+                        this.curPosX,
+                        this.curPosY,
+                        this.curPosZ,
+                        minBlockY,
+                        maxBlockY)) {
+                        throw new IllegalStateException(
+                            "Check light failed at (" + this.curPosX
+                                + ", "
+                                + this.curPosY
+                                + ", "
+                                + this.curPosZ
+                                + ")"
+                                + "!");
                     }
                 }
             }
@@ -189,16 +217,17 @@ public class FirstLightProcessor {
      * Diffuses skylight inside of the given cube in the block column specified by the given MutableBlockPos. The
      * update is limited vertically by minBlockY and maxBlockY.
      *
-     * @param cube the cube inside of which the skylight is to be diffused
-     * @param posX the x position of the block column to be updated
-     * @param posY the y position of the block column to be updated
-     * @param posZ the z position of the block column to be updated
+     * @param cube      the cube inside of which the skylight is to be diffused
+     * @param posX      the x position of the block column to be updated
+     * @param posY      the y position of the block column to be updated
+     * @param posZ      the z position of the block column to be updated
      * @param minBlockY the lower bound of the section to be updated
      * @param maxBlockY the upper bound of the section to be updated
      *
      * @return true if the update was successful, false otherwise
      */
-    private boolean diffuseSkylightInBlockColumn(ILightingManager lm, ICube cube, int posX, int posY, int posZ, int minBlockY, int maxBlockY) {
+    private boolean diffuseSkylightInBlockColumn(ILightingManager lm, ICube cube, int posX, int posY, int posZ,
+        int minBlockY, int maxBlockY) {
         int cubeMinBlockY = cubeToMinBlock(cube.getY());
         int cubeMaxBlockY = cubeToMaxBlock(cube.getY());
 
@@ -215,7 +244,6 @@ public class FirstLightProcessor {
         return true;
     }
 
-
     /**
      * Determines if the block at the given position requires a skylight update.
      *
@@ -227,14 +255,15 @@ public class FirstLightProcessor {
     private static boolean needsSkylightUpdate(ICube cube, int x, int y, int z) {
         // Opaque blocks don't need update. Nothing can emit skylight, and skylight can't get into them nor out of them.
         IBlockAccess world = cube.getWorld();
-        return cube.getBlock(x, y, z).getLightOpacity(world, x, y, z) < 15;
+        return cube.getBlock(x, y, z)
+            .getLightOpacity(world, x, y, z) < 15;
     }
 
     /**
      * Determines which vertical section of the specified block column in the given cube requires a lighting update
      * based on the current occlusion in the cube's column.
      *
-     * @param cube the cube inside of which the skylight is to be updated
+     * @param cube   the cube inside of which the skylight is to be updated
      * @param localX the local x-coordinate of the block column
      * @param localZ the local z-coordinate of the block column
      *
@@ -244,7 +273,7 @@ public class FirstLightProcessor {
     private static ImmutablePair<Integer, Integer> getMinMaxLightUpdateY(ICube cube, int localX, int localZ) {
 
         IColumn column = cube.getColumn();
-        int heightMax = ((IColumnInternal) column).getTopYWithStaging(localX, localZ);//==Y of the top block
+        int heightMax = ((IColumnInternal) column).getTopYWithStaging(localX, localZ);// ==Y of the top block
 
         // If the given cube is above the highest occluding block in the column, everything is fully lit.
         int cubeY = cube.getY();
@@ -253,13 +282,14 @@ public class FirstLightProcessor {
         }
         // If the given cube lies underneath the occluding block,
         // then only blocks in this cube need updating, already handled
-        //if (cubeY < blockToCube(heightMax)) {
-        //    return null;
-        //}
+        // if (cubeY < blockToCube(heightMax)) {
+        // return null;
+        // }
 
         // ... otherwise, the update must start at the occluding block.
-        int previousMaxHeight = column.getOpacityIndex().getTopBlockY(localX, localZ);
-        //noinspection SuspiciousNameCombination
+        int previousMaxHeight = column.getOpacityIndex()
+            .getTopBlockY(localX, localZ);
+        // noinspection SuspiciousNameCombination
         return new ImmutablePair<>(previousMaxHeight, heightMax);
     }
 }

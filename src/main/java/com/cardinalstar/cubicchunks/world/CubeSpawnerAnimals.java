@@ -1,48 +1,24 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.world;
-
-import com.cardinalstar.cubicchunks.server.CubeWatcher;
-import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.util.MathUtil;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-import cpw.mods.fml.common.eventhandler.Event;
-import net.minecraft.block.Block;
-import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.EnumCreatureType;
-import net.minecraft.entity.IEntityLivingData;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.ChunkCoordinates;
-import net.minecraft.util.MathHelper;
-import net.minecraft.world.SpawnerAnimals;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.BiomeGenBase;
-import net.minecraftforge.event.ForgeEventFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,6 +31,27 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import net.minecraft.block.Block;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.entity.IEntityLivingData;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.ChunkCoordinates;
+import net.minecraft.util.MathHelper;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraftforge.event.ForgeEventFactory;
+
+import com.cardinalstar.cubicchunks.server.CubeWatcher;
+import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.MathUtil;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
+import cpw.mods.fml.common.eventhandler.Event;
+
 @ParametersAreNonnullByDefault
 public class CubeSpawnerAnimals implements ISpawnerAnimals {
 
@@ -62,10 +59,12 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
     private static final int MOB_COUNT_DIV = (int) Math.pow(17.0D, 2.0D) * CUBES_PER_CHUNK;
     private static final int SPAWN_RADIUS = 8;
 
-    @Nonnull private Set<CubePos> cubesForSpawn = new HashSet<>();
+    @Nonnull
+    private Set<CubePos> cubesForSpawn = new HashSet<>();
 
     @Override
-    public int findChunksForSpawning(WorldServer world, boolean hostileEnable, boolean peacefulEnable, boolean spawnOnSetTickRate) {
+    public int findChunksForSpawning(WorldServer world, boolean hostileEnable, boolean peacefulEnable,
+        boolean spawnOnSetTickRate) {
         if (!hostileEnable && !peacefulEnable) {
             return 0;
         }
@@ -95,9 +94,9 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
         Random r = world.rand;
         Set<CubePos> allCubes = new HashSet<>();
         for (EntityPlayer player : world.playerEntities) {
-//            if (player.isSpectator()) {
-//                continue;
-//            }
+            // if (player.isSpectator()) {
+            // continue;
+            // }
             CubePos center = CubePos.fromEntity(player);
 
             for (int cubeXRel = -SPAWN_RADIUS; cubeXRel <= SPAWN_RADIUS; ++cubeXRel) {
@@ -111,14 +110,17 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                         assert !possibleChunks.contains(chunkPos);
                         ++chunkCount;
 
-                        boolean isEdge = cubeXRel == -SPAWN_RADIUS || cubeXRel == SPAWN_RADIUS ||
-                            cubeYRel == -SPAWN_RADIUS || cubeYRel == SPAWN_RADIUS ||
-                            cubeZRel == -SPAWN_RADIUS || cubeZRel == SPAWN_RADIUS;
+                        boolean isEdge = cubeXRel == -SPAWN_RADIUS || cubeXRel == SPAWN_RADIUS
+                            || cubeYRel == -SPAWN_RADIUS
+                            || cubeYRel == SPAWN_RADIUS
+                            || cubeZRel == -SPAWN_RADIUS
+                            || cubeZRel == SPAWN_RADIUS;
 
                         if (isEdge) {
                             continue;
                         }
-                        CubeWatcher chunkInfo = ((CubicPlayerManager) world.getPlayerManager()).getCubeWatcher(chunkPos);
+                        CubeWatcher chunkInfo = ((CubicPlayerManager) world.getPlayerManager())
+                            .getCubeWatcher(chunkPos);
 
                         if (chunkInfo != null && chunkInfo.isSentToPlayers()) {
                             allCubes.add(chunkPos);
@@ -133,14 +135,14 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
         return chunkCount;
     }
 
-    private int spawnCreatureTypeInAllChunks(EnumCreatureType mobType, WorldServer world, ArrayList<CubePos> chunkList) {
+    private int spawnCreatureTypeInAllChunks(EnumCreatureType mobType, WorldServer world,
+        ArrayList<CubePos> chunkList) {
         ChunkCoordinates spawnPoint = world.getSpawnPoint();
         int posX, posY, posZ;
 
         int totalSpawned = 0;
 
-        nextChunk:
-        for (CubePos currentChunkPos : chunkList) {
+        nextChunk: for (CubePos currentChunkPos : chunkList) {
             BlockPos blockpos = getRandomChunkPosition(world, currentChunkPos);
             if (blockpos == null) {
                 continue;
@@ -176,8 +178,8 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                     float entityX = (float) entityBlockX + 0.5F;
                     float entityZ = (float) entityBlockZ + 0.5F;
 
-                    if (world.getClosestPlayer(entityX, entityY, entityZ, 24.0D) != null ||
-                        MathUtil.distanceSq(entityX, entityY, entityZ, spawnPoint) < 576.0D) {
+                    if (world.getClosestPlayer(entityX, entityY, entityZ, 24.0D) != null
+                        || MathUtil.distanceSq(entityX, entityY, entityZ, spawnPoint) < 576.0D) {
                         continue;
                     }
                     if (biomeMobs == null) {
@@ -191,21 +193,19 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                     EntityLiving toSpawn;
 
                     try {
-                        toSpawn = biomeMobs.entityClass.getConstructor(new Class[]{
-                            World.class
-                        }).newInstance(world);
+                        toSpawn = biomeMobs.entityClass.getConstructor(new Class[] { World.class })
+                            .newInstance(world);
                     } catch (Exception exception) {
                         exception.printStackTrace();
-                        //TODO: throw when entity creation fails
+                        // TODO: throw when entity creation fails
                         return totalSpawned;
                     }
 
                     toSpawn.setLocationAndAngles(entityX, entityY, entityZ, rand.nextFloat() * 360.0F, 0.0F);
 
                     Event.Result canSpawn = ForgeEventFactory.canEntitySpawn(toSpawn, world, entityX, entityY, entityZ);
-                    if (canSpawn == Event.Result.ALLOW ||
-                        (canSpawn == Event.Result.DEFAULT && toSpawn.getCanSpawnHere() &&
-                            toSpawn.getCanSpawnHere())) {
+                    if (canSpawn == Event.Result.ALLOW || (canSpawn == Event.Result.DEFAULT && toSpawn.getCanSpawnHere()
+                        && toSpawn.getCanSpawnHere())) {
                         if (!ForgeEventFactory.doSpecialSpawn(toSpawn, world, entityX, entityY, entityZ)) {
                             entityData = toSpawn.onSpawnWithEgg(entityData);
                         }
@@ -235,13 +235,14 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
         return list;
     }
 
-    private static boolean shouldSpawnType(EnumCreatureType type, boolean hostile, boolean peaceful, boolean spawnOnSetTickRate) {
-        return !((type.getPeacefulCreature() && !peaceful) ||
-            (!type.getPeacefulCreature() && !hostile) ||
-            (type.getAnimal() && !spawnOnSetTickRate));
+    private static boolean shouldSpawnType(EnumCreatureType type, boolean hostile, boolean peaceful,
+        boolean spawnOnSetTickRate) {
+        return !((type.getPeacefulCreature() && !peaceful) || (!type.getPeacefulCreature() && !hostile)
+            || (type.getAnimal() && !spawnOnSetTickRate));
     }
 
-    @Nullable private static BlockPos getRandomChunkPosition(WorldServer world, CubePos pos) {
+    @Nullable
+    private static BlockPos getRandomChunkPosition(WorldServer world, CubePos pos) {
         int blockX = pos.getMinBlockX() + world.rand.nextInt(Cube.SIZE);
         int blockZ = pos.getMinBlockZ() + world.rand.nextInt(Cube.SIZE);
 

@@ -1,38 +1,32 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2018 @PhiPro95 and @Mathe172
- *  Copyright (c) 2021 @jellysquid_
- *  Copyright (c) 2021 OpenCubicChunks
- *  Copyright (c) 2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2018 @PhiPro95 and @Mathe172
+ * Copyright (c) 2021 @jellysquid_
+ * Copyright (c) 2021 OpenCubicChunks
+ * Copyright (c) 2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.lighting.phosphor;
 
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
 
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.util.DirectionUtils;
-import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
+import java.util.concurrent.locks.ReentrantLock;
+
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.profiler.Profiler;
@@ -41,14 +35,18 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+
 import org.joml.Vector3i;
 
-import java.util.concurrent.locks.ReentrantLock;
-
-import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
-import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.util.DirectionUtils;
+import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 
 public class PhosphorLightEngine {
+
     public static final boolean ENABLE_ILLEGAL_THREAD_ACCESS_WARNINGS = true;
 
     private static final int MAX_SCHEDULED_COUNT = 1 << 22;
@@ -60,7 +58,8 @@ public class PhosphorLightEngine {
     private final Profiler profiler;
 
     // value=padding
-    private final PooledLightUpdateQueue[] queuedLightUpdates = new PooledLightUpdateQueue[EnumSkyBlock.values().length];
+    private final PooledLightUpdateQueue[] queuedLightUpdates = new PooledLightUpdateQueue[EnumSkyBlock
+        .values().length];
 
     // value=padding
     private final PooledLightUpdateQueue[] queuedDarkenings = new PooledLightUpdateQueue[MAX_LIGHT + 1];
@@ -88,8 +87,8 @@ public class PhosphorLightEngine {
         neighborShiftsZ = sz;
     }
 
-    //Iteration state data
-    //Cache position to avoid allocation of new object each time
+    // Iteration state data
+    // Cache position to avoid allocation of new object each time
     private int curPosX = 0;
     private int curPosY = 0;
     private int curPosZ = 0;
@@ -98,7 +97,7 @@ public class PhosphorLightEngine {
     private int curCubeIdentifierX, curCubeIdentifierY, curCubeIdentifierZ;
     private int curDataX, curDataY, curDataZ, curDataVal;
 
-    //Cached data about neighboring blocks (of tempPos)
+    // Cached data about neighboring blocks (of tempPos)
     private boolean isNeighborDataValid = false;
 
     private final NeighborInfo[] neighborInfos = new NeighborInfo[6];
@@ -137,9 +136,9 @@ public class PhosphorLightEngine {
      * {@link #processLightUpdatesForType(EnumSkyBlock)}
      *
      * @param lightType the type of light to update
-     * @param x the x position to update
-     * @param y the y position to update
-     * @param z the z position to update
+     * @param x         the x position to update
+     * @param y         the y position to update
+     * @param z         the z position to update
      */
     public void scheduleLightUpdate(final EnumSkyBlock lightType, final int x, final int y, final int z) {
         this.acquireLock();
@@ -152,14 +151,15 @@ public class PhosphorLightEngine {
     }
 
     /**
-     * Schedules a light update for the specified light type and position to be processed later by {@link #processLightUpdates()}
+     * Schedules a light update for the specified light type and position to be processed later by
+     * {@link #processLightUpdates()}
      */
     private void scheduleLightUpdateInternal(final EnumSkyBlock lightType, final int x, final int y, final int z) {
         final PooledLightUpdateQueue queue = this.queuedLightUpdates[lightType.ordinal()];
 
         queue.add(x, y, z, 0);
 
-        //make sure there are not too many queued light updates
+        // make sure there are not too many queued light updates
         if (queue.size() >= MAX_SCHEDULED_COUNT) {
             this.processLightUpdatesForType(lightType);
         }
@@ -180,6 +180,7 @@ public class PhosphorLightEngine {
 
     /**
      * Processes light updates of the given light type
+     * 
      * @param lightType light type
      */
     public void processLightUpdatesForType(final EnumSkyBlock lightType) {
@@ -217,29 +218,32 @@ public class PhosphorLightEngine {
                 Thread current = Thread.currentThread();
 
                 if (current != this.ownedThread) {
-                    IllegalAccessException e = new IllegalAccessException(String.format("World is owned by '%s' (ID: %s)," +
-                            " but was accessed from thread '%s' (ID: %s)",
-                        this.ownedThread.getName(), this.ownedThread.getId(), current.getName(), current.getId()));
+                    IllegalAccessException e = new IllegalAccessException(
+                        String.format(
+                            "World is owned by '%s' (ID: %s)," + " but was accessed from thread '%s' (ID: %s)",
+                            this.ownedThread.getName(),
+                            this.ownedThread.getId(),
+                            current.getName(),
+                            current.getId()));
 
                     CubicChunks.LOGGER.warn(
-                        "Something (likely another mod) has attempted to modify the world's state from the wrong thread!\n" +
-                            "This is *bad practice* and can cause severe issues in your game. Phosphor has done as best as it can to "
+                        "Something (likely another mod) has attempted to modify the world's state from the wrong thread!\n"
+                            + "This is *bad practice* and can cause severe issues in your game. Phosphor has done as best as it can to "
                             + "mitigate this violation,"
-                            +
-                            " but it may negatively impact performance or introduce stalls.\nIn a future release, this violation may result"
+                            + " but it may negatively impact performance or introduce stalls.\nIn a future release, this violation may result"
                             + " in a hard crash instead"
-                            +
-                            " of the current soft warning. You should report this issue to our issue tracker with the following stacktrace "
+                            + " of the current soft warning. You should report this issue to our issue tracker with the following stacktrace "
                             + "information.\n(If you are"
-                            +
-                            " aware you have misbehaving mods and cannot resolve this issue, you can safely disable this warning by setting" +
-                            " `enable_illegal_thread_access_warnings` to `false` in Phosphor's configuration file for the time being.)", e);
+                            + " aware you have misbehaving mods and cannot resolve this issue, you can safely disable this warning by setting"
+                            + " `enable_illegal_thread_access_warnings` to `false` in Phosphor's configuration file for the time being.)",
+                        e);
 
                 }
 
             }
 
-            // Wait for the lock to be released. This will likely introduce unwanted stalls, but will mitigate the issue.
+            // Wait for the lock to be released. This will likely introduce unwanted stalls, but will mitigate the
+            // issue.
             this.lock.lock();
         }
     }
@@ -249,14 +253,14 @@ public class PhosphorLightEngine {
     }
 
     private void processLightUpdatesForTypeInner(final EnumSkyBlock lightType, final PooledLightUpdateQueue queue) {
-        //avoid nested calls
+        // avoid nested calls
         if (this.updating) {
             throw new IllegalStateException("Already processing updates!");
         }
 
         this.updating = true;
 
-        this.curCubeIdentifierX = Integer.MIN_VALUE; //reset chunk cache
+        this.curCubeIdentifierX = Integer.MIN_VALUE; // reset chunk cache
         this.curCubeIdentifierY = Integer.MIN_VALUE;
         this.curCubeIdentifierZ = Integer.MIN_VALUE;
 
@@ -266,7 +270,7 @@ public class PhosphorLightEngine {
 
         this.queueIt = queue.iterator();
 
-        //process the queued updates and enqueue them for further processing
+        // process the queued updates and enqueue them for further processing
         while (this.nextItem()) {
             if (this.curCube == null) {
                 continue;
@@ -276,10 +280,10 @@ public class PhosphorLightEngine {
             final int newLight = this.calculateNewLightFromCursor(lightType);
 
             if (oldLight < newLight) {
-                //don't enqueue directly for brightening in order to avoid duplicate scheduling
+                // don't enqueue directly for brightening in order to avoid duplicate scheduling
                 this.initialBrightenings.add(this.curDataX, this.curDataY, this.curDataZ, newLight);
             } else if (oldLight > newLight) {
-                //don't enqueue directly for darkening in order to avoid duplicate scheduling
+                // don't enqueue directly for darkening in order to avoid duplicate scheduling
                 this.initialDarkenings.add(this.curDataX, this.curDataY, this.curDataZ, 0);
             }
         }
@@ -290,8 +294,17 @@ public class PhosphorLightEngine {
             final int newLight = this.curDataVal;
 
             if (newLight > this.getCursorCachedLight(lightType)) {
-                //Sets the light to newLight to only schedule once. Clear leading bits of curData for later
-                this.enqueueBrightening(this.curPosX, this.curPosY, this.curPosZ, this.curDataX, this.curDataY, this.curDataZ, newLight, this.curCube, lightType);
+                // Sets the light to newLight to only schedule once. Clear leading bits of curData for later
+                this.enqueueBrightening(
+                    this.curPosX,
+                    this.curPosY,
+                    this.curPosZ,
+                    this.curDataX,
+                    this.curDataY,
+                    this.curDataZ,
+                    newLight,
+                    this.curCube,
+                    lightType);
             }
         }
 
@@ -301,26 +314,38 @@ public class PhosphorLightEngine {
             final int oldLight = this.getCursorCachedLight(lightType);
 
             if (oldLight != 0) {
-                //Sets the light to 0 to only schedule once
-                this.enqueueDarkening(this.curPosX, this.curPosY, this.curPosZ, this.curDataX, this.curDataY, this.curDataZ, oldLight, this.curCube, lightType);
+                // Sets the light to 0 to only schedule once
+                this.enqueueDarkening(
+                    this.curPosX,
+                    this.curPosY,
+                    this.curPosZ,
+                    this.curDataX,
+                    this.curDataY,
+                    this.curDataZ,
+                    oldLight,
+                    this.curCube,
+                    lightType);
             }
         }
 
         this.profiler.endSection();
 
-        //Iterate through enqueued updates (brightening and darkening in parallel) from brightest to darkest so that we only need to iterate once
+        // Iterate through enqueued updates (brightening and darkening in parallel) from brightest to darkest so that we
+        // only need to iterate once
         for (int curLight = MAX_LIGHT; curLight >= 0; --curLight) {
             this.profiler.startSection("darkening");
 
             this.queueIt = this.queuedDarkenings[curLight].iterator();
 
             while (this.nextItem()) {
-                if (this.getCursorCachedLight(lightType) >= curLight) { //don't darken if we got brighter due to some other change
+                if (this.getCursorCachedLight(lightType) >= curLight) { // don't darken if we got brighter due to some
+                                                                        // other change
                     continue;
                 }
-                final Block block = LightingEngineHelpers.posToBlock(this.curPosX, this.curPosY, this.curPosZ, this.curCube);
+                final Block block = LightingEngineHelpers
+                    .posToBlock(this.curPosX, this.curPosY, this.curPosZ, this.curCube);
                 final int luminosity = this.getCursorLuminosity(block, lightType);
-                final int opacity; //if luminosity is high enough, opacity is irrelevant
+                final int opacity; // if luminosity is high enough, opacity is irrelevant
 
                 if (luminosity >= MAX_LIGHT - 1) {
                     opacity = 1;
@@ -328,9 +353,10 @@ public class PhosphorLightEngine {
                     opacity = this.getPosOpacity(this.curPosX, this.curPosY, this.curPosZ, block);
                 }
 
-                //only darken neighbors if we indeed became darker
+                // only darken neighbors if we indeed became darker
                 if (this.calculateNewLightFromCursor(luminosity, opacity, lightType) < curLight) {
-                    //need to calculate new light value from neighbors IGNORING neighbors which are scheduled for darkening
+                    // need to calculate new light value from neighbors IGNORING neighbors which are scheduled for
+                    // darkening
                     int newLight = luminosity;
 
                     this.fetchNeighborDataFromCursor(lightType);
@@ -341,7 +367,14 @@ public class PhosphorLightEngine {
                         final ICube nCube = info.cube;
 
                         if (nCube == null) {
-                            LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPosX, this.curPosY, this.curPosZ, lightType, EnumFacing.values()[i], LightingHooks.EnumBoundaryFacing.OUT);
+                            LightingHooks.flagSecBoundaryForUpdate(
+                                this.curCube,
+                                this.curPosX,
+                                this.curPosY,
+                                this.curPosZ,
+                                lightType,
+                                EnumFacing.values()[i],
+                                LightingHooks.EnumBoundaryFacing.OUT);
                             continue;
                         }
 
@@ -355,19 +388,38 @@ public class PhosphorLightEngine {
                         final int nPosY = info.posY;
                         final int nPosZ = info.posZ;
 
-                        //schedule neighbor for darkening if we possibly light it
-                        if (curLight - this.getPosOpacity(nPosX, nPosY, nPosZ, LightingEngineHelpers.posToBlock(this.curPosX, this.curPosY, this.curPosZ, info.section)) >= nLight) {
-                            this.enqueueDarkening(nPosX, nPosY, nPosZ, info.blockX, info.blockY, info.blockZ, nLight, nCube, lightType);
-                        } else { //only use for new light calculation if not
-                            //if we can't darken the neighbor, no one else can (because of processing order) -> safe to let us be illuminated by it
+                        // schedule neighbor for darkening if we possibly light it
+                        if (curLight
+                            - this
+                                .getPosOpacity(
+                                    nPosX,
+                                    nPosY,
+                                    nPosZ,
+                                    LightingEngineHelpers
+                                        .posToBlock(this.curPosX, this.curPosY, this.curPosZ, info.section))
+                            >= nLight) {
+                            this.enqueueDarkening(
+                                nPosX,
+                                nPosY,
+                                nPosZ,
+                                info.blockX,
+                                info.blockY,
+                                info.blockZ,
+                                nLight,
+                                nCube,
+                                lightType);
+                        } else { // only use for new light calculation if not
+                            // if we can't darken the neighbor, no one else can (because of processing order) -> safe to
+                            // let us be illuminated by it
                             newLight = Math.max(newLight, nLight - opacity);
                         }
                     }
 
-                    //schedule brightening since light level was set to 0
+                    // schedule brightening since light level was set to 0
                     this.enqueueBrighteningFromCursor(newLight, lightType);
-                } else { //we didn't become darker, so we need to re-set our initial light value (was set to 0) and notify neighbors
-                    //do not spread to neighbors immediately to avoid scheduling multiple times
+                } else { // we didn't become darker, so we need to re-set our initial light value (was set to 0) and
+                         // notify neighbors
+                    // do not spread to neighbors immediately to avoid scheduling multiple times
                     this.enqueueBrighteningFromCursor(curLight, lightType);
                 }
             }
@@ -379,7 +431,8 @@ public class PhosphorLightEngine {
             while (this.nextItem()) {
                 final int oldLight = this.getCursorCachedLight(lightType);
 
-                if (oldLight == curLight) { //only process this if nothing else has happened at this position since scheduling
+                if (oldLight == curLight) { // only process this if nothing else has happened at this position since
+                                            // scheduling
                     this.world.func_147479_m(this.curPosX, this.curPosY, this.curPosZ); // TODO WATCH THIS
 
                     if (curLight > 1) {
@@ -395,11 +448,13 @@ public class PhosphorLightEngine {
     }
 
     /**
-     * Gets data for neighbors of <code>curPos</code> and saves the results into neighbor state data members. If a neighbor can't be
-     * accessed/doesn't exist, the corresponding entry in <code>neighborChunks</code> is <code>null</code> - others are not reset
+     * Gets data for neighbors of <code>curPos</code> and saves the results into neighbor state data members. If a
+     * neighbor can't be
+     * accessed/doesn't exist, the corresponding entry in <code>neighborChunks</code> is <code>null</code> - others are
+     * not reset
      */
     private void fetchNeighborDataFromCursor(final EnumSkyBlock lightType) {
-        //only update if curPos was changed
+        // only update if curPos was changed
         if (this.isNeighborDataValid) {
             return;
         }
@@ -423,7 +478,8 @@ public class PhosphorLightEngine {
             final int nCubeY = blockToCube(nPosY);
             final int nCubeZ = blockToCube(nPosZ);
 
-            if (nCubeX == this.curCubeIdentifierX && nCubeY == this.curCubeIdentifierY && nCubeZ == this.curCubeIdentifierZ) {
+            if (nCubeX == this.curCubeIdentifierX && nCubeY == this.curCubeIdentifierY
+                && nCubeZ == this.curCubeIdentifierZ) {
                 nCube = info.cube = this.curCube;
             } else {
                 nCube = info.cube = this.getCube(nPosX, nPosY, nPosZ);
@@ -443,7 +499,8 @@ public class PhosphorLightEngine {
         return y > topY;
     }
 
-    private static int getCachedLightFor(ICube cube, ExtendedBlockStorage storage, int x, int y, int z, EnumSkyBlock type) {
+    private static int getCachedLightFor(ICube cube, ExtendedBlockStorage storage, int x, int y, int z,
+        EnumSkyBlock type) {
         int localX = blockToLocal(x);
         int localY = blockToLocal(y);
         int localZ = blockToLocal(z);
@@ -497,7 +554,14 @@ public class PhosphorLightEngine {
         for (int i = 0; i < infos.length; i++) {
             NeighborInfo info = infos[i];
             if (info.cube == null) {
-                LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPosX, this.curPosY, this.curPosZ, lightType, EnumFacing.values()[i], LightingHooks.EnumBoundaryFacing.IN);
+                LightingHooks.flagSecBoundaryForUpdate(
+                    this.curCube,
+                    this.curPosX,
+                    this.curPosY,
+                    this.curPosZ,
+                    lightType,
+                    EnumFacing.values()[i],
+                    LightingHooks.EnumBoundaryFacing.IN);
                 continue;
             }
 
@@ -518,28 +582,56 @@ public class PhosphorLightEngine {
             final ICube nCube = info.cube;
 
             if (nCube == null) {
-                LightingHooks.flagSecBoundaryForUpdate(this.curCube, this.curPosX, this.curPosY, this.curPosZ, lightType, EnumFacing.values()[i], LightingHooks.EnumBoundaryFacing.OUT);
+                LightingHooks.flagSecBoundaryForUpdate(
+                    this.curCube,
+                    this.curPosX,
+                    this.curPosY,
+                    this.curPosZ,
+                    lightType,
+                    EnumFacing.values()[i],
+                    LightingHooks.EnumBoundaryFacing.OUT);
                 continue;
             }
 
-            final int newLight = curLight - this.getPosOpacity(info.posX, info.posY, info.posZ, LightingEngineHelpers.posToBlock(info.posX, info.posY, info.posZ, info.section));
+            final int newLight = curLight - this.getPosOpacity(
+                info.posX,
+                info.posY,
+                info.posZ,
+                LightingEngineHelpers.posToBlock(info.posX, info.posY, info.posZ, info.section));
 
             if (newLight > info.light) {
-                this.enqueueBrightening(info.posX, info.posY, info.posZ, info.blockX, info.blockY, info.blockZ, newLight, nCube, lightType);
+                this.enqueueBrightening(
+                    info.posX,
+                    info.posY,
+                    info.posZ,
+                    info.blockX,
+                    info.blockY,
+                    info.blockZ,
+                    newLight,
+                    nCube,
+                    lightType);
             }
         }
     }
 
     private void enqueueBrighteningFromCursor(final int newLight, final EnumSkyBlock lightType) {
-        this.enqueueBrightening(this.curPosX, this.curPosY, this.curPosZ, this.curDataX, this.curDataY, this.curDataZ, newLight, this.curCube, lightType);
+        this.enqueueBrightening(
+            this.curPosX,
+            this.curPosY,
+            this.curPosZ,
+            this.curDataX,
+            this.curDataY,
+            this.curDataZ,
+            newLight,
+            this.curCube,
+            lightType);
     }
 
     /**
      * Enqueues the pos for brightening and sets its light value to <code>newLight</code>
      */
-    private void enqueueBrightening(final int x, final int y, final int z,
-                                    final int posX, final int posY, final int posZ, final int newLight,
-                                    final ICube cube, final EnumSkyBlock lightType) {
+    private void enqueueBrightening(final int x, final int y, final int z, final int posX, final int posY,
+        final int posZ, final int newLight, final ICube cube, final EnumSkyBlock lightType) {
         this.queuedBrightenings[newLight].add(posX, posY, posZ, newLight);
 
         cube.setLightFor(lightType, x, y, z, newLight);
@@ -548,9 +640,8 @@ public class PhosphorLightEngine {
     /**
      * Enqueues the pos for darkening and sets its light value to 0
      */
-    private void enqueueDarkening(final int x, final int y, final int z,
-                                  final int posX, final int posY, final int posZ, final int oldLight,
-                                  final ICube cube, final EnumSkyBlock lightType) {
+    private void enqueueDarkening(final int x, final int y, final int z, final int posX, final int posY, final int posZ,
+        final int oldLight, final ICube cube, final EnumSkyBlock lightType) {
         this.queuedDarkenings[oldLight].add(posX, posY, posZ, 0);
 
         cube.setLightFor(lightType, x, y, z, 0);
@@ -615,7 +706,8 @@ public class PhosphorLightEngine {
             }
         }
 
-        return MathHelper.clamp_int(state.getLightValue(this.world, this.curPosX, this.curPosY, this.curPosZ), 0, MAX_LIGHT);
+        return MathHelper
+            .clamp_int(state.getLightValue(this.world, this.curPosX, this.curPosY, this.curPosZ), 0, MAX_LIGHT);
     }
 
     private int getPosOpacity(final int x, final int y, final int z, final Block block) {
@@ -640,20 +732,19 @@ public class PhosphorLightEngine {
         public int posY;
         public int posZ;
 
-        void setPos(int x, int y, int z)
-        {
+        void setPos(int x, int y, int z) {
             this.posX = x;
             this.posY = y;
             this.posZ = z;
         }
 
-
     }
 
-
     static class ClientUtils {
+
         static boolean isCallingFromMainThread() {
-            return Minecraft.getMinecraft().func_152345_ab();
+            return Minecraft.getMinecraft()
+                .func_152345_ab();
         }
     }
 }

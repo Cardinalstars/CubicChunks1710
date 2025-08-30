@@ -1,52 +1,49 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.network;
 
-
-import com.cardinalstar.cubicchunks.client.CubeProviderClient;
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.util.Bits;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import cpw.mods.fml.common.network.ByteBufUtils;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
-import gnu.trove.list.TShortList;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.NibbleArray;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
 
 import java.util.Arrays;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.NibbleArray;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+
+import com.cardinalstar.cubicchunks.client.CubeProviderClient;
+import com.cardinalstar.cubicchunks.util.AddressTools;
+import com.cardinalstar.cubicchunks.util.Bits;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+
+import cpw.mods.fml.common.network.ByteBufUtils;
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
+import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import gnu.trove.list.TShortList;
+import io.netty.buffer.ByteBuf;
 
 // this class exists only for network compatibility with older servers
 @ParametersAreNonnullByDefault
@@ -56,8 +53,7 @@ public class PacketCubeSkyLightUpdates implements IMessage {
     private boolean isFullRelight;
     private byte[] data;
 
-    public PacketCubeSkyLightUpdates() {
-    }
+    public PacketCubeSkyLightUpdates() {}
 
     public PacketCubeSkyLightUpdates(Cube cube, TShortList updates) {
         if (cube.getStorage() == null) {
@@ -73,7 +69,8 @@ public class PacketCubeSkyLightUpdates implements IMessage {
             int localX = AddressTools.getLocalX(packed);
             int localY = AddressTools.getLocalY(packed);
             int localZ = AddressTools.getLocalZ(packed);
-            int value = cube.getStorage().getExtSkylightValue(localX, localY, localZ);
+            int value = cube.getStorage()
+                .getExtSkylightValue(localX, localY, localZ);
             byte byte1 = (byte) (Bits.packUnsignedToInt(localX, 4, 0) | Bits.packUnsignedToInt(localY, 4, 4));
             byte byte2 = (byte) (Bits.packUnsignedToInt(localZ, 4, 0) | Bits.packUnsignedToInt(value, 4, 4));
             this.data[i * 2] = byte1;
@@ -89,7 +86,10 @@ public class PacketCubeSkyLightUpdates implements IMessage {
             return;
         }
         this.cube = cube.getCoords();
-        this.data = Arrays.copyOf(cube.getStorage().getSkylightArray().data, Cube.SIZE * Cube.SIZE * Cube.SIZE / 2);
+        this.data = Arrays.copyOf(
+            cube.getStorage()
+                .getSkylightArray().data,
+            Cube.SIZE * Cube.SIZE * Cube.SIZE / 2);
     }
 
     @Override
@@ -127,7 +127,8 @@ public class PacketCubeSkyLightUpdates implements IMessage {
         return isFullRelight;
     }
 
-    @Nullable byte[] getData() {
+    @Nullable
+    byte[] getData() {
         return data;
     }
 
@@ -138,7 +139,8 @@ public class PacketCubeSkyLightUpdates implements IMessage {
     public static class Handler extends AbstractClientMessageHandler<PacketCubeSkyLightUpdates> {
 
         @Override
-        public void handleClientMessage(World world, EntityPlayer player, PacketCubeSkyLightUpdates message, MessageContext ctx) {
+        public void handleClientMessage(World world, EntityPlayer player, PacketCubeSkyLightUpdates message,
+            MessageContext ctx) {
             WorldClient worldClient = (WorldClient) world;
             CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getChunkProvider();
 
@@ -151,7 +153,8 @@ public class PacketCubeSkyLightUpdates implements IMessage {
             }
             ExtendedBlockStorage storage = cube.getStorage();
             if (cube.getStorage() == null) {
-                cube.setStorage(storage = new ExtendedBlockStorage(cubeToMinBlock(cube.getY()), !worldClient.provider.hasNoSky));
+                cube.setStorage(
+                    storage = new ExtendedBlockStorage(cubeToMinBlock(cube.getY()), !worldClient.provider.hasNoSky));
             }
             assert storage != null;
             if (message.isFullRelight()) {
@@ -160,8 +163,11 @@ public class PacketCubeSkyLightUpdates implements IMessage {
                 for (int i = 0; i < message.updateCount(); i++) {
                     int packed1 = message.getData()[i * 2] & 0xFF;
                     int packed2 = message.getData()[i * 2 + 1] & 0xFF;
-                    storage.setExtSkylightValue(Bits.unpackUnsigned(packed1, 4, 0), Bits.unpackUnsigned(packed1, 4, 4),
-                        Bits.unpackUnsigned(packed2, 4, 0), Bits.unpackUnsigned(packed2, 4, 4));
+                    storage.setExtSkylightValue(
+                        Bits.unpackUnsigned(packed1, 4, 0),
+                        Bits.unpackUnsigned(packed1, 4, 4),
+                        Bits.unpackUnsigned(packed2, 4, 0),
+                        Bits.unpackUnsigned(packed2, 4, 4));
                 }
             }
             cube.markForRenderUpdate();

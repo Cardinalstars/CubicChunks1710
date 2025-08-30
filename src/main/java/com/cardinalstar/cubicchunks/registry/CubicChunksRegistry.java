@@ -1,12 +1,13 @@
 package com.cardinalstar.cubicchunks.registry;
 
-import net.minecraft.util.ResourceLocation;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.minecraft.util.ResourceLocation;
+
 public class CubicChunksRegistry<V> {
+
     private final Map<ResourceLocation, V> entries = new HashMap<>();
 
     public CubicChunksRegistry<V> register(ResourceLocation name, V entry) {

@@ -1,31 +1,24 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.api;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +28,9 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Hash table implementation for objects in a 3-dimensional cartesian coordinate
@@ -49,7 +45,8 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
 
     private static final Logger LOGGER = LogManager.getLogger("cubicchunks");
 
-    private static final boolean CHECK_THREADED_WRITES = "true".equalsIgnoreCase(System.getProperty("cubicchunks.debug.checkThreadedXYZMapWrites"));
+    private static final boolean CHECK_THREADED_WRITES = "true"
+        .equalsIgnoreCase(System.getProperty("cubicchunks.debug.checkThreadedXYZMapWrites"));
 
     /**
      * A larger prime number used as seed for hash calculation.
@@ -62,15 +59,18 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
      * iterate thru elements using simple index increment. Added to optimize map
      * iterator.
      */
-    @Nonnull private XYZAddressable[] bucketsByPointer;
+    @Nonnull
+    private XYZAddressable[] bucketsByPointer;
     /**
      * Backing array containing all elements of this map, accessed by hash.
      * Elements of this array accessed a same way as regular Java HashSet and
      * HashMap items, fastest way possible. It is used to optimize
      * {@code get(III)} function.
      */
-    @Nonnull private XYZAddressable[] bucketsByHash;
-    @Nonnull private int[] pointers;
+    @Nonnull
+    private XYZAddressable[] bucketsByHash;
+    @Nonnull
+    private int[] pointers;
     /**
      * the current number of elements in this map
      */
@@ -100,12 +100,13 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
      * map will automatically grow if the specified load is surpassed.
      *
      * @param loadFactor the load factor
-     * @param capacity the initial capacity
+     * @param capacity   the initial capacity
      */
     public XYZMap(float loadFactor, int capacity) {
 
         if (loadFactor > 1.0) {
-            throw new IllegalArgumentException("You really dont want to be using a " + loadFactor + " load loadFactor with this hash table!");
+            throw new IllegalArgumentException(
+                "You really dont want to be using a " + loadFactor + " load loadFactor with this hash table!");
         }
 
         this.loadFactor = loadFactor;
@@ -222,8 +223,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
         this.pointers[pointerIndex] = size;
 
         // If the load threshold has been reached, increase the map's size.
-        if (this.size > this.loadThreshold)
-            grow();
+        if (this.size > this.loadThreshold) grow();
         return null;
     }
 
@@ -365,15 +365,14 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
             XYZAddressable bucket = bucketsByPointer[i];
             newBucketsByPointer[i] = bucket;
             int pointerIndex = hash(bucket.getX(), bucket.getY(), bucket.getZ()) & newMask;
-            while (newPointers[pointerIndex] != 0)
-                pointerIndex = ++pointerIndex & newMask;
+            while (newPointers[pointerIndex] != 0) pointerIndex = ++pointerIndex & newMask;
             newPointers[pointerIndex] = i;
             newBucketsByHash[pointerIndex] = bucket;
         }
         bucketsByPointer = newBucketsByPointer;
         bucketsByHash = newBucketsByHash;
         pointers = newPointers;
-        mask=newMask;
+        mask = newMask;
         loadThreshold = (int) (newLength * this.loadFactor) - 2;
     }
 
@@ -382,7 +381,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
      * values on its right to the left.
      *
      * @param holePointerIndex the index of the ponter to be collapsed
-     * @param holeIndex an index of the bucket to be collapsed
+     * @param holeIndex        an index of the bucket to be collapsed
      */
     private void collapseBucket(final int holePointerIndex, final int holeIndex) {
         final int lastElement = size;
@@ -449,7 +448,9 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
     private void checkThreadedWrite() {
         if (CHECK_THREADED_WRITES) {
             if (Thread.currentThread() != debugStartThreadRef) {
-                LOGGER.error("Invalid threaded write access", new RuntimeException("Detected XYZ map write access from unexpected thread!"));
+                LOGGER.error(
+                    "Invalid threaded write access",
+                    new RuntimeException("Detected XYZ map write access from unexpected thread!"));
             }
         }
     }
@@ -514,8 +515,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
             public T next() {
                 start = false;
                 T toReturn = (T) bucketsByPointer[at++];
-                if (at > size)
-                    at = 1;
+                if (at > size) at = 1;
                 return toReturn;
             }
 

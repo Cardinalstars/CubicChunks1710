@@ -1,28 +1,48 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.server.chunkio;
+
+import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.NextTickListEntry;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.NibbleArray;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.minecraftforge.event.world.ChunkDataEvent;
+
+import org.apache.logging.log4j.Level;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
@@ -34,31 +54,8 @@ import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import cpw.mods.fml.common.FMLCommonHandler;
+
 import cpw.mods.fml.common.FMLLog;
-import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompressedStreamTools;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.NextTickListEntry;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.NibbleArray;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.minecraftforge.common.util.Constants;
-import net.minecraftforge.event.world.ChunkDataEvent;
-import org.apache.logging.log4j.Level;
-
-import javax.annotation.ParametersAreNonnullByDefault;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
 @ParametersAreNonnullByDefault
 class IONbtWriter {
@@ -73,8 +70,8 @@ class IONbtWriter {
         NBTTagCompound columnNbt = new NBTTagCompound();
         NBTTagCompound level = new NBTTagCompound();
         columnNbt.setTag("Level", level);
-//        columnNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
-//        FMLCommonHandler.instance().getDataFixer().writeVersionData(columnNbt);
+        // columnNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
+        // FMLCommonHandler.instance().getDataFixer().writeVersionData(columnNbt);
         writeBaseColumn(column, level);
         writeBiomes(column, level);
         writeOpacityIndex(column, level);
@@ -84,11 +81,11 @@ class IONbtWriter {
 
     static NBTTagCompound write(final Cube cube) {
         NBTTagCompound cubeNbt = new NBTTagCompound();
-        //Added to preserve compatibility with vanilla NBT chunk format.
+        // Added to preserve compatibility with vanilla NBT chunk format.
         NBTTagCompound level = new NBTTagCompound();
         cubeNbt.setTag("Level", level);
-//        cubeNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
-//        FMLCommonHandler.instance().getDataFixer().writeVersionData(cubeNbt);
+        // cubeNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
+        // FMLCommonHandler.instance().getDataFixer().writeVersionData(cubeNbt);
         writeBaseCube(cube, level);
         writeBlocks(cube, level);
         writeEntities(cube, level);
@@ -108,14 +105,15 @@ class IONbtWriter {
         nbt.setByte("v", (byte) 1);
         nbt.setLong("InhabitedTime", column.inhabitedTime);
 
-//        if (column.getCapabilities() != null) {
-//            try {
-//                nbt.setTag("ForgeCaps", column.getCapabilities().serializeNBT());
-//            } catch (Exception exception) {
-//                CubicChunks.LOGGER.error("A capability provider has thrown an exception trying to write state. It will not persist. "
-//                    + "Report this to the mod author", exception);
-//            }
-//        }
+        // if (column.getCapabilities() != null) {
+        // try {
+        // nbt.setTag("ForgeCaps", column.getCapabilities().serializeNBT());
+        // } catch (Exception exception) {
+        // CubicChunks.LOGGER.error("A capability provider has thrown an exception trying to write state. It will not
+        // persist. "
+        // + "Report this to the mod author", exception);
+        // }
+        // }
     }
 
     private static void writeBiomes(Chunk column, NBTTagCompound nbt) {// biomes
@@ -146,14 +144,15 @@ class IONbtWriter {
 
         cubeNbt.setBoolean("initLightDone", cube.isInitialLightingDone());
 
-//        if (cube.getCapabilities() != null) {
-//            try {
-//                cubeNbt.setTag("ForgeCaps", cube.getCapabilities().serializeNBT());
-//            } catch (Exception exception) {
-//                CubicChunks.LOGGER.error("A capability provider has thrown an exception trying to write state. It will not persist. "
-//                    + "Report this to the mod author", exception);
-//            }
-//        }
+        // if (cube.getCapabilities() != null) {
+        // try {
+        // cubeNbt.setTag("ForgeCaps", cube.getCapabilities().serializeNBT());
+        // } catch (Exception exception) {
+        // CubicChunks.LOGGER.error("A capability provider has thrown an exception trying to write state. It will not
+        // persist. "
+        // + "Report this to the mod author", exception);
+        // }
+        // }
     }
 
     private static void writeBlocks(Cube cube, NBTTagCompound cubeNbt) {
@@ -219,15 +218,11 @@ class IONbtWriter {
         cube.hasEntities = false;
         NBTTagList entityTagList = new NBTTagList();
         NBTTagCompound entityCompound;
-        for (Entity entity : cube.getEntityContainer())
-        {
+        for (Entity entity : cube.getEntityContainer()) {
             entityCompound = new NBTTagCompound();
 
-
-            try
-            {
-                if (entity.writeToNBTOptional(entityCompound))
-                {
+            try {
+                if (entity.writeToNBTOptional(entityCompound)) {
                     cube.hasEntities = true;
                     entityTagList.appendTag(entityCompound);
 
@@ -235,20 +230,29 @@ class IONbtWriter {
                     int cubeY = Coords.getCubeYForEntity(entity);
                     int cubeZ = Coords.getCubeZForEntity(entity);
                     if (cubeX != cube.getX() || cubeY != cube.getY() || cubeZ != cube.getZ()) {
-                        CubicChunks.LOGGER.warn(String.format("Saved entity %s in cube (%d,%d,%d) to cube (%d,%d,%d)! Entity thinks its in (%d,%d,%d)",
-                            entity.getClass().getName(),
-                            cubeX, cubeY, cubeZ,
-                            cube.getX(), cube.getY(), cube.getZ(),
-                            entity.chunkCoordX, entity.chunkCoordY, entity.chunkCoordZ
-                        ));
+                        CubicChunks.LOGGER.warn(
+                            String.format(
+                                "Saved entity %s in cube (%d,%d,%d) to cube (%d,%d,%d)! Entity thinks its in (%d,%d,%d)",
+                                entity.getClass()
+                                    .getName(),
+                                cubeX,
+                                cubeY,
+                                cubeZ,
+                                cube.getX(),
+                                cube.getY(),
+                                cube.getZ(),
+                                entity.chunkCoordX,
+                                entity.chunkCoordY,
+                                entity.chunkCoordZ));
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                FMLLog.log(Level.ERROR, e,
+            } catch (Exception e) {
+                FMLLog.log(
+                    Level.ERROR,
+                    e,
                     "An Entity type %s has thrown an exception trying to write state. It will not persist. Report this to the mod author",
-                    entity.getClass().getName());
+                    entity.getClass()
+                        .getName());
             }
         }
         cubeNbt.setTag("Entities", entityTagList);
@@ -257,7 +261,8 @@ class IONbtWriter {
     private static void writeTileEntities(Cube cube, NBTTagCompound cubeNbt) {// tile entities
         NBTTagList nbtTileEntities = new NBTTagList();
         cubeNbt.setTag("TileEntities", nbtTileEntities);
-        for (TileEntity blockEntity : cube.getTileEntityMap().values()) {
+        for (TileEntity blockEntity : cube.getTileEntityMap()
+            .values()) {
             NBTTagCompound nbtTileEntity = new NBTTagCompound();
             blockEntity.writeToNBT(nbtTileEntity);
             nbtTileEntities.appendTag(nbtTileEntity);
@@ -266,7 +271,8 @@ class IONbtWriter {
 
     private static void writeScheduledTicks(Cube cube, NBTTagCompound cubeNbt) {// scheduled block ticks
         Iterable<NextTickListEntry> scheduledTicks = getScheduledTicks(cube);
-        long time = cube.getWorld().getTotalWorldTime();
+        long time = cube.getWorld()
+            .getTotalWorldTime();
 
         NBTTagList nbtTicks = new NBTTagList();
         cubeNbt.setTag("TileTicks", nbtTicks);
@@ -296,8 +302,7 @@ class IONbtWriter {
 
     private static void writeBiomes(Cube cube, NBTTagCompound nbt) {// biomes
         byte[] biomes = cube.getBiomeArray();
-        if (biomes != null)
-            nbt.setByteArray("Biomes3D", biomes);
+        if (biomes != null) nbt.setByteArray("Biomes3D", biomes);
     }
 
     private static List<NextTickListEntry> getScheduledTicks(Cube cube) {
@@ -309,8 +314,12 @@ class IONbtWriter {
         }
         WorldServer worldServer = cube.getWorld();
 
-        out.addAll(((ICubicWorldInternal.Server) worldServer).getScheduledTicks().getForCube(cube.getCoords()));
-        out.addAll(((ICubicWorldInternal.Server) worldServer).getThisTickScheduledTicks().getForCube(cube.getCoords()));
+        out.addAll(
+            ((ICubicWorldInternal.Server) worldServer).getScheduledTicks()
+                .getForCube(cube.getCoords()));
+        out.addAll(
+            ((ICubicWorldInternal.Server) worldServer).getThisTickScheduledTicks()
+                .getForCube(cube.getCoords()));
 
         return out;
     }

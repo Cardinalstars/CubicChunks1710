@@ -1,26 +1,22 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.api.worldgen;
 
@@ -30,9 +26,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.util.Box;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.world.ChunkPosition;
@@ -40,23 +33,30 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.util.Box;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 @ParametersAreNonnullByDefault
 public interface ICubeGenerator {
 
     Box RECOMMENDED_FULL_POPULATOR_REQUIREMENT = new Box(
-        -1, -1, -1, // ignore jungle trees and other very tall structures and let them reach potentially unloaded cubes
-        0, 0, 0
-    );
+        -1,
+        -1,
+        -1, // ignore jungle trees and other very tall structures and let them reach potentially unloaded cubes
+        0,
+        0,
+        0);
 
     Box RECOMMENDED_GENERATE_POPULATOR_REQUIREMENT = new Box(
-        1, 1, 1, // ignore jungle trees and other very tall structures and let them reach potentially unloaded cubes
-        0, 0, 0
-    );
+        1,
+        1,
+        1, // ignore jungle trees and other very tall structures and let them reach potentially unloaded cubes
+        0,
+        0,
+        0);
 
-    Box NO_REQUIREMENT = new Box(
-        0, 0, 0,
-        0, 0, 0
-    );
+    Box NO_REQUIREMENT = new Box(0, 0, 0, 0, 0, 0);
 
     /**
      * Generate a new cube
@@ -97,8 +97,10 @@ public interface ICubeGenerator {
      * Population should* be done with the restriction that it may not affect cubes whose call to
      * {@link ICubeGenerator#getFullPopulationRequirements(ICube)} would does include {@code cube}.
      *
-     * Note: Unlike vanilla this method will NEVER cause recursive generation, thus the area that it populates is not as strict.
-     * Generation should still be restricted as the player might see something generate in a chunk they have already been sent
+     * Note: Unlike vanilla this method will NEVER cause recursive generation, thus the area that it populates is not as
+     * strict.
+     * Generation should still be restricted as the player might see something generate in a chunk they have already
+     * been sent
      *
      * @param cube the cube to populate
      */
@@ -108,7 +110,8 @@ public interface ICubeGenerator {
         return Optional.of(this.provideCube(chunk, cubeX, cubeY, cubeZ));
     }
 
-    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, Block[] blocks, byte[] blockMeta, boolean forceGenerate) {
+    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, Block[] blocks, byte[] blockMeta,
+        boolean forceGenerate) {
         Chunk column = new Chunk(world, columnX, columnZ);
         this.generateColumn(column);
         return Optional.of(column);
@@ -129,7 +132,7 @@ public interface ICubeGenerator {
      * @param cubeY Y coordinate of the cube
      * @param cubeZ Z coordinate of the cube
      * @return The generator state. READY means that the asynchronous part of generation is done.
-     * WAITING means that async part is in progress. FAIL if cube cannot be generated
+     *         WAITING means that async part is in progress. FAIL if cube cannot be generated
      */
     default GeneratorReadyState pollAsyncCubeGenerator(int cubeX, int cubeY, int cubeZ) {
         return GeneratorReadyState.READY;
@@ -141,7 +144,7 @@ public interface ICubeGenerator {
      * @param chunkX X coordinate of the column
      * @param chunkZ Z coordinate of the column
      * @return The generator state. READY means that the asynchronous part of generation is done.
-     * WAITING means that async part is in progress. FAIL if cube cannot be generated
+     *         WAITING means that async part is in progress. FAIL if cube cannot be generated
      */
     default GeneratorReadyState pollAsyncColumnGenerator(int chunkX, int chunkZ) {
         return GeneratorReadyState.READY;
@@ -154,7 +157,7 @@ public interface ICubeGenerator {
      * @param cubeY Y coordinate of the cube
      * @param cubeZ Z coordinate of the cube
      * @return The generator state. READY means that the asynchronous part of generation is done.
-     * WAITING means that async part is in progress. FAIL if cube cannot be generated
+     *         WAITING means that async part is in progress. FAIL if cube cannot be generated
      */
     default GeneratorReadyState pollAsyncCubePopulator(int cubeX, int cubeY, int cubeZ) {
         return GeneratorReadyState.READY;
@@ -162,10 +165,13 @@ public interface ICubeGenerator {
 
     /**
      * Get the bounding box defining a range of cubes whose population contributes to {@code cube} being fully
-     * populated. The requested cubes will all be generated and populated when the cube that they affect needs to be fully populated.
+     * populated. The requested cubes will all be generated and populated when the cube that they affect needs to be
+     * fully populated.
      *
      * Consider the following example: A call to some implementation of
-     * {@link ICubeGenerator#populate(ICube)} populates a 16x16x16 block area in a 2x2x2 area of cubes around the center.
+     * {@link ICubeGenerator#populate(ICube)} populates a 16x16x16 block area in a 2x2x2 area of cubes around the
+     * center.
+     * 
      * <pre>
      *
      * Shown: Which cubes affect the current cube (marked with dots), and their corresponding areas of population.
@@ -209,9 +215,11 @@ public interface ICubeGenerator {
      * </pre>
      *
      * This method would return {@code {(-1,-1,-1), (0, 0, 0)}}, indicating that populate calls to all cubes in
-     * that area write to this cube.<br> <br>
+     * that area write to this cube.<br>
+     * <br>
      *
-     * Note: Large ranges are not recommended. If you need to generate a large structure like a nether fort, look at how MInecraft generates such
+     * Note: Large ranges are not recommended. If you need to generate a large structure like a nether fort, look at how
+     * MInecraft generates such
      * structures
      *
      * Also @{see #getPopulationPregenerationRequirements}
@@ -223,7 +231,8 @@ public interface ICubeGenerator {
     Box getFullPopulationRequirements(ICube cube);
 
     /**
-     * Get the Box will all the cubes that populating this cube will affect this cube. These cubes will be generated before the cube is populated,
+     * Get the Box will all the cubes that populating this cube will affect this cube. These cubes will be generated
+     * before the cube is populated,
      * even if it's not full population.
      *
      * @param cube The target cube
@@ -256,12 +265,12 @@ public interface ICubeGenerator {
      * Retrieve a list of creature classes eligible for spawning at the specified location.
      *
      * @param type the creature type that we are interested in spawning
-     * @param x the x position we want to spawn creatures at
-     * @param y the y position we want to spawn creatures at
-     * @param z the z position we want to spawn creatures at
+     * @param x    the x position we want to spawn creatures at
+     * @param y    the y position we want to spawn creatures at
+     * @param z    the z position we want to spawn creatures at
      *
      * @return a list of creature classes that can spawn here. Example: Calling this method inside a nether fortress
-     * returns EntityBlaze, EntityPigZombie, EntitySkeleton, and EntityMagmaCube
+     *         returns EntityBlaze, EntityPigZombie, EntitySkeleton, and EntityMagmaCube
      */
     List<BiomeGenBase.SpawnListEntry> getPossibleCreatures(EnumCreatureType type, int x, int y, int z);
 
@@ -269,8 +278,8 @@ public interface ICubeGenerator {
      * Gets the closest structure with name {@code name}. This is primarily used when an eye of ender is trying to find
      * a stronghold.
      *
-     * @param name the name of the structure
-     * @param pos find the structure closest to this position
+     * @param name           the name of the structure
+     * @param pos            find the structure closest to this position
      * @param findUnexplored true if should also find not yet generated structures
      *
      * @return the position of the structure, or {@code null} if none could be found

@@ -1,34 +1,25 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.cardinalstar.cubicchunks.world.core;
-
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.api.IHeightMap;
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -36,6 +27,11 @@ import java.io.IOException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
+
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.IHeightMap;
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 @ParametersAreNonnullByDefault
 public class ServerHeightMap implements IHeightMap {
@@ -51,18 +47,21 @@ public class ServerHeightMap implements IHeightMap {
      * Array containing the y-coordinates of the lowest segment in each block column. The value {@link Coords#NO_HEIGHT}
      * is used if a given block column does not contain any segments.
      */
-    @Nonnull private final int[] ymin;
+    @Nonnull
+    private final int[] ymin;
 
     /**
      * Array containing the y-coordinate of the highest segment in each block column. The value {@link Coords#NO_HEIGHT}
      * is used if a given block column does not contain any segments.
      */
-    @Nonnull private final HeightMap ymax;
+    @Nonnull
+    private final HeightMap ymax;
 
     /**
      * Array containing an array of segments for each x/z position in a column.
      */
-    @Nonnull private final int[][] segments;
+    @Nonnull
+    private final int[][] segments;
 
     private int heightMapLowest;
 
@@ -80,7 +79,6 @@ public class ServerHeightMap implements IHeightMap {
 
         this.heightMapLowest = Coords.NO_HEIGHT;
     }
-
 
     private static int getOpacity(int segmentIndex) {
         return (segmentIndex + 1) % 2;
@@ -207,6 +205,7 @@ public class ServerHeightMap implements IHeightMap {
         int belowYSegment = segments[segmentIndex - 1];
         return belowYSegment - 1;
     }
+
     @Override
     public int getLowestTopBlockY() {
         if (this.heightMapLowest == Coords.NO_HEIGHT) {
@@ -222,7 +221,6 @@ public class ServerHeightMap implements IHeightMap {
         }
         return this.heightMapLowest;
     }
-
 
     // Helper ----------------------------------------------------------------------------------------------------------
 
@@ -254,67 +252,56 @@ public class ServerHeightMap implements IHeightMap {
 
         // making a new section
 
-        //more than one block above ymax?
+        // more than one block above ymax?
         if (blockY > this.ymax.get(xzIndex) + 1) {
             /*
-             A visualization of what happens:
-
-             X - already opaque, within min-max
-             # - newly set opaque
-
-             [ ]
-             --- --> no segment here, new_ymax=blockY
-             [#] (block at blockY)
-             --- --> segment=2, height=blockY, isOpaque=1
-             [ ]
-             ---
-             [ ]
-             --- --> segment=1, height=old_ymax + 1, isOpaque=0
-             [X] (block at old_ymax)
-             ---
-             [X]
-             ---
-             [X] (block at ymin)
-             --- --> segment=0, height=ymin, isOpaque=1
-             [ ]
-              ^ going up from there
+             * A visualization of what happens:
+             * X - already opaque, within min-max
+             * # - newly set opaque
+             * [ ]
+             * --- --> no segment here, new_ymax=blockY
+             * [#] (block at blockY)
+             * --- --> segment=2, height=blockY, isOpaque=1
+             * [ ]
+             * ---
+             * [ ]
+             * --- --> segment=1, height=old_ymax + 1, isOpaque=0
+             * [X] (block at old_ymax)
+             * ---
+             * [X]
+             * ---
+             * [X] (block at ymin)
+             * --- --> segment=0, height=ymin, isOpaque=1
+             * [ ]
+             * ^ going up from there
              */
-            this.segments[xzIndex] = new int[]{
-                this.ymin[xzIndex],
-                this.ymax.get(xzIndex) + 1,
-                blockY
-            };
+            this.segments[xzIndex] = new int[] { this.ymin[xzIndex], this.ymax.get(xzIndex) + 1, blockY };
             this.ymax.set(xzIndex, blockY);
             return;
-            //more than one block below ymin?
+            // more than one block below ymin?
         } else if (blockY < this.ymin[xzIndex] - 1) {
             /*
-             X - already opaque, within min-max
-             # - newly set opaque
-
-             ---
-             [ ]
-             --- --> no segment, limited by ymax
-             [X] (block at ymax)
-             ---
-             [X]
-             ---
-             [X] (block at old_ymin)
-             --- --> segment=2, height=old_ymin, isOpaque=1
-             [ ]
-             ---
-             [ ]
-             --- --> segment=1, height=blockY + 1, isOpaque=0
-             [#] (block at blockY)
-             --- --> segment=0, height=blockY, isOpaque=1
-             [ ]
-              ^ going up from there
+             * X - already opaque, within min-max
+             * # - newly set opaque
+             * ---
+             * [ ]
+             * --- --> no segment, limited by ymax
+             * [X] (block at ymax)
+             * ---
+             * [X]
+             * ---
+             * [X] (block at old_ymin)
+             * --- --> segment=2, height=old_ymin, isOpaque=1
+             * [ ]
+             * ---
+             * [ ]
+             * --- --> segment=1, height=blockY + 1, isOpaque=0
+             * [#] (block at blockY)
+             * --- --> segment=0, height=blockY, isOpaque=1
+             * [ ]
+             * ^ going up from there
              */
-            this.segments[xzIndex] = new int[]{
-                blockY,
-                blockY + 1,
-                this.ymin[xzIndex]
-            };
+            this.segments[xzIndex] = new int[] { blockY, blockY + 1, this.ymin[xzIndex] };
             this.ymin[xzIndex] = blockY;
             return;
         }
@@ -328,8 +315,8 @@ public class ServerHeightMap implements IHeightMap {
         if (this.ymin[xzIndex] == Coords.NO_HEIGHT && this.ymax.get(xzIndex) == Coords.NO_HEIGHT) {
             return;
         }
-        assert !(this.ymin[xzIndex] == Coords.NO_HEIGHT || this.ymax.get(xzIndex) == Coords.NO_HEIGHT) :
-            "Only one of ymin and ymax is NONE! This is not possible";
+        assert !(this.ymin[xzIndex] == Coords.NO_HEIGHT
+            || this.ymax.get(xzIndex) == Coords.NO_HEIGHT) : "Only one of ymin and ymax is NONE! This is not possible";
 
         // only one block left?
         if (this.ymax.get(xzIndex) == this.ymin[xzIndex]) {
@@ -359,32 +346,30 @@ public class ServerHeightMap implements IHeightMap {
         }
 
         // we must be bisecting the range, need to make segments
-        assert (blockY > this.ymin[xzIndex] && blockY <
-            this.ymax.get(xzIndex)) :
-            String.format("blockY outside of ymin/ymax range: %d -> [%d,%d]", blockY, this.ymin[xzIndex], this.ymax.get(xzIndex));
-        /*
-         Example:
-         ---
-         [ ]
-         --- --> no segment, limited by ymax
-         [X] (block at ymax)
-         ---
-         [X]
-         --- --> segment=2, height=blockY + 1, isOpaque=1
-         [-] <--removing this, at y=blockY
-         --- --> segment=1, height=blockY, isOpaque=0
-         [X]
-         ---
-         [X] (block ay ymin)
-         --- --> segment=0, height=ymin, isOpaque=1
-         [ ]
-          ^ going up
-        */
-        this.segments[xzIndex] = new int[]{
-            this.ymin[xzIndex],
+        assert (blockY > this.ymin[xzIndex] && blockY < this.ymax.get(xzIndex)) : String.format(
+            "blockY outside of ymin/ymax range: %d -> [%d,%d]",
             blockY,
-            blockY + 1
-        };
+            this.ymin[xzIndex],
+            this.ymax.get(xzIndex));
+        /*
+         * Example:
+         * ---
+         * [ ]
+         * --- --> no segment, limited by ymax
+         * [X] (block at ymax)
+         * ---
+         * [X]
+         * --- --> segment=2, height=blockY + 1, isOpaque=1
+         * [-] <--removing this, at y=blockY
+         * --- --> segment=1, height=blockY, isOpaque=0
+         * [X]
+         * ---
+         * [X] (block ay ymin)
+         * --- --> segment=0, height=ymin, isOpaque=1
+         * [ ]
+         * ^ going up
+         */
+        this.segments[xzIndex] = new int[] { this.ymin[xzIndex], blockY, blockY + 1 };
     }
 
     private void setOpacityWithSegments(int xzIndex, int blockY, boolean isOpaque) {
@@ -427,30 +412,30 @@ public class ServerHeightMap implements IHeightMap {
         boolean extendsBottomSegmentByOne = blockY == this.ymin[xzIndex] - 1;
         if (extendsBottomSegmentByOne) {
             /*
-             ---
-             [X]
-             ---
-             [X]
-             --- <-- the current bottom segment starts here
-             [#] <-- inserting here
-             --- <-- new bottom segment start
-             [ ]
-              ^ going up
+             * ---
+             * [X]
+             * ---
+             * [X]
+             * --- <-- the current bottom segment starts here
+             * [#] <-- inserting here
+             * --- <-- new bottom segment start
+             * [ ]
+             * ^ going up
              */
             moveSegmentStartDownAndUpdateMinY(xzIndex, 0);
         } else {
             /*
-             ---
-             [X]
-             ---
-             [X]
-             --- <-- the current bottom segment starts here, now segment 2
-             [ ]
-             --- <-- new segment 1, height=blockY + 1, isOpaque=0
-             [#] <-- inserting here
-             --- <-- new segment 0, height=blockY, isOpaque=1
-             [ ]
-              ^ going up
+             * ---
+             * [X]
+             * ---
+             * [X]
+             * --- <-- the current bottom segment starts here, now segment 2
+             * [ ]
+             * --- <-- new segment 1, height=blockY + 1, isOpaque=0
+             * [#] <-- inserting here
+             * --- <-- new segment 0, height=blockY, isOpaque=1
+             * [ ]
+             * ^ going up
              */
             int segment0 = blockY;
             int segment1 = blockY + 1;
@@ -471,34 +456,34 @@ public class ServerHeightMap implements IHeightMap {
         boolean extendsTopSegmentByOne = blockY == this.ymax.get(xzIndex) + 1;
         if (extendsTopSegmentByOne) {
             /*
-             [ ]
-             --- <-- new ymax
-             [#] <-- inserting here
-             --- <-- current top segment ends here, limited by ymax
-             [X]
-             ---
-             [X]
-              ^ going up
+             * [ ]
+             * --- <-- new ymax
+             * [#] <-- inserting here
+             * --- <-- current top segment ends here, limited by ymax
+             * [X]
+             * ---
+             * [X]
+             * ^ going up
              */
             this.ymax.set(xzIndex, blockY);
         } else {
             /*
-             [ ]
-             --- <-- limited by newMaxY
-             [#] <-- inserting here
-             --- <-- new segment [previousLastSegment+2], height=blockY, isOpaque=1
-             [ ] <-- possibly many blocks here
-             ---
-             [ ] <-- block at prevMaxY+1
-             --- <-- previously limited by ymax, add segment=[previousLastSegment+1], height=prevMaxY+1, isOpaque=0
-             [X] <-- block at prevMaxY
-             ---
-             [X]
-              ^ going up
+             * [ ]
+             * --- <-- limited by newMaxY
+             * [#] <-- inserting here
+             * --- <-- new segment [previousLastSegment+2], height=blockY, isOpaque=1
+             * [ ] <-- possibly many blocks here
+             * ---
+             * [ ] <-- block at prevMaxY+1
+             * --- <-- previously limited by ymax, add segment=[previousLastSegment+1], height=prevMaxY+1, isOpaque=0
+             * [X] <-- block at prevMaxY
+             * ---
+             * [X]
+             * ^ going up
              */
             int segmentPrevLastPlus1 = this.ymax.get(xzIndex) + 1;
             int segmentPrevLastPlus2 = blockY;
-            //insert below the segment above the last segment, so above the last segment
+            // insert below the segment above the last segment, so above the last segment
             insertSegmentsBelow(xzIndex, lastIndex + 1, segmentPrevLastPlus1, segmentPrevLastPlus2);
             this.ymax.set(xzIndex, blockY);
         }
@@ -510,7 +495,7 @@ public class ServerHeightMap implements IHeightMap {
 
         int segmentWithBlockY = segments[segmentIndexWithBlockY];
 
-        //does it even change anything?
+        // does it even change anything?
         if (getOpacity(segmentIndexWithBlockY) == isOpaqueInt) {
             return;
         }
@@ -524,25 +509,25 @@ public class ServerHeightMap implements IHeightMap {
             return;
         }
         /*
-         3 possible cases:
-          * change at the top of segment
-          * change at the bottom of segment
-          * change in the middle of segment
-        */
+         * 3 possible cases:
+         * change at the top of segment
+         * change at the bottom of segment
+         * change in the middle of segment
+         */
         int lastSegment = getLastSegmentIndex(segments);
         if (blockY == segmentTop) {
-            //if it's the top of the top segment - just change ymax
+            // if it's the top of the top segment - just change ymax
             if (segmentIndexWithBlockY == lastSegment) {
                 this.ymax.decrement(xzIndex);
                 return;
             }
             /*
-             [-]
-             ---
-             [#] <-- changing this from [X] to [-]
-             ---
-             [X] <-- segmentWithBlockY
-              ^ going up
+             * [-]
+             * ---
+             * [#] <-- changing this from [X] to [-]
+             * ---
+             * [X] <-- segmentWithBlockY
+             * ^ going up
              */
             moveSegmentStartDownAndUpdateMinY(xzIndex, segmentIndexWithBlockY + 1);
             return;
@@ -552,18 +537,18 @@ public class ServerHeightMap implements IHeightMap {
             return;
         }
         /*
-         ---
-         [X]
-         ---
-         [X]
-         --- <-- insert this (newSegment2), height=blockY + 1, opacity=!isOpaque
-         [#] <-- changing this
-         --- <-- insert this (newSegment1), height=blockY, opacity=isOpaque
-         [X]
-         ---
-         [X]
-         --- <-- segmentWithBlockY
-         [-]
+         * ---
+         * [X]
+         * ---
+         * [X]
+         * --- <-- insert this (newSegment2), height=blockY + 1, opacity=!isOpaque
+         * [#] <-- changing this
+         * --- <-- insert this (newSegment1), height=blockY, opacity=isOpaque
+         * [X]
+         * ---
+         * [X]
+         * --- <-- segmentWithBlockY
+         * [-]
          */
         int newSegment1 = blockY;
         int newSegment2 = blockY + 1;
@@ -578,14 +563,14 @@ public class ServerHeightMap implements IHeightMap {
         assert lastSegmentIndex >= 2 : "Less than 3 segments in array!";
         if (segmentIndexWithBlockY == lastSegmentIndex) {
 
-            //the top segment must be opaque, so we set it to transparent
-            //and the segment below it is also transparent.
-            //set both of them to NONE and decrease maxY
+            // the top segment must be opaque, so we set it to transparent
+            // and the segment below it is also transparent.
+            // set both of them to NONE and decrease maxY
             int segmentBelow = segments[segmentIndexWithBlockY - 1];
             this.ymax.set(xzIndex, segmentBelow - 1);
             if (segmentIndexWithBlockY == 2) {
-                //after removing top 2 segments we will be left with 1 segment
-                //remove them entirely to guarantee at least 3 segments and use min/maxY
+                // after removing top 2 segments we will be left with 1 segment
+                // remove them entirely to guarantee at least 3 segments and use min/maxY
                 this.segments[xzIndex] = null;
                 return;
             }
@@ -595,7 +580,7 @@ public class ServerHeightMap implements IHeightMap {
             return;
         }
         if (segmentIndexWithBlockY == 0) {
-            //same logic as for top segment applies
+            // same logic as for top segment applies
             this.ymin[xzIndex] = segments[2];
             if (lastSegmentIndex == 2) {
                 this.segments[xzIndex] = null;
@@ -605,28 +590,26 @@ public class ServerHeightMap implements IHeightMap {
             return;
         }
         /*
-         The situation:
-         # - opacity to set
-         - - opposite opacity
-
-         ---
-         [#]
-         ---
-         [#]
-         --- <-- old segment=segmentIndexWithBlockY+1, height=blockY+1
-         [-]
-         --- <-- old segment=segmentIndexWithBlockY, height=blockY, opacity=(-)
-         [#]
-         ---
-         [#]
-          ^ going up
-
-          Since this is not the top/bottom segment - we can remove it.
-          And to avoid 2 identical segments in a row - remove the one above too
+         * The situation:
+         * # - opacity to set
+         * - - opposite opacity
+         * ---
+         * [#]
+         * ---
+         * [#]
+         * --- <-- old segment=segmentIndexWithBlockY+1, height=blockY+1
+         * [-]
+         * --- <-- old segment=segmentIndexWithBlockY, height=blockY, opacity=(-)
+         * [#]
+         * ---
+         * [#]
+         * ^ going up
+         * Since this is not the top/bottom segment - we can remove it.
+         * And to avoid 2 identical segments in a row - remove the one above too
          */
         removeTwoSegments(xzIndex, segmentIndexWithBlockY);
-        //but in case after the removal there are less than 3 segments
-        //remove them entirely and rely only on min/maxY
+        // but in case after the removal there are less than 3 segments
+        // remove them entirely and rely only on min/maxY
         if (lastSegmentIndex == 2) {
             this.segments[xzIndex] = null;
         }
@@ -660,7 +643,12 @@ public class ServerHeightMap implements IHeightMap {
         int jmax = getLastSegmentIndex(segments);
 
         // remove the segment
-        System.arraycopy(segments, firstSegmentToRemove + 2, segments, firstSegmentToRemove, jmax - 1 - firstSegmentToRemove);
+        System.arraycopy(
+            segments,
+            firstSegmentToRemove + 2,
+            segments,
+            firstSegmentToRemove,
+            jmax - 1 - firstSegmentToRemove);
         segments[jmax] = NONE_SEGMENT;
         segments[jmax - 1] = NONE_SEGMENT;
         assert parityCheck(xzIndex) : "The number of segments was wrong!";
@@ -670,33 +658,38 @@ public class ServerHeightMap implements IHeightMap {
         }
     }
 
-    //is theIndex = lastSegmentIndex+1, it will be inserted after last segment
+    // is theIndex = lastSegmentIndex+1, it will be inserted after last segment
     private void insertSegmentsBelow(int xzIndex, int theIndex, int... newSegments) {
         int lastIndex = getLastSegmentIndex(this.segments[xzIndex]);
         int expandSize = newSegments.length;
-        //will it fit in current array?
+        // will it fit in current array?
         if (this.segments[xzIndex].length >= lastIndex + expandSize) {
-            //shift all segments up
-            System.arraycopy(this.segments[xzIndex], theIndex, this.segments[xzIndex], theIndex + expandSize, lastIndex + 1 - theIndex);
+            // shift all segments up
+            System.arraycopy(
+                this.segments[xzIndex],
+                theIndex,
+                this.segments[xzIndex],
+                theIndex + expandSize,
+                lastIndex + 1 - theIndex);
             System.arraycopy(newSegments, 0, this.segments[xzIndex], theIndex, expandSize);
             assert parityCheck(xzIndex) : "The number of segments was wrong!";
         } else {
-            //need to expand the array
+            // need to expand the array
             int[] newSegmentArr = new int[(lastIndex + 1) + expandSize];
             int newArrIndex = 0;
             int oldArrIndex = 0;
-            //copy all index up to before theIndex
+            // copy all index up to before theIndex
             for (int i = 0; i < theIndex; i++) {
                 newSegmentArr[newArrIndex] = this.segments[xzIndex][oldArrIndex];
                 newArrIndex++;
                 oldArrIndex++;
             }
-            //copy new elements
+            // copy new elements
             for (int i = 0; i < expandSize; i++) {
                 newSegmentArr[newArrIndex] = newSegments[i];
                 newArrIndex++;
             }
-            //copy everything else
+            // copy everything else
             while (newArrIndex < newSegmentArr.length) {
                 newSegmentArr[newArrIndex] = this.segments[xzIndex][oldArrIndex];
                 newArrIndex++;
@@ -709,7 +702,7 @@ public class ServerHeightMap implements IHeightMap {
 
     private int getSegmentTopBlockY(int xzIndex, int segmentIndex) {
         int[] segments = this.segments[xzIndex];
-        //if it's the last segment in the array, or the one above is NoneSegment
+        // if it's the last segment in the array, or the one above is NoneSegment
         if (segments.length - 1 == segmentIndex || segments[segmentIndex + 1] == NONE_SEGMENT) {
             return this.ymax.get(xzIndex);
         }
@@ -757,15 +750,15 @@ public class ServerHeightMap implements IHeightMap {
 
     private int readIntBigEndian(byte[] arr, int pos) {
         int ch1 = arr[pos] & 0xFF;
-        int ch2 = arr[pos+1] & 0xFF;
-        int ch3 = arr[pos+2] & 0xFF;
-        int ch4 = arr[pos+3] & 0xFF;
+        int ch2 = arr[pos + 1] & 0xFF;
+        int ch3 = arr[pos + 2] & 0xFF;
+        int ch4 = arr[pos + 3] & 0xFF;
         return (ch1 << 24) | (ch2 << 16) | (ch3 << 8) | ch4;
     }
 
     private int readUShortBigEndian(byte[] arr, int pos) {
         int ch1 = arr[pos] & 0xFF;
-        int ch2 = arr[pos+1] & 0xFF;
+        int ch2 = arr[pos + 1] & 0xFF;
         return (ch1 << 8) | ch2;
     }
 
@@ -785,7 +778,6 @@ public class ServerHeightMap implements IHeightMap {
             }
         }
     }
-
 
     // Debug -----------------------------------------------------------------------------------------------------------
 

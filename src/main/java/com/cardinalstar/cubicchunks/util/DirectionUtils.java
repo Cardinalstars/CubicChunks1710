@@ -1,14 +1,14 @@
 package com.cardinalstar.cubicchunks.util;
 
-import com.gtnewhorizon.gtnhlib.client.renderer.quad.Axis;
 import net.minecraft.util.EnumFacing;
+
 import org.joml.Vector3i;
 
-public class DirectionUtils
-{
+import com.gtnewhorizon.gtnhlib.client.renderer.quad.Axis;
 
-    public static EnumFacing getOpposite(EnumFacing dir)
-    {
+public class DirectionUtils {
+
+    public static EnumFacing getOpposite(EnumFacing dir) {
         return switch (dir) {
             case DOWN -> EnumFacing.UP;
             case UP -> EnumFacing.DOWN;
@@ -19,8 +19,7 @@ public class DirectionUtils
         };
     }
 
-    public static Vector3i getDirectionVec(EnumFacing dir)
-    {
+    public static Vector3i getDirectionVec(EnumFacing dir) {
         return switch (dir) {
             case DOWN -> new Vector3i(0, -1, 0);
             case UP -> new Vector3i(0, 1, 0);
@@ -31,8 +30,7 @@ public class DirectionUtils
         };
     }
 
-    public static Axis fromFacing(EnumFacing dir)
-    {
+    public static Axis fromFacing(EnumFacing dir) {
         return switch (dir) {
             case DOWN, UP -> Axis.Y;
             case NORTH, SOUTH -> Axis.Z;
