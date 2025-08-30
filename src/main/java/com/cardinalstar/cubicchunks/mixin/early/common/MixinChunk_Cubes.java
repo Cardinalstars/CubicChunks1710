@@ -1012,7 +1012,7 @@ public abstract class MixinChunk_Cubes {
                 continue;
             }
             for (Entity entity : cube.getEntityContainer()) {
-                if (!entity.getBoundingBox()
+                if (entity.getBoundingBox() == null || !entity.getBoundingBox()
                     .intersectsWith(aabb) || entity == entityIn) {
                     continue;
                 }
