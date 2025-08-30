@@ -230,7 +230,7 @@ public class Cube implements ICube {
 
                     if (block != null && block.getMaterial() != Material.air) {
                         if (this.storage == null) {
-                            this.storage = new ExtendedBlockStorage(cubeY, flag);
+                            this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), flag);
                         }
                         this.storage.func_150818_a(x, y, z, block);
                     }
@@ -256,7 +256,7 @@ public class Cube implements ICube {
                         if (block != null && block != Blocks.air) {
 
                             if (this.storage == null) {
-                                this.storage = new ExtendedBlockStorage(cubeY, flag);
+                                this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), flag);
                             }
 
                             this.storage.func_150818_a(x, y, z, block);
@@ -275,7 +275,7 @@ public class Cube implements ICube {
                         if (block != null && block != Blocks.air) {
 
                             if (this.storage == null) {
-                                this.storage = new ExtendedBlockStorage(cubeY, flag);
+                                this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), flag);
                             }
 
                             this.storage.func_150818_a(x, y, z, block);
