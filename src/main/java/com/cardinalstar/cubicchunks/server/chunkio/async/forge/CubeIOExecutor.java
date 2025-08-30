@@ -26,13 +26,13 @@ public class CubeIOExecutor
     private static final int BASE_THREADS = 1;
     private static final int PLAYERS_PER_THREAD = 50;
 
-    private static final AsynchronousExecutor<QueuedColumn, ICubeIO.PartialData<IColumn>, Consumer<Chunk>, RuntimeException> columnInstance = new AsynchronousExecutor<QueuedColumn, ICubeIO.PartialData<IColumn>, Consumer<Chunk>, RuntimeException>(new ColumnIOProvider(), BASE_THREADS);
+    private static final AsynchronousExecutor<QueuedColumn, ICubeIO.PartialData<Chunk>, Consumer<Chunk>, RuntimeException> columnInstance = new AsynchronousExecutor<QueuedColumn, ICubeIO.PartialData<Chunk>, Consumer<Chunk>, RuntimeException>(new ColumnIOProvider(), BASE_THREADS);
     private static final AsynchronousExecutor<QueuedCube, ICubeIO.PartialData<ICube>, Consumer<Cube>, RuntimeException> cubeInstance = new AsynchronousExecutor<QueuedCube, ICubeIO.PartialData<ICube>, Consumer<Cube>, RuntimeException>(new CubeIOProvider(), BASE_THREADS);
 
     private static final Multimap<QueuedColumn, QueuedCube> loadingCubesColumnMap =
         Multimaps.newMultimap(new ConcurrentHashMap<>(), Sets::newConcurrentHashSet);
 
-    public static ICubeIO.PartialData<IColumn> syncColumnLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int z) {
+    public static ICubeIO.PartialData<Chunk> syncColumnLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int z) {
         return columnInstance.getSkipQueue(new QueuedColumn(x, z, loader, world, provider));
     }
 
@@ -51,7 +51,10 @@ public class CubeIOExecutor
     }
 
     public static ICubeIO.PartialData<ICube> syncCubeLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int y, int z) {
-        return cubeInstance.getSkipQueue(new QueuedCube(x, y, z, loader, world, provider));
+        Chunk column = provider.getColumn(x, z, ICubeProviderServer.Requirement.LIGHT);
+        QueuedCube queuedCube = new QueuedCube(x, y, z, loader, world, provider);
+        queuedCube.setColumn(column);
+        return cubeInstance.getSkipQueue(queuedCube);
     }
 
     public static void queueCubeLoad(World world, ICubeIO loader, CubeProviderServer provider, int x, int y, int z, Consumer<Cube> consumer) // DONE I think

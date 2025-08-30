@@ -63,11 +63,10 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public class CommonEventHandler {
     @SubscribeEvent // this event is fired early enough to replace world with cubic chunks without any issues
-    public void onWorldLoad(WorldEvent.CreateSpawnPosition event) {
-        if (event.world.isRemote || !(event.world instanceof WorldServer)) {
+    public void onCreateSpawnPoint(WorldEvent.CreateSpawnPosition event) {
+        if (event.world.isRemote || !(event.world instanceof WorldServer world)) {
             return; // we will send packet to the client when it joins, client shouldn't change world types as it wants
         }
-        WorldServer world = (WorldServer) event.world;
 
         WorldSavedCubicChunksData savedData =
             (WorldSavedCubicChunksData) event.world.perWorldStorage.loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
@@ -132,9 +131,16 @@ public class CommonEventHandler {
 
         int minHeight = savedData.minHeight;
         int maxHeight = savedData.maxHeight;
-        ((ICubicWorldInternal.Server) world).initCubicWorldServer(new IntRange(minHeight, maxHeight), generationRange);
+        ((ICubicWorldInternal.Server) world).initCubicWorldServerPart1(new IntRange(minHeight, maxHeight), generationRange);
     }
 
+    @SubscribeEvent void onWorldLoad(WorldEvent.Load event)
+    {
+        if (event.world.isRemote || !(event.world instanceof WorldServer world)) {
+            return; // we will send packet to the client when it joins, client shouldn't change world types as it wants
+        }
+        ((ICubicWorldInternal.Server) world).initCubicWorldServerPart2();
+    }
     @SubscribeEvent
     public void onWorldServerTick(TickEvent.WorldTickEvent evt) {
         WorldServer world = (WorldServer) evt.world;

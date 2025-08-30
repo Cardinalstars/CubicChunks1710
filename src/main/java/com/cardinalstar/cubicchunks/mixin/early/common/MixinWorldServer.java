@@ -113,15 +113,19 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     // @Shadow protected abstract boolean canAddEntity(Entity entityIn);
 
-    @Override public void initCubicWorldServer(IntRange heightRange, IntRange generationRange) {
+    @Override public void initCubicWorldServerPart1(IntRange heightRange, IntRange generationRange) {
         super.initCubicWorld(heightRange, generationRange);
         this.isCubicWorld = true;
+        this.chunkProvider = new CubeProviderServer((WorldServer) (Object) this,
+            ((ICubicWorldProvider) this.provider).createCubeGenerator());
+        this.lightingManager = new LightingManager((World) (Object) this);
+    }
+
+    @Override public void initCubicWorldServerPart2()
+    {
         ISpawnerAnimals spawner = new CubeSpawnerAnimals();
         ISpawnerAnimals.Handler spawnHandler = cast(animalSpawner);
         spawnHandler.setEntitySpawner(spawner);
-
-        this.chunkProvider = new CubeProviderServer((WorldServer) (Object) this,
-            ((ICubicWorldProvider) this.provider).createCubeGenerator());
 
         // this.vanillaNetworkHandler = new VanillaNetworkHandler((WorldServer) (Object) this);
         this.thePlayerManager = new CubicPlayerManager((WorldServer) (Object) this);
@@ -133,10 +137,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         this.pendingTickListEntriesHashSet = new CubeSplitTickSet();
         this.pendingTickListEntriesThisTick = new CubeSplitTickList();
         this.worldChunkGc = new ChunkGc(getCubeCache());
-
-        this.lightingManager = new LightingManager((World) (Object) this);
     }
-
 
 //    @Override public VanillaNetworkHandler getVanillaNetworkHandler() {
 //        return vanillaNetworkHandler;
@@ -388,32 +389,4 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         }
         this.theProfiler.endSection();
     }
-
-//    private BlockPos adjustPosToNearbyEntityCubicChunks(BlockPos strikeTarget) {
-//        Chunk column = this.getCubeCache().getColumn(Coords.blockToCube(strikeTarget.getX()), Coords.blockToCube(strikeTarget.getZ()),
-//            ICubeProviderServer.Requirement.GET_CACHED);
-//        int strikeHeight = column.getPrecipitationHeight(strikeTarget.getZ(), strikeTarget.getZ());
-//        strikeTarget = new BlockPos(strikeTarget.getZ(), strikeHeight, strikeTarget.getZ());
-//        Cube cube = this.getCubeCache().getLoadedCube(CubePos.fromBlockCoords(strikeTarget));
-//        if (cube == null) {
-//            return null;
-//        }
-//        AxisAlignedBB aabb = (AxisAlignedBB.getBoundingBox(strikeTarget.getX(), strikeTarget.getY(), strikeTarget.getZ(), strikeTarget.getX() + 1, strikeTarget.getY() + 1, strikeTarget.getZ() + 1)).expand(3.0D);
-//
-//        for (Entity entity : cube.getEntityContainer()) {
-//            if (!entity.isEntityAlive() || !(entity instanceof EntityLivingBase)) {
-//                continue;
-//            }
-//            int entityPosX = MathHelper.floor_double(entity.posX);
-//            int entityPosY = MathHelper.floor_double(entity.posY + 0.5D);
-//            int entityPosZ = MathHelper.floor_double(entity.posZ);
-//            if (entityPosY < column.getHeightValue(Coords.blockToLocal(entityPosX), Coords.blockToLocal(entityPosZ))) {
-//                continue;
-//            }
-//            if (entity.getBoundingBox().intersectsWith(aabb)) {
-//                return new BlockPos(entityPosX, entityPosY, entityPosZ);
-//            }
-//        }
-//        return strikeTarget;
-//    }
 }

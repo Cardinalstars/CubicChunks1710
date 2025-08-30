@@ -37,36 +37,60 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(EntityTrackerEntry.class)
 public class MixinEntityTrackerEntry implements ICubicEntityTracker.Entry {
 
     @Shadow public int blocksDistanceThreshold;
-    @Shadow public long lastScaledYPosition;
+    @Shadow public int lastScaledYPosition;
 
     @Shadow public Entity myEntity;
     @Unique
     private int cubic_chunks$maxVertRange;
 
-    @ModifyExpressionValue(
+//    @ModifyExpressionValue(
+//        method = "tryStartWachingThis",
+//        at = @At(value = "FIELD", target = "Lnet/minecraft/entity/EntityTrackerEntry;blocksDistanceThreshold:I",
+//            ordinal = 0)
+//    )
+//    private int modifyThreshold(int original,
+//                                @Local(argsOnly = true) EntityPlayerMP player,
+//                                @Local double d0,
+//                                @Local double d1) {
+//        if (d0 >= (double)(-original) && ((ICubicWorld) player.worldObj).isCubicWorld())
+//        {
+//            int rangeY = Math.min(this.blocksDistanceThreshold, this.cubic_chunks$maxVertRange);
+//            double dy = player.posY - this.lastScaledYPosition / 32.0D;
+//            if (dy < -rangeY || dy > rangeY)
+//            {
+//                return -(int)Math.floor(d0) - 1;
+//            }
+//        }
+//        return original;
+//    }
+
+    @Redirect(
         method = "tryStartWachingThis",
-        at = @At(value = "FIELD", target = "Lnet/minecraft/entity/EntityTrackerEntry;blocksDistanceThreshold:I",
-            ordinal = 0)
+        at = @At(value = "FIELD",
+            target = "Lnet/minecraft/entity/EntityTrackerEntry;blocksDistanceThreshold:I")
     )
-    private int modifyThreshold(int original,
-                                @Local(argsOnly = true) EntityPlayerMP player,
-                                @Local double d0,
-                                @Local double d1) {
-        if (d0 >= (double)(-original) && ((ICubicWorld) player.worldObj).isCubicWorld())
-        {
-            int rangeY = Math.min(this.blocksDistanceThreshold, this.cubic_chunks$maxVertRange);
+    private int redirectThreshold(EntityTrackerEntry entry,
+                                  EntityPlayerMP player) {
+        int original = entry.blocksDistanceThreshold;
+
+        // do your cubic-world-aware check
+        if (((ICubicWorld) player.worldObj).isCubicWorld()) {
+            int rangeY = Math.min(original, this.cubic_chunks$maxVertRange);
             double dy = player.posY - this.lastScaledYPosition / 32.0D;
-            if (dy < -rangeY || dy > rangeY)
-            {
-                return -(int)Math.floor(d0) - 1;
+
+            if (dy < -rangeY || dy > rangeY) {
+                // hack: return an exaggerated threshold so the vanilla checks fail early
+                return -(original + 1);
             }
         }
+
         return original;
     }
 

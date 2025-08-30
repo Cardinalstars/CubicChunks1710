@@ -164,14 +164,14 @@ public final class SpawnPlaceFinder {
 
     @Nullable
     private static BlockPos findNonEmpty(World world, BlockPos pos) {
-        pos = (BlockPos) pos.sub(0, MIN_FREE_SPACE_SPAWN, 0);
-        for (int i = 0; i < MIN_FREE_SPACE_SPAWN * 2; i++, pos = pos.up()) {
+        BlockPos newPos = new BlockPos(pos.x, pos.y - MIN_FREE_SPACE_SPAWN, pos.z);
+        for (int i = 0; i < MIN_FREE_SPACE_SPAWN * 2; i++, newPos = newPos.up()) {
             ((ICubicWorldServer) world).getCubeCache().getCubeNow(
-                Coords.blockToCube(pos.getX()), Coords.blockToCube(pos.getY()), Coords.blockToCube(pos.getZ()),
+                Coords.blockToCube(newPos.getX()), Coords.blockToCube(newPos.getY()), Coords.blockToCube(newPos.getZ()),
                 ICubeProviderServer.Requirement.POPULATE
             );
-            if (world.getBlock(pos.x, pos.y, pos.z).isSideSolid(world, pos.x, pos.y, pos.z, ForgeDirection.UP)) {
-                return pos;
+            if (world.getBlock(newPos.x, newPos.y, newPos.z).isSideSolid(world, newPos.x, newPos.y, newPos.z, ForgeDirection.UP)) {
+                return newPos;
             }
         }
         return null;
