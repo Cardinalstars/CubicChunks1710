@@ -1,36 +1,32 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.api;
-
-import com.cardinalstar.cubicchunks.util.XZAddressable;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+
+import com.cardinalstar.cubicchunks.util.XZAddressable;
 
 /**
  * Hash table implementation for objects in a 2-dimensional cartesian coordinate system.
@@ -46,7 +42,6 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
      * A larger prime number used as seed for hash calculation.
      */
     private static final int HASH_SEED = 1183822147;
-
 
     /**
      * backing array containing all elements of this map
@@ -73,18 +68,18 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
      */
     private int mask;
 
-
     /**
      * Creates a new XZMap with the given load factor and initial capacity. The map will automatically grow if
      * the specified load is surpassed.
      *
      * @param loadFactor the load factor
-     * @param capacity the initial capacity
+     * @param capacity   the initial capacity
      */
     public XZMap(float loadFactor, int capacity) {
 
         if (loadFactor > 1.0) {
-            throw new IllegalArgumentException("You really dont want to be using a " + loadFactor + " load loadFactor with this hash table!");
+            throw new IllegalArgumentException(
+                "You really dont want to be using a " + loadFactor + " load loadFactor with this hash table!");
         }
 
         this.loadFactor = loadFactor;
@@ -98,7 +93,6 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
         this.refreshFields();
     }
 
-
     /**
      * Returns the number of elements in this map
      *
@@ -107,7 +101,6 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
     public int getSize() {
         return this.size;
     }
-
 
     /**
      * Computes a 32b hash based on the given coordinates.
@@ -165,7 +158,8 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
      *
      * @return the previous value associated with the given value's coordinates or null if no such value exists
      */
-    @Nullable @SuppressWarnings("unchecked")
+    @Nullable
+    @SuppressWarnings("unchecked")
     public T put(T value) {
 
         int x = value.getX();
@@ -206,7 +200,8 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
      *
      * @return the entry associated with the specified coordinates or null if no such value exists
      */
-    @Nullable @SuppressWarnings("unchecked")
+    @Nullable
+    @SuppressWarnings("unchecked")
     public T remove(int x, int z) {
 
         int index = getIndex(x, z);
@@ -238,7 +233,8 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
      *
      * @return the entry associated with the given value's coordinates or null if no such entry exists
      */
-    @Nullable public T remove(T value) {
+    @Nullable
+    public T remove(T value) {
         return this.remove(value.getX(), value.getZ());
     }
 
@@ -250,7 +246,8 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
      *
      * @return the entry associated with the specified coordinates or null if no such value exists
      */
-    @Nullable @SuppressWarnings("unchecked")
+    @Nullable
+    @SuppressWarnings("unchecked")
     public T get(int x, int z) {
 
         int index = getIndex(x, z);
@@ -393,11 +390,11 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
         this.mask = this.buckets.length - 1;
     }
 
-
     // Interface: Iterable<T> ------------------------------------------------------------------------------------------
 
     public Iterator<T> iterator() {
         return new Iterator<T>() {
+
             int at = -1;
             int next = -1;
 
@@ -414,7 +411,8 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
                 return false;
             }
 
-            @Nullable @Override
+            @Nullable
+            @Override
             @SuppressWarnings("unchecked")
             public T next() {
                 if (next > at) {
@@ -430,8 +428,8 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
                 return null;
             }
 
-            //TODO: WARNING: risk of iterating over the same item more than once if this is used
-            //               do to items wrapping back around form the front of the buckets array
+            // TODO: WARNING: risk of iterating over the same item more than once if this is used
+            // do to items wrapping back around form the front of the buckets array
             @Override
             public void remove() {
                 collapseBucket(at);

@@ -1,35 +1,32 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.cardinalstar.cubicchunks.api;
 
-import com.cardinalstar.cubicchunks.util.XZAddressable;
+import java.util.Collection;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Collection;
+
+import com.cardinalstar.cubicchunks.util.XZAddressable;
 
 @ParametersAreNonnullByDefault
 public interface IColumn extends XZAddressable {
@@ -38,8 +35,9 @@ public interface IColumn extends XZAddressable {
      * Return Y position of the block directly above the top non-transparent block (opacity != 0),
      * or a value below minimum world height of there is no top block.
      *
-     * @param pos the position for which the height should be returned. Note that Y coordinate may not necessarily be ignored, which gives the
-     * possibility of multiple layers/stacked dimensions
+     * @param pos the position for which the height should be returned. Note that Y coordinate may not necessarily be
+     *            ignored, which gives the
+     *            possibility of multiple layers/stacked dimensions
      * @return Y coordinate of the block directly above the top non-transparent block
      */
     int getHeight(int x, int y, int z);
@@ -53,15 +51,18 @@ public interface IColumn extends XZAddressable {
      * @return Height at specified X and Z coordinates
      * @deprecated Use {@link #getHeightValue(int, int, int)} instead
      */
-    @Deprecated int getHeightValue(int localX, int localZ);
+    @Deprecated
+    int getHeightValue(int localX, int localZ);
 
     /**
      * Return Y position of the block directly above the top non-transparent block,
      * or a value below minimum world height of there is no top block.
      *
      * @param localX x coordinate relative to this chunk. Only values in range [0, {@link ICube#SIZE}) are valid
-     * @param blockY the Y for which the height should be returned. This is global world coordinate, not a local coordinate.
-     * Note that Y coordinate may not necessarily be ignored, which gives the possibility of multiple layers/stacked dimensions
+     * @param blockY the Y for which the height should be returned. This is global world coordinate, not a local
+     *               coordinate.
+     *               Note that Y coordinate may not necessarily be ignored, which gives the possibility of multiple
+     *               layers/stacked dimensions
      * @param localZ zPosition coordinate relative to this chunk. Only values in range [0, {@link ICube#SIZE}) are valid
      * @return Height at specified X and Z coordinates
      */
@@ -91,7 +92,7 @@ public interface IColumn extends XZAddressable {
      * otherwise order is top to bottom.
      *
      * @param startY initial cube y position
-     * @param endY last cube y position
+     * @param endY   last cube y position
      *
      * @return an iterator over all loaded cubes between {@code startY} and {@code endY} (inclusive)
      */
@@ -104,7 +105,8 @@ public interface IColumn extends XZAddressable {
      *
      * @return the cube at that position, or {@code null} if it is not loaded
      */
-    @Nullable ICube getLoadedCube(int cubeY);
+    @Nullable
+    ICube getLoadedCube(int cubeY);
 
     /**
      * Retrieve the cube at the specified location
@@ -129,7 +131,8 @@ public interface IColumn extends XZAddressable {
      *
      * @return the removed cube if it existed, otherwise {@code null}
      */
-    @Nullable ICube removeCube(int cubeY);
+    @Nullable
+    ICube removeCube(int cubeY);
 
     /**
      * Check if there are any loaded cube in this column

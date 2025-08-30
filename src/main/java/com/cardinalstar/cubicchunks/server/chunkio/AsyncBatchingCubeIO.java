@@ -1,44 +1,26 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.server.chunkio;
 
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.server.chunkio.async.forge.CubeIOExecutor;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import cpw.mods.fml.common.FMLCommonHandler;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.nbt.NBTTagCompound;
-
-import net.minecraft.world.ChunkCoordIntPair;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.storage.ThreadedFileIOBase;
+import static com.google.common.base.Preconditions.*;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -48,14 +30,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.google.common.base.Preconditions.*;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.storage.ThreadedFileIOBase;
+
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
 /**
- * Implementation of {@link ICubeIO} which internally batches cubes/columns together, and forwards them along to a {@link ICubicStorage} on the I/O thread.
+ * Implementation of {@link ICubeIO} which internally batches cubes/columns together, and forwards them along to a
+ * {@link ICubicStorage} on the I/O thread.
  *
  * @author DaPorkchop_
  */
 public class AsyncBatchingCubeIO implements ICubeIO {
+
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     protected final World world;
@@ -83,7 +80,8 @@ public class AsyncBatchingCubeIO implements ICubeIO {
     public boolean columnExists(int columnX, int columnZ) {
         ChunkCoordIntPair pos = new ChunkCoordIntPair(columnX, columnZ);
 
-        this.lock.readLock().lock();
+        this.lock.readLock()
+            .lock();
         try {
             this.ensureOpen();
 
@@ -92,7 +90,8 @@ public class AsyncBatchingCubeIO implements ICubeIO {
             CubicChunks.LOGGER.catching(e);
             return false;
         } finally {
-            this.lock.readLock().unlock();
+            this.lock.readLock()
+                .unlock();
         }
     }
 
@@ -100,7 +99,8 @@ public class AsyncBatchingCubeIO implements ICubeIO {
     public boolean cubeExists(int cubeX, int cubeY, int cubeZ) {
         CubePos pos = new CubePos(cubeX, cubeY, cubeZ);
 
-        this.lock.readLock().lock();
+        this.lock.readLock()
+            .lock();
         try {
             this.ensureOpen();
 
@@ -109,7 +109,8 @@ public class AsyncBatchingCubeIO implements ICubeIO {
             CubicChunks.LOGGER.catching(e);
             return false;
         } finally {
-            this.lock.readLock().unlock();
+            this.lock.readLock()
+                .unlock();
         }
     }
 
@@ -117,21 +118,23 @@ public class AsyncBatchingCubeIO implements ICubeIO {
     public PartialData<Chunk> loadColumnNbt(int chunkX, int chunkZ) throws IOException {
         ChunkCoordIntPair pos = new ChunkCoordIntPair(chunkX, chunkZ);
 
-        this.lock.readLock().lock();
+        this.lock.readLock()
+            .lock();
         try {
             this.ensureOpen();
 
             NBTTagCompound nbt = this.pendingColumns.get(pos);
-            if (nbt == null) { //column isn't cached, forward request on to storage
+            if (nbt == null) { // column isn't cached, forward request on to storage
                 nbt = this.storage.readColumn(pos);
             }
             // TODO PROBABLY DON'T NEED TO DO THIS. WORLDS DON'T CHANGE VERSIONS.
-//            if (nbt != null) { //fix column data
-//                nbt = FMLCommonHandler.instance().getDataFixer().process(FixTypes.CHUNK, nbt);
-//            }
+            // if (nbt != null) { //fix column data
+            // nbt = FMLCommonHandler.instance().getDataFixer().process(FixTypes.CHUNK, nbt);
+            // }
             return new PartialData<>(null, nbt);
         } finally {
-            this.lock.readLock().unlock();
+            this.lock.readLock()
+                .unlock();
         }
     }
 
@@ -139,23 +142,26 @@ public class AsyncBatchingCubeIO implements ICubeIO {
     public PartialData<ICube> loadCubeNbt(Chunk column, int cubeY) throws IOException {
         CubePos pos = new CubePos(column.xPosition, cubeY, column.zPosition);
 
-        this.lock.readLock().lock();
+        this.lock.readLock()
+            .lock();
         try {
             this.ensureOpen();
 
             NBTTagCompound nbt = this.pendingCubes.get(pos);
-            if (nbt == null) { //cube isn't cached, forward request on to storage
+            if (nbt == null) { // cube isn't cached, forward request on to storage
                 nbt = this.storage.readCube(pos);
             }
             return new PartialData<>(null, nbt);
         } finally {
-            this.lock.readLock().unlock();
+            this.lock.readLock()
+                .unlock();
         }
     }
 
     @Override
     public void saveColumn(Chunk column) {
-        this.lock.readLock().lock();
+        this.lock.readLock()
+            .lock();
         try {
             this.ensureOpen();
 
@@ -171,16 +177,19 @@ public class AsyncBatchingCubeIO implements ICubeIO {
             // signal the IO thread to process the save queue
             ThreadedFileIOBase.threadedIOInstance.queueIO(this);
         } finally {
-            this.lock.readLock().unlock();
+            this.lock.readLock()
+                .unlock();
         }
     }
 
     @Override
     public void saveCube(Cube cube) {
         // make sure all light updates are processed, even if someone calls this from the outside
-        ((ICubicWorldInternal) world).getLightingManager().processUpdates();
+        ((ICubicWorldInternal) world).getLightingManager()
+            .processUpdates();
 
-        this.lock.readLock().lock();
+        this.lock.readLock()
+            .lock();
         try {
             this.ensureOpen();
 
@@ -192,49 +201,56 @@ public class AsyncBatchingCubeIO implements ICubeIO {
             // signal the IO thread to process the save queue
             ThreadedFileIOBase.threadedIOInstance.queueIO(this);
         } finally {
-            this.lock.readLock().unlock();
+            this.lock.readLock()
+                .unlock();
         }
     }
 
     @Override
     public int getPendingColumnCount() {
-        this.lock.readLock().lock();
+        this.lock.readLock()
+            .lock();
         try {
             this.ensureOpen();
 
             return this.pendingColumns.size();
         } finally {
-            this.lock.readLock().unlock();
+            this.lock.readLock()
+                .unlock();
         }
     }
 
     @Override
     public int getPendingCubeCount() {
-        this.lock.readLock().lock();
+        this.lock.readLock()
+            .lock();
         try {
             this.ensureOpen();
 
             return this.pendingCubes.size();
         } finally {
-            this.lock.readLock().unlock();
+            this.lock.readLock()
+                .unlock();
         }
     }
 
     @Override
-    public void flush() throws IOException { //only used by "/save-all flush" command
-        this.lock.writeLock().lock();
+    public void flush() throws IOException { // only used by "/save-all flush" command
+        this.lock.writeLock()
+            .lock();
         try {
             this.ensureOpen();
 
-            //ensure write queue is empty
+            // ensure write queue is empty
             this.drainQueueBlocking();
 
-            //flush storage
+            // flush storage
             this.storage.flush();
         } catch (InterruptedException e) {
             CubicChunks.LOGGER.catching(e);
         } finally {
-            this.lock.writeLock().unlock();
+            this.lock.writeLock()
+                .unlock();
         }
     }
 
@@ -246,32 +262,37 @@ public class AsyncBatchingCubeIO implements ICubeIO {
         // TODO ??
         // CubeIOExecutor.shutdownNowBlocking();
 
-        this.lock.writeLock().lock();
+        this.lock.writeLock()
+            .lock();
         try {
             this.ensureOpen();
 
-            //ensure write queue is empty
+            // ensure write queue is empty
             this.drainQueueBlocking();
 
-            //close storage
+            // close storage
             this.storage.close();
 
-            //mark self as closed AFTER finishing everything else
+            // mark self as closed AFTER finishing everything else
             this.open = false;
         } catch (InterruptedException e) {
             CubicChunks.LOGGER.catching(e);
         } finally {
-            this.lock.writeLock().unlock();
+            this.lock.writeLock()
+                .unlock();
         }
     }
 
     /**
      * Blocks the calling thread until the write queues have been completely drained.
+     * 
      * @throws InterruptedException if the thread has been interrupted
      */
     protected void drainQueueBlocking() throws InterruptedException {
-        //this has to submit itself to the I/O thread again, and also run in a loop, in order to avoid a potential race condition caused by the fact that ThreadedFileIOBase
-        // is incredibly stupid. don't you think that if you're going to make an ASYNCHRONOUS executor, that you'd ensure that the code is ACTUALLY thread-safe? well,
+        // this has to submit itself to the I/O thread again, and also run in a loop, in order to avoid a potential race
+        // condition caused by the fact that ThreadedFileIOBase
+        // is incredibly stupid. don't you think that if you're going to make an ASYNCHRONOUS executor, that you'd
+        // ensure that the code is ACTUALLY thread-safe? well,
         // if you're mojang, apparently you don't.
 
         do {
@@ -284,19 +305,26 @@ public class AsyncBatchingCubeIO implements ICubeIO {
     @Override
     public boolean writeNextIO() {
         try {
-            //take a snapshot of both queues
+            // take a snapshot of both queues
 
-            //unfortunately we can't use putAll() (or the copy constructor which delegates to putAll()), because the implementation doesn't actually bother to check
-            // for Iterator#hasNext(), which is kind of important in our case where the pendingCubes/Columns map could be modified at any time...
-            Map<ChunkCoordIntPair, NBTTagCompound> columnsSnapshot = new Object2ObjectOpenHashMap<>(this.pendingColumns.size());
+            // unfortunately we can't use putAll() (or the copy constructor which delegates to putAll()), because the
+            // implementation doesn't actually bother to check
+            // for Iterator#hasNext(), which is kind of important in our case where the pendingCubes/Columns map could
+            // be modified at any time...
+            Map<ChunkCoordIntPair, NBTTagCompound> columnsSnapshot = new Object2ObjectOpenHashMap<>(
+                this.pendingColumns.size());
             this.pendingColumns.forEach(columnsSnapshot::put);
             Map<CubePos, NBTTagCompound> cubesSnapshot = new Object2ObjectOpenHashMap<>(this.pendingCubes.size());
             this.pendingCubes.forEach(cubesSnapshot::put);
 
-            //forward all tasks to the storage at once
-            this.storage.writeBatch(new ICubicStorage.NBTBatch(Collections.unmodifiableMap(columnsSnapshot), Collections.unmodifiableMap(cubesSnapshot)));
+            // forward all tasks to the storage at once
+            this.storage.writeBatch(
+                new ICubicStorage.NBTBatch(
+                    Collections.unmodifiableMap(columnsSnapshot),
+                    Collections.unmodifiableMap(cubesSnapshot)));
 
-            //remove from queue (using remove(key, value) in order to avoid removing entries which have been modified since the snapshot was taken)
+            // remove from queue (using remove(key, value) in order to avoid removing entries which have been modified
+            // since the snapshot was taken)
             columnsSnapshot.forEach(this.pendingColumns::remove);
             cubesSnapshot.forEach(this.pendingCubes::remove);
         } catch (IOException e) {
@@ -307,7 +335,8 @@ public class AsyncBatchingCubeIO implements ICubeIO {
     }
 
     // parsing methods
-    // these methods don't use the instance state for anything meaningful, so we can just let them do their thing without worrying about locks and whatnot
+    // these methods don't use the instance state for anything meaningful, so we can just let them do their thing
+    // without worrying about locks and whatnot
 
     @Override
     public void loadColumnAsyncPart(PartialData<Chunk> info, int chunkX, int chunkZ) {
@@ -320,7 +349,7 @@ public class AsyncBatchingCubeIO implements ICubeIO {
 
     @Override
     public void loadColumnSyncPart(PartialData<Chunk> info) {
-        //no-op
+        // no-op
     }
 
     @Override

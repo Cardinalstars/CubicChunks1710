@@ -1,37 +1,26 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.world;
 
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
-import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
-import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-import net.minecraft.block.Block;
-import net.minecraft.world.World;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
 
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -39,7 +28,15 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import net.minecraft.block.Block;
+import net.minecraft.world.World;
+
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 @ParametersAreNonnullByDefault
 public interface ICubicWorld extends IMinMaxHeight {
@@ -61,28 +58,33 @@ public interface ICubicWorld extends IMinMaxHeight {
      *
      * Note: forcedAdditionalCubes should be zero unless absolutely necessary.
      *
-     * @param cubePos cube position to find surface for
-     * @param xOffset x coordinate of population area offset relative to cube origin
-     * @param zOffset z coordinate of population area offset relative to cube origin
+     * @param cubePos               cube position to find surface for
+     * @param xOffset               x coordinate of population area offset relative to cube origin
+     * @param zOffset               z coordinate of population area offset relative to cube origin
      * @param forcedAdditionalCubes amount of additional cubes above to scan
-     * @param type surface type
-     * @return position of the block above the top block matching criteria specified by surface type, or null if it doesn't exist
+     * @param type                  surface type
+     * @return position of the block above the top block matching criteria specified by surface type, or null if it
+     *         doesn't exist
      */
-    public default BlockPos getSurfaceForCube(CubePos cubePos, int xOffset, int zOffset, int forcedAdditionalCubes, SurfaceType type) {
-        return getSurfaceForCube(cubePos, xOffset, zOffset, forcedAdditionalCubes, (pos, block) -> canBeTopBlock(pos, block, type));
+    public default BlockPos getSurfaceForCube(CubePos cubePos, int xOffset, int zOffset, int forcedAdditionalCubes,
+        SurfaceType type) {
+        return getSurfaceForCube(
+            cubePos,
+            xOffset,
+            zOffset,
+            forcedAdditionalCubes,
+            (pos, block) -> canBeTopBlock(pos, block, type));
     }
 
     @Nullable
-    public default BlockPos getSurfaceForCube(CubePos pos, int xOffset, int zOffset, int forcedAdditionalCubes, BiPredicate<BlockPos, Block> canBeTopBlock) {
+    public default BlockPos getSurfaceForCube(CubePos pos, int xOffset, int zOffset, int forcedAdditionalCubes,
+        BiPredicate<BlockPos, Block> canBeTopBlock) {
         int maxFreeY = pos.getMaxBlockY() + ICube.SIZE / 2;
         int minFreeY = pos.getMinBlockY() + ICube.SIZE / 2;
-        int startY = pos.above().getMaxBlockY() + forcedAdditionalCubes * ICube.SIZE;
+        int startY = pos.above()
+            .getMaxBlockY() + forcedAdditionalCubes * ICube.SIZE;
 
-        BlockPos start = new BlockPos(
-            pos.getMinBlockX() + xOffset,
-            startY,
-            pos.getMinBlockZ() + zOffset
-        );
+        BlockPos start = new BlockPos(pos.getMinBlockX() + xOffset, startY, pos.getMinBlockZ() + zOffset);
         return findTopBlock(start, minFreeY, maxFreeY, canBeTopBlock);
     }
 
@@ -95,17 +97,19 @@ public interface ICubicWorld extends IMinMaxHeight {
      * Finds the top block between minTopY and maxTopY, startiung the search at start.
      * If a potential top block is found above maxTopY, this method returns null.
      *
-     * Note that canBeTopBlock should return true even if you don't intend to generate something when that block is encountered
+     * Note that canBeTopBlock should return true even if you don't intend to generate something when that block is
+     * encountered
      * as long as it counts as "surface".
      *
-     * @param start start position
-     * @param minTopY minimum Y coordinate to search
-     * @param maxTopY maximum Y coordinate to consider as a surface
+     * @param start         start position
+     * @param minTopY       minimum Y coordinate to search
+     * @param maxTopY       maximum Y coordinate to consider as a surface
      * @param canBeTopBlock checks whether a block at given position should be considered "surface".
      * @return the top found position
      */
     @Nullable
-    default BlockPos findTopBlock(BlockPos start, int minTopY, int maxTopY, BiPredicate<BlockPos, Block> canBeTopBlock) {
+    default BlockPos findTopBlock(BlockPos start, int minTopY, int maxTopY,
+        BiPredicate<BlockPos, Block> canBeTopBlock) {
         BlockPos pos = start;
         Block startState = ((World) this).getBlock(start.getX(), start.getY(), start.getZ());
         if (canBeTopBlock.test(start, startState)) {
@@ -135,15 +139,18 @@ public interface ICubicWorld extends IMinMaxHeight {
     public default boolean canBeTopBlock(BlockPos pos, Block block, SurfaceType type) {
         switch (type) {
             case SOLID: {
-                return block.getMaterial().blocksMovement()
-                    && !block.isLeaves((World) this, pos.getX(), pos.getY(), pos.getZ())
+                return block.getMaterial()
+                    .blocksMovement() && !block.isLeaves((World) this, pos.getX(), pos.getY(), pos.getZ())
                     && !block.isFoliage((World) this, pos.getX(), pos.getY(), pos.getZ());
             }
             case OPAQUE: {
                 return block.getLightOpacity((World) this, pos.getX(), pos.getY(), pos.getZ()) != 0;
             }
             case BLOCKING_MOVEMENT: {
-                return block.getMaterial().blocksMovement() || block.getMaterial().isLiquid();
+                return block.getMaterial()
+                    .blocksMovement()
+                    || block.getMaterial()
+                        .isLiquid();
             }
             default:
                 throw new IllegalArgumentException(type.toString());
@@ -154,17 +161,20 @@ public interface ICubicWorld extends IMinMaxHeight {
      * Returns true iff the given Predicate evaluates to true for all cubes for block positions within blockRadius from
      * centerPos. Only cubes that exist are tested. If some cubes within that range aren't loaded - returns false.
      *
-     * @param centerPos position to start at
+     * @param centerPos   position to start at
      * @param blockRadius radius in block to test, starting from centerPos
-     * @param test the test to apply
+     * @param test        the test to apply
      * @return false if any invokation of the given predicate returns false, true otherwise
      */
     default boolean testForCubes(BlockPos centerPos, int blockRadius, Predicate<ICube> test) {
         return testForCubes(
-            centerPos.getX() - blockRadius, centerPos.getY() - blockRadius, centerPos.getZ() - blockRadius,
-            centerPos.getX() + blockRadius, centerPos.getY() + blockRadius, centerPos.getZ() + blockRadius,
-            test
-        );
+            centerPos.getX() - blockRadius,
+            centerPos.getY() - blockRadius,
+            centerPos.getZ() - blockRadius,
+            centerPos.getX() + blockRadius,
+            centerPos.getY() + blockRadius,
+            centerPos.getZ() + blockRadius,
+            test);
     }
 
     /**
@@ -178,15 +188,15 @@ public interface ICubicWorld extends IMinMaxHeight {
      * @param maxBlockX maximum block x coordinate
      * @param maxBlockY maximum block y coordinate
      * @param maxBlockZ maximum block z coordinate
-     * @param test the test to apply
+     * @param test      the test to apply
      * @return false if any invokation of the given predicate returns false, true otherwise
      */
-    default boolean testForCubes(int minBlockX, int minBlockY, int minBlockZ, int maxBlockX, int maxBlockY, int maxBlockZ, Predicate<ICube> test) {
+    default boolean testForCubes(int minBlockX, int minBlockY, int minBlockZ, int maxBlockX, int maxBlockY,
+        int maxBlockZ, Predicate<ICube> test) {
         return testForCubes(
             CubePos.fromBlockCoords(minBlockX, minBlockY, minBlockZ),
             CubePos.fromBlockCoords(maxBlockX, maxBlockY, maxBlockZ),
-            test
-        );
+            test);
     }
 
     /**
@@ -194,10 +204,10 @@ public interface ICubicWorld extends IMinMaxHeight {
      * Only cubes that exist are tested. If some cubes within that range aren't loaded - returns false.
      *
      * @param start start cube position
-     * @param end end cube position
-     * @param test the test to apply
+     * @param end   end cube position
+     * @param test  the test to apply
      * @return false if any invokation of the given predicate returns false, true otherwise
-
+     * 
      */
     boolean testForCubes(CubePos start, CubePos end, Predicate<? super ICube> test);
 
@@ -215,8 +225,8 @@ public interface ICubicWorld extends IMinMaxHeight {
         return getCubeFromCubeCoords(pos.getX(), pos.getY(), pos.getZ());
     }
 
-
     ICube getCubeFromBlockCoords(int x, int y, int z);
+
     ICube getCubeFromBlockCoords(BlockPos pos);
 
     int getEffectiveHeight(int blockX, int blockZ);
@@ -230,6 +240,8 @@ public interface ICubicWorld extends IMinMaxHeight {
     int getMaxGenerationHeight();
 
     enum SurfaceType {
-        SOLID, BLOCKING_MOVEMENT, OPAQUE
+        SOLID,
+        BLOCKING_MOVEMENT,
+        OPAQUE
     }
 }

@@ -1,43 +1,34 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
 
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.IntRange;
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
-import com.cardinalstar.cubicchunks.lighting.LightingManager;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
-import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+import java.util.Random;
+import java.util.function.Predicate;
+
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
@@ -53,6 +44,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.WorldInfo;
+
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
@@ -65,15 +57,19 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Random;
-import java.util.function.Predicate;
-
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-
-import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
-import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
-import static com.cardinalstar.cubicchunks.util.Coords.coordsSeedHash;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.IntRange;
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
+import com.cardinalstar.cubicchunks.lighting.LightingManager;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 /**
  * Contains implementation of {@link ICubicWorld} interface.
@@ -84,70 +80,114 @@ import static com.cardinalstar.cubicchunks.util.Coords.coordsSeedHash;
 public abstract class MixinWorld implements ICubicWorldInternal {
 
     // these have to be here because of mixin limitation, they are used by MixinWorldServer
-    @Shadow public abstract ISaveHandler getSaveHandler();
+    @Shadow
+    public abstract ISaveHandler getSaveHandler();
+
     // TODO FIGURE OUT WHERE THESE GO
-    @Shadow public abstract boolean checkChunksExist(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
-    @Shadow public abstract boolean doChunksNearChunkExist(int x, int y, int z, int radius);
+    @Shadow
+    public abstract boolean checkChunksExist(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
 
-    @Shadow protected IChunkProvider chunkProvider;
-    @Shadow @Final @Mutable public WorldProvider provider;
-    @Shadow @Final public Random rand;
-    @Shadow @Final public boolean isRemote;
-    @Shadow @Final public Profiler theProfiler;
-    @Shadow @Final @Mutable protected ISaveHandler saveHandler;
-    @Shadow protected boolean findingSpawnPoint;
-    @Shadow protected WorldInfo worldInfo;
-    @Shadow protected int updateLCG;
-    @Shadow protected abstract boolean chunkExists(int i, int i1);
+    @Shadow
+    public abstract boolean doChunksNearChunkExist(int x, int y, int z, int radius);
 
-    @Nullable protected LightingManager lightingManager;
+    @Shadow
+    protected IChunkProvider chunkProvider;
+    @Shadow
+    @Final
+    @Mutable
+    public WorldProvider provider;
+    @Shadow
+    @Final
+    public Random rand;
+    @Shadow
+    @Final
+    public boolean isRemote;
+    @Shadow
+    @Final
+    public Profiler theProfiler;
+    @Shadow
+    @Final
+    @Mutable
+    protected ISaveHandler saveHandler;
+    @Shadow
+    protected boolean findingSpawnPoint;
+    @Shadow
+    protected WorldInfo worldInfo;
+    @Shadow
+    protected int updateLCG;
+
+    @Shadow
+    protected abstract boolean chunkExists(int i, int i1);
+
+    @Nullable
+    protected LightingManager lightingManager;
     protected boolean isCubicWorld;
     protected int minHeight = 0, maxHeight = 256, fakedMaxHeight = 0;
     private int minGenerationHeight = 0, maxGenerationHeight = 256;
 
     // @Shadow public abstract boolean isValid(BlockPos pos);
 
-    @Shadow public abstract GameRules getGameRules();
+    @Shadow
+    public abstract GameRules getGameRules();
 
-    @Shadow public abstract boolean isRaining();
+    @Shadow
+    public abstract boolean isRaining();
 
-    @Shadow public abstract boolean isThundering();
+    @Shadow
+    public abstract boolean isThundering();
 
     // @Shadow public abstract boolean isRainingAt(BlockPos position);
 
     // @Shadow public abstract DifficultyInstance getDifficultyForLocation(BlockPos pos);
 
-    @Shadow public abstract int getPrecipitationHeight(int blockX, int blockY);
+    @Shadow
+    public abstract int getPrecipitationHeight(int blockX, int blockY);
 
-    @Shadow protected abstract void setActivePlayerChunksAndCheckLight();
-    @Shadow public abstract boolean canLightningStrikeAt(int x, int y, int z);
+    @Shadow
+    protected abstract void setActivePlayerChunksAndCheckLight();
 
-    @Shadow public abstract boolean canBlockFreeze(int x, int y, int z, boolean byWater);
+    @Shadow
+    public abstract boolean canLightningStrikeAt(int x, int y, int z);
 
-    @Shadow public abstract boolean setBlock(int x, int y, int z, Block blockIn);
-    @Shadow public abstract boolean setBlock(int x, int y, int z, Block blockIn, int metaIn, int flags);
-    @Shadow public abstract boolean isBlockFreezableNaturally(int x, int y, int z);
+    @Shadow
+    public abstract boolean canBlockFreeze(int x, int y, int z, boolean byWater);
+
+    @Shadow
+    public abstract boolean setBlock(int x, int y, int z, Block blockIn);
+
+    @Shadow
+    public abstract boolean setBlock(int x, int y, int z, Block blockIn, int metaIn, int flags);
+
+    @Shadow
+    public abstract boolean isBlockFreezableNaturally(int x, int y, int z);
+
     // canSnowAt
-    @Shadow public abstract boolean func_147478_e(int x, int y, int z, boolean checkLight);
+    @Shadow
+    public abstract boolean func_147478_e(int x, int y, int z, boolean checkLight);
 
     // @Shadow public abstract boolean isBlockLoaded(BlockPos pos);
 
-    @Shadow public abstract BiomeGenBase getBiomeGenForCoords(int x, int z);
+    @Shadow
+    public abstract BiomeGenBase getBiomeGenForCoords(int x, int z);
 
     // @Shadow public abstract boolean isBlockLoaded(BlockPos pos, boolean allowEmpty);
 
-    @Shadow public abstract Chunk getChunkFromBlockCoords(int x, int z);
+    @Shadow
+    public abstract Chunk getChunkFromBlockCoords(int x, int z);
 
-    @Shadow public abstract boolean canBlockSeeTheSky(int x, int y, int z);
+    @Shadow
+    public abstract boolean canBlockSeeTheSky(int x, int y, int z);
 
-    @Shadow public abstract void setLightValue(EnumSkyBlock type, int x, int y, int z, int lightValue);
+    @Shadow
+    public abstract void setLightValue(EnumSkyBlock type, int x, int y, int z, int lightValue);
 
     /*
      * This shadow method is used by MixinWorldServer, place in here for Bukkit compatibility.
      * As World#spawnEntity method is not getting overridden in CraftBukkit WorldServer class,
      * shadowing spawnEntity in WorldServer will break Bukkit compatibility.
      */
-    @Shadow public abstract boolean spawnEntityInWorld(Entity entityIn);
+    @Shadow
+    public abstract boolean spawnEntityInWorld(Entity entityIn);
 
     protected void initCubicWorld(IntRange heightRange, IntRange generationRange) {
         ((ICubicWorldSettings) worldInfo).setCubic(true);
@@ -160,34 +200,41 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         this.maxGenerationHeight = generationRange.getMax();
     }
 
-    @Override public boolean isCubicWorld() {
+    @Override
+    public boolean isCubicWorld() {
         return this.isCubicWorld;
     }
 
-    @Override public int getMinHeight() {
+    @Override
+    public int getMinHeight() {
         return this.minHeight;
     }
 
-    @Override public int getMaxHeight() {
+    @Override
+    public int getMaxHeight() {
         return this.maxHeight;
     }
 
-    @Override public int getMinGenerationHeight() {
+    @Override
+    public int getMinGenerationHeight() {
         return this.minGenerationHeight;
     }
 
-    @Override public int getMaxGenerationHeight() {
+    @Override
+    public int getMaxGenerationHeight() {
         return this.maxGenerationHeight;
     }
 
-    @Override public ICubeProviderInternal getCubeCache() {
+    @Override
+    public ICubeProviderInternal getCubeCache() {
         if (!this.isCubicWorld()) {
             throw new NotCubicChunksWorldException();
         }
         return (ICubeProviderInternal) this.chunkProvider;
     }
 
-    @Override public LightingManager getLightingManager() {
+    @Override
+    public LightingManager getLightingManager() {
         if (!this.isCubicWorld()) {
             throw new NotCubicChunksWorldException();
         }
@@ -208,7 +255,8 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         for (int cubeX = minCubeX; cubeX <= maxCubeX; cubeX++) {
             for (int cubeY = minCubeY; cubeY <= maxCubeY; cubeY++) {
                 for (int cubeZ = minCubeZ; cubeZ <= maxCubeZ; cubeZ++) {
-                    Cube cube = this.getCubeCache().getLoadedCube(cubeX, cubeY, cubeZ);
+                    Cube cube = this.getCubeCache()
+                        .getLoadedCube(cubeX, cubeY, cubeZ);
                     if (!cubeAllowed.test(cube)) {
                         return false;
                     }
@@ -218,31 +266,38 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         return true;
     }
 
-    @Override public Cube getCubeFromCubeCoords(int cubeX, int cubeY, int cubeZ) {
-        return this.getCubeCache().getCube(cubeX, cubeY, cubeZ);
+    @Override
+    public Cube getCubeFromCubeCoords(int cubeX, int cubeY, int cubeZ) {
+        return this.getCubeCache()
+            .getCube(cubeX, cubeY, cubeZ);
     }
 
-    @Override public Cube getCubeFromBlockCoords(int blockX, int blockY, int blockZ) {
+    @Override
+    public Cube getCubeFromBlockCoords(int blockX, int blockY, int blockZ) {
         return this.getCubeFromCubeCoords(blockToCube(blockX), blockToCube(blockY), blockToCube(blockZ));
     }
 
-    @Override public Cube getCubeFromBlockCoords(BlockPos pos)
-    {
+    @Override
+    public Cube getCubeFromBlockCoords(BlockPos pos) {
         return this.getCubeFromBlockCoords(blockToCube(pos.getX()), blockToCube(pos.getY()), blockToCube(pos.getZ()));
     }
 
-    @Override public int getEffectiveHeight(int blockX, int blockZ) {
+    @Override
+    public int getEffectiveHeight(int blockX, int blockZ) {
         return this.chunkProvider.provideChunk(blockToCube(blockX), blockToCube(blockZ))
             .getHeightValue(blockToLocal(blockX), blockToLocal(blockZ));
     }
 
     // suppress mixin warning when running with -Dmixin.checks.interfaces=true
-    @Override public void tickCubicWorld() {
+    @Override
+    public void tickCubicWorld() {
         // pretend this method doesn't exist
-        throw new NoSuchMethodError("World.tickCubicWorld: Classes extending World need to implement tickCubicWorld in CubicChunks");
+        throw new NoSuchMethodError(
+            "World.tickCubicWorld: Classes extending World need to implement tickCubicWorld in CubicChunks");
     }
 
-    @Override public void fakeWorldHeight(int height) {
+    @Override
+    public void fakeWorldHeight(int height) {
         this.fakedMaxHeight = height;
     }
 
@@ -262,7 +317,6 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         return this.provider.getHeight();
     }
 
-
     @Inject(method = "updateLightByType", at = @At("HEAD"), cancellable = true)
     private void updateLightByType(EnumSkyBlock lightType, int x, int y, int z, CallbackInfoReturnable<Boolean> ci) {
         if (!isCubicWorld()) {
@@ -272,11 +326,11 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     }
 
     /**
-     * @param x x block position
-     * @param y y block position
-     * @param z z block position
+     * @param x                x block position
+     * @param y                y block position
+     * @param z                z block position
      * @param unusedTileEntity tile entity instance, unused
-     * @param ci callback info
+     * @param ci               callback info
      *
      * @author Foghrye4
      * @reason Original {@link World#markTileEntityChunkModified}
@@ -288,7 +342,8 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Inject(method = "markTileEntityChunkModified", at = @At("HEAD"), cancellable = true)
     private void onMarkChunkDirty(int x, int y, int z, TileEntity unusedTileEntity, CallbackInfo ci) {
         if (this.isCubicWorld()) {
-            Cube cube = this.getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z));
+            Cube cube = this.getCubeCache()
+                .getLoadedCube(CubePos.fromBlockCoords(x, y, z));
             if (cube != null) {
                 cube.markDirty();
             }
@@ -312,16 +367,14 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         if (this.isCubicWorld) {
             ICube cube = ((ICubeProviderInternal) this.chunkProvider)
                 .getCube(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z));
-            if (cube == null)
-            {
+            if (cube == null) {
                 CubicChunks.LOGGER.info("NULL cube found at {}, {}, {}, returning Blocks.air", x, y, z);
                 return Blocks.air;
             }
             return cube.getBlock(x, y, z);
         } else {
             Chunk chunk = this.getChunkFromBlockCoords(x, z);
-            if (chunk == null)
-            {
+            if (chunk == null) {
                 CubicChunks.LOGGER.info("NULL chunk found at {}, {}, {}, returning Blocks.air", x, y, z);
                 return Blocks.air;
             }
@@ -341,8 +394,8 @@ public abstract class MixinWorld implements ICubicWorldInternal {
             int nextY = currentY - 1;
             Block block = chunk.getBlock(Coords.blockToLocal(x), nextY, Coords.blockToLocal(z));
 
-            if (block.getMaterial().blocksMovement()
-                && !block.isLeaves((IBlockAccess) this, x, nextY, z)
+            if (block.getMaterial()
+                .blocksMovement() && !block.isLeaves((IBlockAccess) this, x, nextY, z)
                 && !block.isFoliage((IBlockAccess) this, x, nextY, z)) {
                 break;
             }
@@ -351,7 +404,8 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         cir.setReturnValue(currentY);
     }
 
-    @Override public boolean isBlockColumnLoaded(int x, int y, int z) {
+    @Override
+    public boolean isBlockColumnLoaded(int x, int y, int z) {
         return this.chunkExists(blockToCube(x), blockToCube(z));
     }
 }

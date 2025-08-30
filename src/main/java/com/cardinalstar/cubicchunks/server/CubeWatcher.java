@@ -1,28 +1,38 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.server;
+
+import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.Packet;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeModContainer;
+import net.minecraftforge.common.MinecraftForge;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.world.ICubeWatcher;
@@ -42,24 +52,11 @@ import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.base.Predicate;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import gnu.trove.list.TShortList;
 import gnu.trove.list.array.TShortArrayList;
-
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.Packet;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.world.World;
-import net.minecraftforge.common.ForgeModContainer;
-import net.minecraftforge.common.MinecraftForge;
-
-import java.util.function.Consumer;
-
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
@@ -68,7 +65,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
     private final CubeProviderServer cubeCache;
     private CubicPlayerManager cubicPlayerManager;
-    @Nullable private Cube cube;
+    @Nullable
+    private Cube cube;
     // Note: using wrap() so that the internal array is not Object[], and can be safely cast to EntityPlayerMP[]
     private final ObjectArrayList<EntityPlayerMP> players = ObjectArrayList.wrap(new EntityPlayerMP[0]);
     private final ObjectArrayList<EntityPlayerMP> playersToAdd = ObjectArrayList.wrap(new EntityPlayerMP[1], 0);
@@ -92,11 +90,14 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             this.cube = c;
             this.loading = false;
             if (this.cube != null) {
-                this.cube.getTickets().add(this);
+                this.cube.getTickets()
+                    .add(this);
             }
         };
         this.cubeCache.asyncGetCube(
-            cubePos.getX(), cubePos.getY(), cubePos.getZ(),
+            cubePos.getX(),
+            cubePos.getY(),
+            cubePos.getZ(),
             ICubeProviderServer.Requirement.LOAD,
             consumer);
     }
@@ -136,8 +137,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
         if (this.sentToPlayers) {
             this.sendToPlayer(player);
-            ((ICubicEntityTracker) cubicPlayerManager.getWorldServer().getEntityTracker())
-                .sendLeashedEntitiesInCube(player, this.getCube());
+            ((ICubicEntityTracker) cubicPlayerManager.getWorldServer()
+                .getEntityTracker()).sendLeashedEntitiesInCube(player, this.getCube());
         }
     }
 
@@ -175,8 +176,11 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
     void invalidate() {
         if (loading) {
-            CubeIOExecutor.dropQueuedCubeLoad(this.cubicPlayerManager.getWorldServer(),
-                cubePos.getX(), cubePos.getY(), cubePos.getZ(),
+            CubeIOExecutor.dropQueuedCubeLoad(
+                this.cubicPlayerManager.getWorldServer(),
+                cubePos.getX(),
+                cubePos.getY(),
+                cubePos.getZ(),
                 c -> this.cube = c);
         }
         invalid = true;
@@ -213,7 +217,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             this.cube = this.cubeCache.getCube(cubeX, cubeY, cubeZ, ICubeProviderServer.Requirement.LOAD);
         }
         if (this.cube != null) {
-            this.cube.getTickets().add(this);
+            this.cube.getTickets()
+                .add(this);
         }
         cubicPlayerManager.getWorldServer().theProfiler.endStartSection("light");
         cubicPlayerManager.getWorldServer().theProfiler.endSection();
@@ -221,12 +226,15 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         return this.cube != null;
     }
 
-    @Override public boolean isSentToPlayers() {
+    @Override
+    public boolean isSentToPlayers() {
         return sentToPlayers;
     }
 
     boolean isWaitingForCube() {
-        return this.cube == null || !this.cube.isFullyPopulated() || !this.cube.isInitialLightingDone() || !this.cube.isSurfaceTracked();
+        return this.cube == null || !this.cube.isFullyPopulated()
+            || !this.cube.isInitialLightingDone()
+            || !this.cube.isSurfaceTracked();
     }
 
     boolean isWaitingForColumn() {
@@ -242,7 +250,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         if (isWaitingForCube()) {
             return SendToPlayersResult.WAITING;
         }
-        //can't send cubes before columns
+        // can't send cubes before columns
         if (isWaitingForColumn()) {
             return SendToPlayersResult.WAITING;
         }
@@ -250,7 +258,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             return SendToPlayersResult.WAITING;
         }
         this.dirtyBlocks.clear();
-        //set to true before adding to queue so that sendToPlayer can actually add it
+        // set to true before adding to queue so that sendToPlayer can actually add it
         this.sentToPlayers = true;
 
         for (EntityPlayerMP playerEntry : this.players) {
@@ -286,7 +294,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
     // CHECKED: 1.10.2-12.18.1.2092
     void blockChanged(int localX, int localY, int localZ) {
-        //if we are adding the first one, add it to update list
+        // if we are adding the first one, add it to update list
         if (this.dirtyBlocks.isEmpty()) {
             cubicPlayerManager.addToUpdateEntry(this);
         }
@@ -317,16 +325,16 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         } else {
             // send all the dirty blocks
             PacketCubeBlockChange packet = null;
-//            for (EntityPlayerMP player : this.players) {
-//                if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
-//                    if (packet == null) { // create packet lazily
-//                        packet = new PacketCubeBlockChange(this.cube, this.dirtyBlocks);
-//                    }
-//                    PacketDispatcher.sendTo(packet, player);
-//                } else {
-//                    cubicPlayerManager.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
-//                }
-//            }
+            // for (EntityPlayerMP player : this.players) {
+            // if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
+            // if (packet == null) { // create packet lazily
+            // packet = new PacketCubeBlockChange(this.cube, this.dirtyBlocks);
+            // }
+            // PacketDispatcher.sendTo(packet, player);
+            // } else {
+            // cubicPlayerManager.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
+            // }
+            // }
             // send the block entites on those blocks too
             this.dirtyBlocks.forEach(localAddress -> {
                 BlockPos pos = cube.localAddressToBlockPos(localAddress);
@@ -369,13 +377,12 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         return false;
     }
 
-    boolean hasPlayer()
-    {
+    boolean hasPlayer() {
         return players.elements().length != 0;
     }
 
     boolean hasPlayerMatchingInRange(Predicate<EntityPlayerMP> predicate, int range) {
-        double d = range*range;
+        double d = range * range;
         double cx = cubePos.getXCenter();
         double cy = cubePos.getYCenter();
         double cz = cubePos.getZCenter();
@@ -415,7 +422,9 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         return dx * dx + dy * dy + dz * dz;
     }
 
-    @Override @Nullable public Cube getCube() {
+    @Override
+    @Nullable
+    public Cube getCube() {
         return this.cube;
     }
 
@@ -437,7 +446,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     private long getWorldTime() {
-        return cubicPlayerManager.getWorldServer().getWorldTime();
+        return cubicPlayerManager.getWorldServer()
+            .getWorldTime();
     }
 
     private void sendPacketToAllPlayers(Packet packet) {
@@ -446,7 +456,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         }
     }
 
-    @Override public void sendPacketToAllPlayers(IMessage packet) {
+    @Override
+    public void sendPacketToAllPlayers(IMessage packet) {
         for (EntityPlayerMP entry : this.players) {
             PacketDispatcher.sendTo(packet, entry);
         }
@@ -456,33 +467,41 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         return cubePos;
     }
 
-    @Override public int getX() {
+    @Override
+    public int getX() {
         return this.cubePos.getX();
     }
 
-    @Override public int getY() {
+    @Override
+    public int getY() {
         return this.cubePos.getY();
     }
 
-    @Override public int getZ() {
+    @Override
+    public int getZ() {
         return this.cubePos.getZ();
     }
 
-    @Override public boolean shouldTick() {
+    @Override
+    public boolean shouldTick() {
         return false; // player seeing a cube is not enough to force ticking from the ticket system
     }
 
     private long[] bucketDataEntry = null;
 
-    @Override public long[] getBucketEntryData() {
+    @Override
+    public long[] getBucketEntryData() {
         return bucketDataEntry;
     }
 
-    @Override public void setBucketEntryData(long[] data) {
+    @Override
+    public void setBucketEntryData(long[] data) {
         bucketDataEntry = data;
     }
 
     public enum SendToPlayersResult {
-        ALREADY_DONE, CUBE_SENT, WAITING
+        ALREADY_DONE,
+        CUBE_SENT,
+        WAITING
     }
 }

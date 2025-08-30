@@ -1,28 +1,34 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.network;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.network.PacketBuffer;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
@@ -31,17 +37,9 @@ import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-
-import javax.annotation.ParametersAreNonnullByDefault;
 
 // TODO Watch implementation packet io functions for block data arrays and serialization length
 @ParametersAreNonnullByDefault
@@ -53,35 +51,40 @@ class WorldEncoder {
         // 1. emptiness
         cubes.forEach(cube -> {
             byte flags = 0;
-            if(cube.isEmpty())
-                flags |= 1;
-            if(cube.getStorage() != null)
-                flags |= 2;
-            if(cube.getBiomeArray() != null)
-                flags |= 4;
+            if (cube.isEmpty()) flags |= 1;
+            if (cube.getStorage() != null) flags |= 2;
+            if (cube.getBiomeArray() != null) flags |= 4;
             out.writeByte(flags);
         });
 
         // 2. block IDs and metadata
         cubes.forEach(cube -> {
             if (!cube.isEmpty()) {
-                //noinspection ConstantConditions
-                out.writeBytes(cube.getStorage().getBlockLSBArray());
-                out.writeBytes(cube.getStorage().getBlockMSBArray().data);
+                // noinspection ConstantConditions
+                out.writeBytes(
+                    cube.getStorage()
+                        .getBlockLSBArray());
+                out.writeBytes(
+                    cube.getStorage()
+                        .getBlockMSBArray().data);
             }
         });
 
         // 3. block light
         cubes.forEach(cube -> {
             if (cube.getStorage() != null) {
-                out.writeBytes(cube.getStorage().getBlocklightArray().data);
+                out.writeBytes(
+                    cube.getStorage()
+                        .getBlocklightArray().data);
             }
         });
 
         // 4. sky light
         cubes.forEach(cube -> {
             if (cube.getStorage() != null && !cube.getWorld().provider.hasNoSky) {
-                out.writeBytes(cube.getStorage().getSkylightArray().data);
+                out.writeBytes(
+                    cube.getStorage()
+                        .getSkylightArray().data);
             }
         });
 
@@ -96,10 +99,7 @@ class WorldEncoder {
         });
 
         // 6. biomes
-        cubes.forEach(cube -> {
-            if (cube.getBiomeArray() != null)
-                out.writeBytes(cube.getBiomeArray());
-        });
+        cubes.forEach(cube -> { if (cube.getBiomeArray() != null) out.writeBytes(cube.getBiomeArray()); });
     }
 
     static void encodeColumn(PacketBuffer out, Chunk column) {
@@ -117,7 +117,9 @@ class WorldEncoder {
     }
 
     static void decodeCube(PacketBuffer in, List<Cube> cubes) {
-        cubes.stream().filter(Objects::nonNull).forEach(Cube::setClientCube);
+        cubes.stream()
+            .filter(Objects::nonNull)
+            .forEach(Cube::setClientCube);
 
         // 1. emptiness
         boolean[] isEmpty = new boolean[cubes.size()];
@@ -134,7 +136,8 @@ class WorldEncoder {
         for (int i = 0; i < cubes.size(); i++) {
             if (hasStorage[i]) {
                 Cube cube = cubes.get(i);
-                ExtendedBlockStorage storage = new ExtendedBlockStorage(Coords.cubeToMinBlock(cube.getY()),
+                ExtendedBlockStorage storage = new ExtendedBlockStorage(
+                    Coords.cubeToMinBlock(cube.getY()),
                     !cube.getWorld().provider.hasNoSky);
                 cube.setStorageFromSave(storage);
             }
@@ -143,13 +146,17 @@ class WorldEncoder {
         // 2. Block IDs and metadata
         for (int i = 0; i < cubes.size(); i++) {
             if (!isEmpty[i]) {
-                //noinspection ConstantConditions
-                if (cubes.get(i).getStorage() != null)
-                {
-                    byte[] lsbData = cubes.get(i).getStorage().getBlockLSBArray();
+                // noinspection ConstantConditions
+                if (cubes.get(i)
+                    .getStorage() != null) {
+                    byte[] lsbData = cubes.get(i)
+                        .getStorage()
+                        .getBlockLSBArray();
                     in.readBytes(lsbData);
 
-                    byte[] msbData = cubes.get(i).getStorage().getBlockMSBArray().data;
+                    byte[] msbData = cubes.get(i)
+                        .getStorage()
+                        .getBlockMSBArray().data;
                     in.readBytes(msbData);
                 }
             }
@@ -158,17 +165,22 @@ class WorldEncoder {
         // 3. block light
         for (int i = 0; i < cubes.size(); i++) {
             if (hasStorage[i]) {
-                //noinspection ConstantConditions
-                byte[] data = cubes.get(i).getStorage().getBlocklightArray().data;
+                // noinspection ConstantConditions
+                byte[] data = cubes.get(i)
+                    .getStorage()
+                    .getBlocklightArray().data;
                 in.readBytes(data);
             }
         }
 
         // 4. sky light
         for (int i = 0; i < cubes.size(); i++) {
-            if (hasStorage[i] && !cubes.get(i).getWorld().provider.hasNoSky) {
-                //noinspection ConstantConditions
-                byte[] data = cubes.get(i).getStorage().getSkylightArray().data;
+            if (hasStorage[i] && !cubes.get(i)
+                .getWorld().provider.hasNoSky) {
+                // noinspection ConstantConditions
+                byte[] data = cubes.get(i)
+                    .getStorage()
+                    .getSkylightArray().data;
                 in.readBytes(data);
             }
         }
@@ -196,15 +208,15 @@ class WorldEncoder {
                         }
                     }
                 }
-                //noinspection ConstantConditions
-                cube.getStorage().removeInvalidBlocks();
+                // noinspection ConstantConditions
+                cube.getStorage()
+                    .removeInvalidBlocks();
             }
         }
 
         // 6. biomes
         for (int i = 0; i < cubes.size(); i++) {
-            if (!hasCustomBiomeMap[i])
-                continue;
+            if (!hasCustomBiomeMap[i]) continue;
             Cube cube = cubes.get(i);
             byte[] blockBiomeArray = new byte[Coords.BIOMES_PER_CUBE];
             in.readBytes(blockBiomeArray);
@@ -225,14 +237,18 @@ class WorldEncoder {
         // 2. block IDs and metadata
         for (Cube cube : cubes) {
             if (!cube.isEmpty()) {
-                //noinspection ConstantConditions
-                size += cube.getStorage().getBlockLSBArray().length;
-                size += cube.getStorage().getBlockMSBArray().data.length;
+                // noinspection ConstantConditions
+                size += cube.getStorage()
+                    .getBlockLSBArray().length;
+                size += cube.getStorage()
+                    .getBlockMSBArray().data.length;
             }
             if (cube.getStorage() != null) {
-                size += cube.getStorage().getBlocklightArray().data.length;
+                size += cube.getStorage()
+                    .getBlocklightArray().data.length;
                 if (!cube.getWorld().provider.hasNoSky) {
-                    size += cube.getStorage().getSkylightArray().data.length;
+                    size += cube.getStorage()
+                        .getSkylightArray().data.length;
                 }
             }
         }
@@ -242,8 +258,7 @@ class WorldEncoder {
         // biomes
         for (Cube cube : cubes) {
             byte[] biomeArray = cube.getBiomeArray();
-            if (biomeArray == null)
-                continue;
+            if (biomeArray == null) continue;
             size += biomeArray.length;
         }
         return size;

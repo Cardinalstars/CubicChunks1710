@@ -1,53 +1,25 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 package com.cardinalstar.cubicchunks;
-
-import com.cardinalstar.cubicchunks.command.CubicCommandBase;
-import com.google.common.collect.BoundType;
-import com.google.common.collect.Range;
-import com.google.common.collect.TreeRangeSet;
-
-import com.cardinalstar.cubicchunks.command.SubCommandBase;
-
-import com.gtnewhorizon.gtnhlib.config.Config;
-import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
-import cpw.mods.fml.client.event.ConfigChangedEvent;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.event.FMLServerStartingEvent;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.relauncher.Side;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.command.CommandBase;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.command.WrongUsageException;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.ResourceLocation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -66,6 +38,25 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import net.minecraft.client.resources.I18n;
+import net.minecraft.command.CommandException;
+import net.minecraft.command.ICommandSender;
+import net.minecraft.command.WrongUsageException;
+import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.ResourceLocation;
+
+import com.cardinalstar.cubicchunks.command.CubicCommandBase;
+import com.cardinalstar.cubicchunks.command.SubCommandBase;
+import com.google.common.collect.BoundType;
+import com.google.common.collect.Range;
+import com.google.common.collect.TreeRangeSet;
+import com.gtnewhorizon.gtnhlib.config.Config;
+import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
+
+import cpw.mods.fml.client.event.ConfigChangedEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+
 @ParametersAreNonnullByDefault
 @Config(modid = CubicChunks.MODID, category = "general")
 public class CubicChunksConfig {
@@ -74,11 +65,10 @@ public class CubicChunksConfig {
     @Config.LangKey("cubicchunks.config.chunk_gc_interval")
     public static int chunkGCInterval = 20 * 10;
 
-    @Config.Comment("Eliminates a few data copies in compatibility generator. May break some mods." +
-        " Disable if you experience issues in modded dimensions or world types")
+    @Config.Comment("Eliminates a few data copies in compatibility generator. May break some mods."
+        + " Disable if you experience issues in modded dimensions or world types")
     @Config.LangKey("cubicchunks.config.optimized_compatibility_generator")
     public static boolean optimizedCompatibilityGenerator = true;
-
 
     @Config.LangKey("cubicchunks.config.force_cc")
     @Config.Comment("Determines when a cubic chunks world should be created for non-cubic-chunks world types.\n"
@@ -120,7 +110,7 @@ public class CubicChunksConfig {
         + "        -5\n"
         + "     >\n"
         + "The ranges specified can overlap, and the bounds can be specified in reversed order.")
-    public static String[] excludedDimensions = {"1"};
+    public static String[] excludedDimensions = { "1" };
 
     @Config.LangKey("cubicchunks.config.force_dimension_blacklist")
     @Config.Comment("If this is set to true, cubic chunks will respect excluded dimensions even for already existing worlds. If this results in a "
@@ -191,8 +181,7 @@ public class CubicChunksConfig {
     public static int worldgenWatchdogTimeLimit = 10000;
 
     @Config.LangKey("cubicchunks.config.allow_vanilla_clients")
-    @Config.Comment("Allows clients without cubic chunks to join. "
-        + "THIS IS INTENDED FOR VANILLA CLIENTS. "
+    @Config.Comment("Allows clients without cubic chunks to join. " + "THIS IS INTENDED FOR VANILLA CLIENTS. "
         + "This is VERY likely to break when used with other mods")
     public static boolean allowVanillaClients = false;
 
@@ -233,6 +222,7 @@ public class CubicChunksConfig {
         @Config.Comment("The size (radius) of a horizontal slice.")
         public int horizontalSliceSize = 65536;
     }
+
     public static int defaultMaxCubesPerChunkloadingTicket = 25 * 16;
     public static Map<String, Integer> modMaxCubesPerChunkloadingTicket = new HashMap<>();
 
@@ -251,20 +241,30 @@ public class CubicChunksConfig {
     }
 
     private static void validateConfigValues() {
-//        if (!VanillaCompatibilityGeneratorProviderBase.REGISTRY.containsKey(new ResourceLocation(compatibilityGeneratorType))) {
-//            CubicChunks.LOGGER.error("CubicChunksConfig: Compatibility generator type {} doesn't exist, resetting config to default", compatibilityGeneratorType);
-//            compatibilityGeneratorType = VanillaCompatibilityGeneratorProviderBase.DEFAULT.toString();
-//        }
-//        if (!storageFormat.isEmpty() && !StorageFormatProviderBase.REGISTRY.containsKey(new ResourceLocation(storageFormat))) {
-//            CubicChunks.LOGGER.error("CubicChunksConfig: Storage format {} doesn't exist, resetting config to default", storageFormat);
-//            storageFormat = "";
-//        }
+        // if (!VanillaCompatibilityGeneratorProviderBase.REGISTRY.containsKey(new
+        // ResourceLocation(compatibilityGeneratorType))) {
+        // CubicChunks.LOGGER.error("CubicChunksConfig: Compatibility generator type {} doesn't exist, resetting config
+        // to default", compatibilityGeneratorType);
+        // compatibilityGeneratorType = VanillaCompatibilityGeneratorProviderBase.DEFAULT.toString();
+        // }
+        // if (!storageFormat.isEmpty() && !StorageFormatProviderBase.REGISTRY.containsKey(new
+        // ResourceLocation(storageFormat))) {
+        // CubicChunks.LOGGER.error("CubicChunksConfig: Storage format {} doesn't exist, resetting config to default",
+        // storageFormat);
+        // storageFormat = "";
+        // }
         if ((defaultMinHeight & 0xF) != 0) {
-            CubicChunks.LOGGER.error("CubicChunksConfig: defaultMinHeight not a multiple of 16, got {}, setting to {}", defaultMinHeight, defaultMinHeight & ~0xF);
+            CubicChunks.LOGGER.error(
+                "CubicChunksConfig: defaultMinHeight not a multiple of 16, got {}, setting to {}",
+                defaultMinHeight,
+                defaultMinHeight & ~0xF);
             defaultMinHeight &= ~0xF;
         }
         if ((defaultMaxHeight & 0xF) != 0) {
-            CubicChunks.LOGGER.error("CubicChunksConfig: defaultMaxHeight not a multiple of 16, got {}, setting to {}", defaultMaxHeight, defaultMaxHeight & ~0xF);
+            CubicChunks.LOGGER.error(
+                "CubicChunksConfig: defaultMaxHeight not a multiple of 16, got {}, setting to {}",
+                defaultMaxHeight,
+                defaultMaxHeight & ~0xF);
             defaultMaxHeight &= ~0xF;
         }
     }
@@ -275,14 +275,17 @@ public class CubicChunksConfig {
         }
         excludedDimensionsRanges.clear();
 
-        final Predicate<String> NUMBER_PATTERN = Pattern.compile("^-?\\d+$").asPredicate();
-        final Predicate<String> NUMBER_RANGE_PATTERN = Pattern.compile("^-?\\d+:-?\\d+$").asPredicate();
+        final Predicate<String> NUMBER_PATTERN = Pattern.compile("^-?\\d+$")
+            .asPredicate();
+        final Predicate<String> NUMBER_RANGE_PATTERN = Pattern.compile("^-?\\d+:-?\\d+$")
+            .asPredicate();
 
         for (String str : excludedDimensions) {
             try {
                 parseRange(NUMBER_PATTERN, NUMBER_RANGE_PATTERN, str);
             } catch (NumberFormatException ex) {
-                CubicChunks.LOGGER.error("Error parsing excluded dimension ranges: " + str + " is not a valid range, ignoring");
+                CubicChunks.LOGGER
+                    .error("Error parsing excluded dimension ranges: " + str + " is not a valid range, ignoring");
             }
         }
         Set<Range<Integer>> ranges = excludedDimensionsRanges.asRanges();
@@ -296,7 +299,8 @@ public class CubicChunksConfig {
         }
     }
 
-    private static void parseRange(Predicate<String> NUMBER_PATTERN, Predicate<String> NUMBER_RANGE_PATTERN, String str) {
+    private static void parseRange(Predicate<String> NUMBER_PATTERN, Predicate<String> NUMBER_RANGE_PATTERN,
+        String str) {
         // add ranges as open where possible to allow merging
         if (NUMBER_PATTERN.test(str)) {
             int value = Integer.parseInt(str);
@@ -327,7 +331,8 @@ public class CubicChunksConfig {
                 }
             }
         } else {
-            CubicChunks.LOGGER.error("Error parsing excluded dimension ranges: " + str + " is not a valid range, ignoring");
+            CubicChunks.LOGGER
+                .error("Error parsing excluded dimension ranges: " + str + " is not a valid range, ignoring");
         }
     }
 
@@ -353,8 +358,7 @@ public class CubicChunksConfig {
     }
 
     public static void setGenerator(ResourceLocation generatorTypeIn) {
-        if(forceLoadCubicChunks == ForceCCMode.NONE)
-            forceLoadCubicChunks = ForceCCMode.NEW_WORLD;
+        if (forceLoadCubicChunks == ForceCCMode.NONE) forceLoadCubicChunks = ForceCCMode.NEW_WORLD;
         compatibilityGeneratorType = generatorTypeIn.toString();
         sync();
     }
@@ -373,42 +377,40 @@ public class CubicChunksConfig {
         ALWAYS
     }
 
-    static class BaseCubicChunksCommand extends SubCommandBase
-    {
+    static class BaseCubicChunksCommand extends SubCommandBase {
+
         public BaseCubicChunksCommand() {
             super(CubicCommandBase.PermissionLevel.OP);
             addSubcommand(new ConfigCommand(CubicCommandBase.PermissionLevel.OP));
         }
 
-        @Override public String getCommandName() {
+        @Override
+        public String getCommandName() {
             return "cubicchunks";
         }
 
-        @Override public String getCommandUsage(ICommandSender sender) {
+        @Override
+        public String getCommandUsage(ICommandSender sender) {
             return "cubicchunks.command.usage.cubicchunks";
         }
 
     }
 
-    static class ConfigCommand extends SubCommandBase
-    {
+    static class ConfigCommand extends SubCommandBase {
 
-        public ConfigCommand(PermissionLevel permissionLevel)
-        {
+        public ConfigCommand(PermissionLevel permissionLevel) {
             super(permissionLevel);
             addSubcommand(new ReloadConfig(permissionLevel));
             addSubcommand(new SetConfigBase(permissionLevel));
         }
 
         @Override
-        public String getCommandName()
-        {
+        public String getCommandName() {
             return "config";
         }
 
         @Override
-        public String getCommandUsage(ICommandSender sender)
-        {
+        public String getCommandUsage(ICommandSender sender) {
             return "cubicchunks.command.usage.config";
         }
     }
@@ -425,44 +427,54 @@ public class CubicChunksConfig {
             }
         }
 
-        private void registerConfigCommandsFor(@Nullable Object object, Field[] fields, String prefix) throws ReflectiveOperationException {
+        private void registerConfigCommandsFor(@Nullable Object object, Field[] fields, String prefix)
+            throws ReflectiveOperationException {
             for (Field field : fields) {
                 if (field.getAnnotationsByType(Config.Ignore.class).length != 0) {
                     continue;
                 }
-                boolean requiresWorldRestart = field.getAnnotationsByType(Config.RequiresWorldRestart.class).length != 0;
+                boolean requiresWorldRestart = field.getAnnotationsByType(Config.RequiresWorldRestart.class).length
+                    != 0;
                 String name = prefix + field.getName();
                 Class<?> type = field.getType();
                 boolean isSimpleType = type.isPrimitive() || type == String.class;
-                boolean isCollection = type.isArray() || Map.class.isAssignableFrom(type) || List.class.isAssignableFrom(type);
+                boolean isCollection = type.isArray() || Map.class.isAssignableFrom(type)
+                    || List.class.isAssignableFrom(type);
                 boolean isEnum = type.isEnum();
                 if (!isSimpleType && !isCollection && !isEnum) {
                     registerConfigCommandsFor(field.get(object), type.getFields(), name + ".");
                     continue;
                 }
-                addSubcommand(new SetConfig(name, object, field, requiresWorldRestart, this.getRequiredPermissionEnum()));
+                addSubcommand(
+                    new SetConfig(name, object, field, requiresWorldRestart, this.getRequiredPermissionEnum()));
             }
         }
 
-        @Override public String getCommandName() {
+        @Override
+        public String getCommandName() {
             return "set";
         }
 
-        @Override public String getCommandUsage(ICommandSender sender) {
+        @Override
+        public String getCommandUsage(ICommandSender sender) {
             return "cubicchunks.command.usage.config.set";
         }
     }
+
     static class SetConfig extends CubicCommandBase {
 
-        private static final Set<String> TRUE_STRINGS = new HashSet<>(Arrays.asList("true", "1", "yes", "on", "enable", "enabled"));
-        private static final Set<String> FALSE_STRINGS = new HashSet<>(Arrays.asList("false", "0", "no", "off", "disable", "disabled"));
+        private static final Set<String> TRUE_STRINGS = new HashSet<>(
+            Arrays.asList("true", "1", "yes", "on", "enable", "enabled"));
+        private static final Set<String> FALSE_STRINGS = new HashSet<>(
+            Arrays.asList("false", "0", "no", "off", "disable", "disabled"));
 
         private final String name;
         private final Object object;
         private final Field field;
         private final boolean requiresWorldRestart;
 
-        public SetConfig(String name, @Nullable Object object, Field field, boolean requiresWorldRestart, PermissionLevel permissionLevel) {
+        public SetConfig(String name, @Nullable Object object, Field field, boolean requiresWorldRestart,
+            PermissionLevel permissionLevel) {
             super(permissionLevel);
             this.name = name;
             this.object = object;
@@ -470,24 +482,27 @@ public class CubicChunksConfig {
             this.requiresWorldRestart = requiresWorldRestart;
         }
 
-        @Override public String getCommandName() {
+        @Override
+        public String getCommandName() {
             return name;
         }
 
         @SuppressWarnings("deprecation")
-        @Override public String getCommandUsage(ICommandSender sender) {
+        @Override
+        public String getCommandUsage(ICommandSender sender) {
             return I18n.format("cubicchunks.command.usage.config.set_option", name); // TODO?
-//            if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-//
-//            } else {
-//                //we have to use this on the dedicated server, as the client I18n class isn't available there...
-//                // unfortunately this could result in a client being sent a string in a language other than their configured locale, but i don't
-//                // see any alternative other than adding separate translation keys for every single config option
-//                return net.minecraft.util.text.translation.I18n.translateToLocalFormatted("cubicchunks.command.usage.config.set_option", name);
-//            }
+            // if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
+            //
+            // } else {
+            // //we have to use this on the dedicated server, as the client I18n class isn't available there...
+            // // unfortunately this could result in a client being sent a string in a language other than their
+            // configured locale, but i don't
+            // // see any alternative other than adding separate translation keys for every single config option
+            // return
+            // net.minecraft.util.text.translation.I18n.translateToLocalFormatted("cubicchunks.command.usage.config.set_option",
+            // name);
+            // }
         }
-
-
 
         @Override
         public void processCommand(ICommandSender sender, String[] args) throws CommandException {
@@ -495,9 +510,14 @@ public class CubicChunksConfig {
             try {
                 field.set(object, newValue);
                 CubicChunksConfig.sync();
-                sender.addChatMessage(new ChatComponentTranslation("cubicchunks.command.config.set.done", name, stringify(field.get(object))));
+                sender.addChatMessage(
+                    new ChatComponentTranslation(
+                        "cubicchunks.command.config.set.done",
+                        name,
+                        stringify(field.get(object))));
                 if (requiresWorldRestart) {
-                    sender.addChatMessage(new ChatComponentTranslation("cubicchunks.command.config.set.requires_restart", name));
+                    sender.addChatMessage(
+                        new ChatComponentTranslation("cubicchunks.command.config.set.requires_restart", name));
                 }
             } catch (ReflectiveOperationException e) {
                 throw new CommandException("cubicchunks.command.config.set.failed", name);
@@ -508,7 +528,12 @@ public class CubicChunksConfig {
             if (o == null) {
                 return "null";
             }
-            if (o.getClass().isPrimitive() || o.getClass().isEnum() || o instanceof String || o instanceof Collection) {
+            if (o.getClass()
+                .isPrimitive()
+                || o.getClass()
+                    .isEnum()
+                || o instanceof String
+                || o instanceof Collection) {
                 return o.toString();
             }
             if (o instanceof int[]) {
@@ -526,7 +551,10 @@ public class CubicChunksConfig {
                 return String.join(" ", args);
             }
             if ((type.isPrimitive() || type.isEnum()) && args.length != 1) {
-                throw new WrongUsageException("cubicchunks.command.usage.config.set.primitive", name, type.getSimpleName());
+                throw new WrongUsageException(
+                    "cubicchunks.command.usage.config.set.primitive",
+                    name,
+                    type.getSimpleName());
             }
             Object o = tryParseSimpleType(type, args[0], sender);
             if (o != null) {
@@ -545,18 +573,28 @@ public class CubicChunksConfig {
             if (type == Map.class) {
                 Type genericType = field.getGenericType();
                 if (!(genericType instanceof ParameterizedType)) {
-                    throw new IllegalStateException("Field " + field.getDeclaringClass() + "." + field.getName() + " appears to be a raw type Map!");
+                    throw new IllegalStateException(
+                        "Field " + field.getDeclaringClass()
+                            + "."
+                            + field.getName()
+                            + " appears to be a raw type Map!");
                 }
                 Type[] actualTypeArguments = ((ParameterizedType) genericType).getActualTypeArguments();
                 Type key = actualTypeArguments[0];
                 if (!(key instanceof Class)) {
-                    throw new IllegalStateException("Field " + field.getDeclaringClass() + "." + field.getName() +
-                        " key generic type is not a class!");
+                    throw new IllegalStateException(
+                        "Field " + field.getDeclaringClass()
+                            + "."
+                            + field.getName()
+                            + " key generic type is not a class!");
                 }
                 Type value = actualTypeArguments[1];
                 if (!(value instanceof Class)) {
-                    throw new IllegalStateException("Field " + field.getDeclaringClass() + "." + field.getName() +
-                        " key generic type is not a class!");
+                    throw new IllegalStateException(
+                        "Field " + field.getDeclaringClass()
+                            + "."
+                            + field.getName()
+                            + " key generic type is not a class!");
                 }
                 Map<Object, Object> map = new HashMap<>();
                 for (String arg : args) {
@@ -570,7 +608,8 @@ public class CubicChunksConfig {
             throw new IllegalStateException("Unsupported field type " + field);
         }
 
-        @SuppressWarnings({"rawtypes", "unchecked"}) @Nullable
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        @Nullable
         private Object tryParseSimpleType(Class<?> type, String value, ICommandSender sender) throws CommandException {
             if (type == String.class) {
                 return value;

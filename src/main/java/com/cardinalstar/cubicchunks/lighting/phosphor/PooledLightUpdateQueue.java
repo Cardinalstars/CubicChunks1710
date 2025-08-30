@@ -1,35 +1,31 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2018 @PhiPro95 and @Mathe172
- *  Copyright (c) 2021 @jellysquid_
- *  Copyright (c) 2021 OpenCubicChunks
- *  Copyright (c) 2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2018 @PhiPro95 and @Mathe172
+ * Copyright (c) 2021 @jellysquid_
+ * Copyright (c) 2021 OpenCubicChunks
+ * Copyright (c) 2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.lighting.phosphor;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-//Implement own queue with pooled segments to reduce allocation costs and reduce idle memory footprint
+// Implement own queue with pooled segments to reduce allocation costs and reduce idle memory footprint
 public class PooledLightUpdateQueue {
 
     private static final int CACHED_QUEUE_SEGMENTS_COUNT = 1 << 12; // 4096
@@ -50,7 +46,8 @@ public class PooledLightUpdateQueue {
     }
 
     /**
-     * Not thread-safe! If you must know whether or not the queue is empty, please use {@link PooledLightUpdateQueue#isEmpty()}.
+     * Not thread-safe! If you must know whether or not the queue is empty, please use
+     * {@link PooledLightUpdateQueue#isEmpty()}.
      *
      * @return The number of encoded values present in this queue
      */
@@ -59,7 +56,9 @@ public class PooledLightUpdateQueue {
     }
 
     /**
-     * Thread-safe method to check whether or not this queue has work to do. Significantly cheaper than acquiring a lock.
+     * Thread-safe method to check whether or not this queue has work to do. Significantly cheaper than acquiring a
+     * lock.
+     * 
      * @return True if the queue is empty, otherwise false
      */
     public boolean isEmpty() {
@@ -68,9 +67,10 @@ public class PooledLightUpdateQueue {
 
     /**
      * Not thread-safe! Adds an encoded long value into this queue.
-     * @param x x coordinate
-     * @param y y coordinate
-     * @param z z coordinate
+     * 
+     * @param x   x coordinate
+     * @param y   y coordinate
+     * @param z   z coordinate
      * @param val The encoded value to add
      */
     public void add(final int x, final int y, final int z, final int val) {
@@ -101,6 +101,7 @@ public class PooledLightUpdateQueue {
 
     /**
      * Not thread safe! Creates an iterator over the values in this queue. Values will be returned in a FIFO fashion.
+     * 
      * @return The iterator
      */
     public LightUpdateQueueIterator iterator() {

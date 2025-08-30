@@ -1,13 +1,12 @@
 package com.cardinalstar.cubicchunks.world.storage;
 
 // Storage 3d is used to hold chunks and block data
-public class Storage3d implements IStorageFormat
-{
+public class Storage3d implements IStorageFormat {
+
     public static final int LOCATION_BITS = 23;
     public static final int LOCATION_MASK = (1 << LOCATION_BITS) - 1;
     public static final int ENTRIES_PER_REGION = 4096; // 16x16x16 regions
     public static final int HEADER_ENTRY_SIZE_BYTES = 4;
-
 
     @Override
     public String getRegionFileKey() {
@@ -25,8 +24,7 @@ public class Storage3d implements IStorageFormat
     }
 
     @Override
-    public Entry parseEntry(int readInt)
-    {
+    public Entry parseEntry(int readInt) {
         int length = readInt >>> LOCATION_BITS;
         int offset = readInt & LOCATION_MASK;
 

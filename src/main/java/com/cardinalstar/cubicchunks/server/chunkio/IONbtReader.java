@@ -1,38 +1,30 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.server.chunkio;
 
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.api.IHeightMap;
-import com.cardinalstar.cubicchunks.lighting.ILightingManager;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
+import java.util.Arrays;
+
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
@@ -46,10 +38,15 @@ import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.common.util.Constants;
 
-import java.util.Arrays;
-
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.api.IHeightMap;
+import com.cardinalstar.cubicchunks.lighting.ILightingManager;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.util.AddressTools;
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 @ParametersAreNonnullByDefault
 public class IONbtReader {
@@ -79,8 +76,13 @@ public class IONbtReader {
         int xCheck = nbt.getInteger("x");
         int zCheck = nbt.getInteger("z");
         if (xCheck != x || zCheck != z) {
-            CubicChunks.LOGGER
-                .warn(String.format("Column is corrupted! Expected (%d,%d) but got (%d,%d). Column will be regenerated.", x, z, xCheck, zCheck));
+            CubicChunks.LOGGER.warn(
+                String.format(
+                    "Column is corrupted! Expected (%d,%d) but got (%d,%d). Column will be regenerated.",
+                    x,
+                    z,
+                    xCheck,
+                    zCheck));
             return null;
         }
 
@@ -90,9 +92,9 @@ public class IONbtReader {
         // read the rest of the column properties
         column.inhabitedTime = nbt.getLong("InhabitedTime");
 
-//        if (column.getCapabilities() != null && nbt.hasKey("ForgeCaps")) {
-//            column.getCapabilities().deserializeNBT(nbt.getCompoundTag("ForgeCaps"));
-//        }
+        // if (column.getCapabilities() != null && nbt.hasKey("ForgeCaps")) {
+        // column.getCapabilities().deserializeNBT(nbt.getCompoundTag("ForgeCaps"));
+        // }
         return column;
     }
 
@@ -108,8 +110,14 @@ public class IONbtReader {
     @Nullable
     static Cube readCubeAsyncPart(Chunk column, final int cubeX, final int cubeY, final int cubeZ, NBTTagCompound nbt) {
         if (column.xPosition != cubeX || column.zPosition != cubeZ) {
-            throw new IllegalArgumentException(String.format("Invalid column (%d, %d) for cube at (%d, %d, %d)",
-                column.xPosition, column.zPosition, cubeX, cubeY, cubeZ));
+            throw new IllegalArgumentException(
+                String.format(
+                    "Invalid column (%d, %d) for cube at (%d, %d, %d)",
+                    column.xPosition,
+                    column.zPosition,
+                    cubeX,
+                    cubeY,
+                    cubeZ));
         }
         World world = column.worldObj;
         NBTTagCompound level = nbt.getCompoundTag("Level");
@@ -125,7 +133,8 @@ public class IONbtReader {
 
     static void readCubeSyncPart(Cube cube, World world, NBTTagCompound nbt) {
         // a hack so that the Column won't try to get cube from CubeCache/CubeProvider.
-        cube.getColumn().preCacheCube(cube);
+        cube.getColumn()
+            .preCacheCube(cube);
         NBTTagCompound level = nbt.getCompoundTag("Level");
         readEntities(level, world, cube);
         readTileEntities(level, world, cube);
@@ -135,10 +144,14 @@ public class IONbtReader {
     }
 
     @Nullable
-    private static Cube readBaseCube(Chunk column, int cubeX, int cubeY, int cubeZ, NBTTagCompound nbt, World world) {// check the version number
+    private static Cube readBaseCube(Chunk column, int cubeX, int cubeY, int cubeZ, NBTTagCompound nbt, World world) {// check
+                                                                                                                      // the
+                                                                                                                      // version
+                                                                                                                      // number
         byte version = nbt.getByte("v");
         if (version != 1) {
-            throw new IllegalArgumentException(String.format("Cube at CubePos:(%d, %d, %d), has wrong version! %d", cubeX, cubeY, cubeZ, version));
+            throw new IllegalArgumentException(
+                String.format("Cube at CubePos:(%d, %d, %d), has wrong version! %d", cubeX, cubeY, cubeZ, version));
         }
 
         // check the coordinates
@@ -146,47 +159,64 @@ public class IONbtReader {
         int yCheck = nbt.getInteger("y");
         int zCheck = nbt.getInteger("z");
         if (xCheck != cubeX || yCheck != cubeY || zCheck != cubeZ) {
-            CubicChunks.LOGGER.error(String
-                .format("Cube is corrupted! Expected (%d,%d,%d) but got (%d,%d,%d). Cube will be regenerated.", cubeX, cubeY, cubeZ, xCheck,
-                    yCheck, zCheck));
+            CubicChunks.LOGGER.error(
+                String.format(
+                    "Cube is corrupted! Expected (%d,%d,%d) but got (%d,%d,%d). Cube will be regenerated.",
+                    cubeX,
+                    cubeY,
+                    cubeZ,
+                    xCheck,
+                    yCheck,
+                    zCheck));
             return null;
         }
 
         // check against column
-        assert cubeX == column.xPosition && cubeZ == column.zPosition :
-            String.format("Cube is corrupted! Cube (%d,%d,%d) does not match column (%d,%d).", cubeX, cubeY, cubeZ, column.xPosition,
-                column.zPosition);
-
+        assert cubeX == column.xPosition && cubeZ == column.zPosition : String.format(
+            "Cube is corrupted! Cube (%d,%d,%d) does not match column (%d,%d).",
+            cubeX,
+            cubeY,
+            cubeZ,
+            column.xPosition,
+            column.zPosition);
 
         // build the cube
         final Cube cube = new Cube(column, cubeY);
 
         // set the worldgen stage
         cube.setPopulated(nbt.getBoolean("populated"));
-        cube.setSurfaceTracked(nbt.getBoolean("isSurfaceTracked")); // previous versions will get their surface tracking redone. This is intended
+        cube.setSurfaceTracked(nbt.getBoolean("isSurfaceTracked")); // previous versions will get their surface tracking
+                                                                    // redone. This is intended
         cube.setFullyPopulated(nbt.getBoolean("fullyPopulated"));
 
-        //this status will get unset again in readLightingInfo() if the lighting engine is changed (LightingInfoType).
+        // this status will get unset again in readLightingInfo() if the lighting engine is changed (LightingInfoType).
         cube.setInitialLightingDone(nbt.getBoolean("initLightDone"));
 
-//        if (cube.getCapabilities() != null && nbt.hasKey("ForgeCaps")) {
-//            cube.getCapabilities().deserializeNBT(nbt.getCompoundTag("ForgeCaps"));
-//        }
+        // if (cube.getCapabilities() != null && nbt.hasKey("ForgeCaps")) {
+        // cube.getCapabilities().deserializeNBT(nbt.getCompoundTag("ForgeCaps"));
+        // }
         return cube;
     }
 
-    @SuppressWarnings("deprecation") private static void readBlocks(NBTTagCompound nbt, World world, Cube cube) {
+    @SuppressWarnings("deprecation")
+    private static void readBlocks(NBTTagCompound nbt, World world, Cube cube) {
         boolean isEmpty = !nbt.hasKey("Sections");// is this an empty cube?
         if (!isEmpty) {
             NBTTagList sectionList = nbt.getTagList("Sections", 10);
             nbt = sectionList.getCompoundTagAt(0);
 
-            ExtendedBlockStorage ebs = new ExtendedBlockStorage(Coords.cubeToMinBlock(cube.getY()), !cube.getWorld().provider.hasNoSky);
+            ExtendedBlockStorage ebs = new ExtendedBlockStorage(
+                Coords.cubeToMinBlock(cube.getY()),
+                !cube.getWorld().provider.hasNoSky);
 
             byte[] abyte = nbt.getByteArray("Blocks");
             NibbleArray data = new NibbleArray(nbt.getByteArray("Data"), 4);
-            NibbleArray add = nbt.hasKey("Add", Constants.NBT.TAG_BYTE_ARRAY) ? new NibbleArray(nbt.getByteArray("Add"), 4) : null;
-            NibbleArray add2neid = nbt.hasKey("Add2", Constants.NBT.TAG_BYTE_ARRAY) ? new NibbleArray(nbt.getByteArray("Add2"), 4) : null;
+            NibbleArray add = nbt.hasKey("Add", Constants.NBT.TAG_BYTE_ARRAY)
+                ? new NibbleArray(nbt.getByteArray("Add"), 4)
+                : null;
+            NibbleArray add2neid = nbt.hasKey("Add2", Constants.NBT.TAG_BYTE_ARRAY)
+                ? new NibbleArray(nbt.getByteArray("Add2"), 4)
+                : null;
 
             for (int i = 0; i < 4096; i++) {
                 int x = i & 15;
@@ -214,24 +244,30 @@ public class IONbtReader {
     private static void readEntities(NBTTagCompound cubeNbt, World world, Cube cube) {// entities
         NBTTagList entityTagList = cubeNbt.getTagList("Entities", 10);
 
-        if (entityTagList != null)
-        {
-            for (int l = 0; l < entityTagList.tagCount(); ++l)
-            {
+        if (entityTagList != null) {
+            for (int l = 0; l < entityTagList.tagCount(); ++l) {
                 NBTTagCompound entityNBT = entityTagList.getCompoundTagAt(l);
                 Entity rootEntity = EntityList.createEntityFromNBT(entityNBT, world);
                 cube.hasEntities = true;
 
-                if (rootEntity != null)
-                {
+                if (rootEntity != null) {
                     cube.addEntity(rootEntity);
 
                     int entityCubeX = Coords.getCubeXForEntity(rootEntity);
                     int entityCubeY = Coords.getCubeYForEntity(rootEntity);
                     int entityCubeZ = Coords.getCubeZForEntity(rootEntity);
                     if (entityCubeX != cube.getX() || entityCubeY != cube.getY() || entityCubeZ != cube.getZ()) {
-                        CubicChunks.LOGGER.warn(String.format("Loaded entity %s in cube (%d,%d,%d) to cube (%d,%d,%d)!", rootEntity.getClass()
-                            .getName(), entityCubeX, entityCubeY, entityCubeZ, cube.getX(), cube.getY(), cube.getZ()));
+                        CubicChunks.LOGGER.warn(
+                            String.format(
+                                "Loaded entity %s in cube (%d,%d,%d) to cube (%d,%d,%d)!",
+                                rootEntity.getClass()
+                                    .getName(),
+                                entityCubeX,
+                                entityCubeY,
+                                entityCubeZ,
+                                cube.getX(),
+                                cube.getY(),
+                                cube.getZ()));
                     }
 
                     // The entity needs to know what Cube it is in, this is normally done in Cube.addEntity()
@@ -245,12 +281,12 @@ public class IONbtReader {
                     // Riding stuff
                     Entity currentEntity = rootEntity;
 
-                    for (NBTTagCompound ridingNBT = entityNBT; ridingNBT.hasKey("Riding", 10); ridingNBT = ridingNBT.getCompoundTag("Riding"))
-                    {
-                        Entity entityThatIsRiding = EntityList.createEntityFromNBT(ridingNBT.getCompoundTag("Riding"), world);
+                    for (NBTTagCompound ridingNBT = entityNBT; ridingNBT
+                        .hasKey("Riding", 10); ridingNBT = ridingNBT.getCompoundTag("Riding")) {
+                        Entity entityThatIsRiding = EntityList
+                            .createEntityFromNBT(ridingNBT.getCompoundTag("Riding"), world);
 
-                        if (entityThatIsRiding != null)
-                        {
+                        if (entityThatIsRiding != null) {
                             cube.addEntity(entityThatIsRiding);
                             currentEntity.mountEntity(entityThatIsRiding);
                         }
@@ -266,11 +302,16 @@ public class IONbtReader {
         NBTTagList nbtTileEntities = nbt.getTagList("TileEntities", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < nbtTileEntities.tagCount(); i++) {
             NBTTagCompound nbtTileEntity = nbtTileEntities.getCompoundTagAt(i);
-            //TileEntity.create
+            // TileEntity.create
             TileEntity blockEntity = TileEntity.createAndLoadEntity(nbtTileEntity);
             if (blockEntity != null) {
-                if (!cube.getCoords().containsBlock(blockEntity.xCoord, blockEntity.yCoord, blockEntity.zCoord)) {
-                    CubicChunks.LOGGER.warn("TileEntity " + blockEntity + " is not in cube at " + cube.getCoords() + ", tile entity will be skipped");
+                if (!cube.getCoords()
+                    .containsBlock(blockEntity.xCoord, blockEntity.yCoord, blockEntity.zCoord)) {
+                    CubicChunks.LOGGER.warn(
+                        "TileEntity " + blockEntity
+                            + " is not in cube at "
+                            + cube.getCoords()
+                            + ", tile entity will be skipped");
                     continue;
                 }
                 cube.addTileEntity(blockEntity);
@@ -301,8 +342,7 @@ public class IONbtReader {
                 nbtScheduledTick.getInteger("z"),
                 block,
                 nbtScheduledTick.getInteger("t"),
-                nbtScheduledTick.getInteger("p")
-            );
+                nbtScheduledTick.getInteger("p"));
         }
     }
 
@@ -314,7 +354,7 @@ public class IONbtReader {
             cube.setInitialLightingDone(false);
             ExtendedBlockStorage storage = cube.getStorage();
             if (storage != null) {
-                //noinspection ConstantConditions
+                // noinspection ConstantConditions
                 if (storage.getSkylightArray() != null) {
                     Arrays.fill(storage.getSkylightArray().data, (byte) 0);
                 }
@@ -344,7 +384,9 @@ public class IONbtReader {
                 for (int z = 0; z < 4; z++) {
                     // NOTE: spread the biomes from 4 2x2 segments into the 4 vertical 4x4x4 segments
                     // this ensures that no biome data has been lost, but some of it may get arranged weirdly
-                    newBiomes[AddressTools.getBiomeAddress3d(x, y, z)] = biomes[getOldBiomeAddress(x << 1 | (y & 1), z << 1 | ((y >> 1) & 1))];
+                    newBiomes[AddressTools.getBiomeAddress3d(x, y, z)] = biomes[getOldBiomeAddress(
+                        x << 1 | (y & 1),
+                        z << 1 | ((y >> 1) & 1))];
                 }
             }
         }

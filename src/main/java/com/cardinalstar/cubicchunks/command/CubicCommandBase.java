@@ -4,23 +4,20 @@ import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 
-public abstract class CubicCommandBase extends CommandBase
-{
+public abstract class CubicCommandBase extends CommandBase {
+
     private final PermissionLevel requiredPermissionLevel;
 
-    public CubicCommandBase(PermissionLevel permissionLevelRequired)
-    {
+    public CubicCommandBase(PermissionLevel permissionLevelRequired) {
         this.requiredPermissionLevel = permissionLevelRequired;
     }
 
     @Override
-    public int getRequiredPermissionLevel()
-    {
+    public int getRequiredPermissionLevel() {
         return this.requiredPermissionLevel.ordinal();
     }
 
-    public PermissionLevel getRequiredPermissionEnum()
-    {
+    public PermissionLevel getRequiredPermissionEnum() {
         return this.requiredPermissionLevel;
     }
 
@@ -33,8 +30,7 @@ public abstract class CubicCommandBase extends CommandBase
         }
     }
 
-    public static enum PermissionLevel
-    {
+    public static enum PermissionLevel {
         ALL,
         OP,
         NONE

@@ -1,38 +1,32 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.util;
-
-import net.minecraft.entity.Entity;
-import net.minecraft.util.ChunkCoordinates;
-import net.minecraft.util.MathHelper;
 
 import static java.lang.Math.exp;
 import static java.lang.Math.sqrt;
 
-
 import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.util.ChunkCoordinates;
+import net.minecraft.util.MathHelper;
 
 @ParametersAreNonnullByDefault
 public class MathUtil {
@@ -47,9 +41,11 @@ public class MathUtil {
         }
         return toTest == 1;
     }
+
     public static double lerp(final double a, final double min, final double max) {
         return min + a * (max - min);
     }
+
     // reverse linear interpolation - unlerp(lerp(a, min, max), min, max) == a
     public static double unlerp(final double v, final double min, final double max) {
         return (v - min) / (max - min);
@@ -125,8 +121,7 @@ public class MathUtil {
     }
 
     public static double gaussianProbabilityDensity(double x, double mean, double stdDev) {
-        return exp(-(x - mean) * (x - mean) / (2 * stdDev * stdDev)) /
-            (sqrt(2 * Math.PI) * stdDev);
+        return exp(-(x - mean) * (x - mean) / (2 * stdDev * stdDev)) / (sqrt(2 * Math.PI) * stdDev);
     }
 
     /**
@@ -137,17 +132,18 @@ public class MathUtil {
      * This is done by substracting "halfspace" from the factor.
      * To have the ore still generated in the area it's supposed to, the location inside the modulo gets shifted
      * by both the mean location of the first curve and back the "halfspace".
-     * @param x Value to be evaluated
-     * @param mean Center of the first curve
-     * @param stdDev Standard deviation
+     * 
+     * @param x       Value to be evaluated
+     * @param mean    Center of the first curve
+     * @param stdDev  Standard deviation
      * @param spacing Distance between the centers of the curves
      * @return gaussian probability
      */
     public static double bellCurveProbabilityCyclic(int x, int mean, double stdDev, int spacing) {
-        //Using vars for better overview/easier debugging.
-        double halfSpace = (double)spacing / 2.0;
-        double shiftedLoc = (double)x - halfSpace - (double)mean;
-        double factor = Math.abs(shiftedLoc % (double)spacing) - halfSpace;
+        // Using vars for better overview/easier debugging.
+        double halfSpace = (double) spacing / 2.0;
+        double shiftedLoc = (double) x - halfSpace - (double) mean;
+        double factor = Math.abs(shiftedLoc % (double) spacing) - halfSpace;
         double divisorExp = 2.0 * stdDev * stdDev;
         double exponent = (-1.0 * factor) * factor / divisorExp;
         double result = exp(exponent);
@@ -172,8 +168,7 @@ public class MathUtil {
         return MathHelper.clamp_int(Math.round(value * 255), 0, 255);
     }
 
-    public static double distanceSq(double toX, double toY, double toZ, ChunkCoordinates coords)
-    {
+    public static double distanceSq(double toX, double toY, double toZ, ChunkCoordinates coords) {
         double d0 = coords.posX - toX;
         double d1 = coords.posY - toY;
         double d2 = coords.posZ - toZ;

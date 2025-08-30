@@ -1,14 +1,16 @@
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.storage.WorldInfo;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 
 @ParametersAreNonnullByDefault
 @Mixin(WorldInfo.class)
@@ -16,10 +18,10 @@ public class MixinWorldInfo implements ICubicWorldSettings {
 
     private boolean isCubic;
 
-//    @Inject(method = "populateFromWorldSettings", at = @At("RETURN"))
-//    private void onConstructWithSettings(WorldSettings settings, CallbackInfo cbi) {
-//        this.isCubic = ((ICubicWorldSettings) (Object) settings).isCubic();
-//    }
+    // @Inject(method = "populateFromWorldSettings", at = @At("RETURN"))
+    // private void onConstructWithSettings(WorldSettings settings, CallbackInfo cbi) {
+    // this.isCubic = ((ICubicWorldSettings) (Object) settings).isCubic();
+    // }
 
     @Inject(method = "<init>(Lnet/minecraft/world/storage/WorldInfo;)V", at = @At("RETURN"))
     private void onConstructWithSettings(WorldInfo other, CallbackInfo cbi) {
@@ -36,11 +38,13 @@ public class MixinWorldInfo implements ICubicWorldSettings {
         nbt.setBoolean("isCubicWorld", isCubic);
     }
 
-    @Override public boolean isCubic() {
+    @Override
+    public boolean isCubic() {
         return isCubic;
     }
 
-    @Override public void setCubic(boolean cubic) {
+    @Override
+    public void setCubic(boolean cubic) {
         this.isCubic = cubic;
     }
 }

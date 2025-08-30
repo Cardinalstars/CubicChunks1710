@@ -1,37 +1,24 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.world.column;
-
-import com.cardinalstar.cubicchunks.CubicChunksConfig;
-import com.cardinalstar.cubicchunks.util.AddressTools;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.google.common.collect.Lists;
-
-import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,15 +30,24 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.util.AddressTools;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.google.common.collect.Lists;
+
 /**
  * Stores cubes for columns
  */
 @ParametersAreNonnullByDefault
 public class CubeMap implements Iterable<Cube> {
 
-    @Nonnull private final List<Cube> cubes = new ArrayList<>();
+    @Nonnull
+    private final List<Cube> cubes = new ArrayList<>();
 
-    @Nonnull private ExtendedBlockStorage[] toBlockTick = new ExtendedBlockStorage[0];
+    @Nonnull
+    private ExtendedBlockStorage[] toBlockTick = new ExtendedBlockStorage[0];
 
     /**
      * Removes the cube at {@code cubeY}
@@ -60,9 +56,11 @@ public class CubeMap implements Iterable<Cube> {
      *
      * @return the removed cube if it existed, otherwise <code>null</code>
      */
-    @Nullable public Cube remove(int cubeY) {
+    @Nullable
+    public Cube remove(int cubeY) {
         int index = binarySearch(cubeY);
-        return index < cubes.size() && cubes.get(index).getY() == cubeY ? cubes.remove(index) : null;
+        return index < cubes.size() && cubes.get(index)
+            .getY() == cubeY ? cubes.remove(index) : null;
     }
 
     /**
@@ -83,7 +81,7 @@ public class CubeMap implements Iterable<Cube> {
      * {@code startY < endY}, order is bottom to top, otherwise order is top to bottom.
      *
      * @param startY initial cube y position
-     * @param endY last cube y position
+     * @param endY   last cube y position
      *
      * @return an iterator over the cubes
      */
@@ -109,13 +107,14 @@ public class CubeMap implements Iterable<Cube> {
     /**
      * Check if the target cube is stored here
      *
-     * @param cubeY the y coordinate of the cube
+     * @param cubeY       the y coordinate of the cube
      * @param searchIndex the index to search at (got form {@link #binarySearch(int)})
      *
      * @return <code>true</code> if the cube is contained here, <code>false</code> otherwise
      */
     private boolean contains(int cubeY, int searchIndex) {
-        return searchIndex < cubes.size() && cubes.get(searchIndex).getY() == cubeY;
+        return searchIndex < cubes.size() && cubes.get(searchIndex)
+            .getY() == cubeY;
     }
 
     /**
@@ -123,7 +122,8 @@ public class CubeMap implements Iterable<Cube> {
      *
      * @return the iterator
      */
-    @Override public Iterator<Cube> iterator() {
+    @Override
+    public Iterator<Cube> iterator() {
         return cubes.iterator();
     }
 
@@ -152,7 +152,8 @@ public class CubeMap implements Iterable<Cube> {
         if (!isToTickValid()) {
             int count = 0;
             for (Cube cube : cubes) {
-                if (cube.getStorage() != null && cube.getTickets().shouldTick()) {
+                if (cube.getStorage() != null && cube.getTickets()
+                    .shouldTick()) {
                     count++;
                 }
             }
@@ -160,7 +161,8 @@ public class CubeMap implements Iterable<Cube> {
             toBlockTick = new ExtendedBlockStorage[count];
             count = 0;
             for (Cube cube : cubes) {
-                if (cube.getStorage() != null && cube.getTickets().shouldTick()) {
+                if (cube.getStorage() != null && cube.getTickets()
+                    .shouldTick()) {
                     toBlockTick[count++] = cube.getStorage();
                 }
             }
@@ -172,7 +174,8 @@ public class CubeMap implements Iterable<Cube> {
     private boolean isToTickValid() {
         int index = 0;
         for (Cube cube : cubes) {
-            if (cube.getStorage() != null && cube.getTickets().shouldTick()) {
+            if (cube.getStorage() != null && cube.getTickets()
+                .shouldTick()) {
                 if (index >= toBlockTick.length) {
                     return false;
                 }
@@ -200,7 +203,8 @@ public class CubeMap implements Iterable<Cube> {
         while (start <= end) {
             mid = start + end >>> 1;
 
-            int at = cubes.get(mid).getY();
+            int at = cubes.get(mid)
+                .getY();
             if (at < cubeY) { // we are below the target;
                 start = mid + 1;
             } else if (at > cubeY) {
@@ -229,7 +233,8 @@ public class CubeMap implements Iterable<Cube> {
                     relightCubeBlockIdx = 0;
                 }
             }
-            // taking the bits in reverse order means we will still visit every possible position, but jumping around the cube
+            // taking the bits in reverse order means we will still visit every possible position, but jumping around
+            // the cube
             // order of coords: 0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15
             int reversedBits = Integer.reverse(relightCubeBlockIdx) >>> (32 - 12);
             assert reversedBits < 4096 && reversedBits >= 0;
@@ -238,10 +243,14 @@ public class CubeMap implements Iterable<Cube> {
             final int x = AddressTools.getLocalX(relightCubeBlockIdx);
             final int y = AddressTools.getLocalY(relightCubeBlockIdx);
             final int z = AddressTools.getLocalZ(relightCubeBlockIdx);
-            final int minX = cube.getCoords().getMinBlockX();
-            final int minY = cube.getCoords().getMinBlockY();
-            final int minZ = cube.getCoords().getMinBlockZ();
-            cube.getWorld().func_147451_t(minX + x, minY + y, minZ + z);
+            final int minX = cube.getCoords()
+                .getMinBlockX();
+            final int minY = cube.getCoords()
+                .getMinBlockY();
+            final int minZ = cube.getCoords()
+                .getMinBlockZ();
+            cube.getWorld()
+                .func_147451_t(minX + x, minY + y, minZ + z);
 
             relightCubeIdx++;
         }

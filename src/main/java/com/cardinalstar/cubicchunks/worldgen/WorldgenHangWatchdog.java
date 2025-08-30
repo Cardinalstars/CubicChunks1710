@@ -1,32 +1,24 @@
 /*
- *  This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
- *
- *  Copyright (c) 2015-2021 OpenCubicChunks
- *  Copyright (c) 2015-2021 contributors
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be included in
- *  all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- *  THE SOFTWARE.
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 package com.cardinalstar.cubicchunks.worldgen;
-
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.CubicChunksConfig;
-import com.cardinalstar.cubicchunks.util.CompatHandler;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -36,9 +28,14 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.util.CompatHandler;
+
 public class WorldgenHangWatchdog {
 
-    public static final boolean ENABLED = "true".equalsIgnoreCase(System.getProperty("cubicchunks.wgen_hang_watchdog", "true"));
+    public static final boolean ENABLED = "true"
+        .equalsIgnoreCase(System.getProperty("cubicchunks.wgen_hang_watchdog", "true"));
 
     private static final WorldgenHangWatchdog INSTANCE = new WorldgenHangWatchdog();
 
@@ -103,7 +100,8 @@ public class WorldgenHangWatchdog {
                 e.printStackTrace();
             }
             synchronized (entries) {
-                for (Iterator<Map.Entry<Thread, Entry>> iterator = entries.entrySet().iterator(); iterator.hasNext(); ) {
+                for (Iterator<Map.Entry<Thread, Entry>> iterator = entries.entrySet()
+                    .iterator(); iterator.hasNext();) {
                     Map.Entry<Thread, Entry> entry = iterator.next();
                     Thread t = entry.getKey();
                     Entry e = entry.getValue();
@@ -116,7 +114,8 @@ public class WorldgenHangWatchdog {
 
                     if (dt > TimeUnit.MILLISECONDS.toNanos(CubicChunksConfig.worldgenWatchdogTimeLimit)) {
                         StringBuilder sb = new StringBuilder();
-                        sb.append("World generation taking ").append(dt / (double) TimeUnit.SECONDS.toNanos(1))
+                        sb.append("World generation taking ")
+                            .append(dt / (double) TimeUnit.SECONDS.toNanos(1))
                             .append(" seconds, should be less than 50ms. Stopping the server.\n");
 
                         sb.append("Samples collected during world generation:\n");
@@ -125,10 +124,15 @@ public class WorldgenHangWatchdog {
                             sb.append("--------------------------------------------\n");
 
                             Set<String> likelyModsInvolved = CompatHandler.getModsForStacktrace(stacktrace);
-                            sb.append("SAMPLE #").append(i).append(", likely mods involved: ").append(String.join(", ", likelyModsInvolved))
+                            sb.append("SAMPLE #")
+                                .append(i)
+                                .append(", likely mods involved: ")
+                                .append(String.join(", ", likelyModsInvolved))
                                 .append('\n');
                             for (StackTraceElement traceElement : stacktrace) {
-                                sb.append("\tat ").append(traceElement).append('\n');
+                                sb.append("\tat ")
+                                    .append(traceElement)
+                                    .append('\n');
                             }
                             i++;
                         }
