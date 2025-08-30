@@ -611,7 +611,7 @@ public abstract class MixinChunk_Cubes {
      ), cancellable = true)
      private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta,
          CallbackInfoReturnable<Boolean> cir) {
-         if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
+         if (isColumn && getWorldObj().getCubeCache().getLoadedCube(new CubePos(xPosition, y >> 4, zPosition)) == null) {
             cir.setReturnValue(null);
          }
      }
