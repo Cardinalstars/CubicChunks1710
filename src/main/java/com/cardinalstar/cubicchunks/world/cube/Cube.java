@@ -20,7 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.world.cube;
 
-import static com.cardinalstar.cubicchunks.util.ChunkStorageUtils.getCubeBlockIndexFromChunkData;
 import static com.cardinalstar.cubicchunks.util.Coords.*;
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
@@ -269,7 +268,7 @@ public class Cube implements ICube {
             for (int y = Cube.SIZE - 1; y >= 0; y--) {
                 for (int z = 0; z < Cube.SIZE; z++) {
                     for (int x = 0; x < Cube.SIZE; x++) {
-                        int blockIter = getCubeBlockIndexFromChunkData(x, y, z, cubeY);
+                        int blockIter = x << 12 | z << 8 | y;;
                         Block block = blocks[blockIter];
 
                         if (block != null && block != Blocks.air) {
