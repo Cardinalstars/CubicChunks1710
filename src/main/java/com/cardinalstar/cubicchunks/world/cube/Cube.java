@@ -418,7 +418,7 @@ public class Cube implements ICube {
     @Override
     public void addTileEntity(TileEntity tileEntityIn) {
         int i = tileEntityIn.xCoord - this.coords.getX() * 16;
-        int j = tileEntityIn.yCoord;
+        int j = tileEntityIn.yCoord - this.coords.getY() * 16;
         int k = tileEntityIn.zCoord - this.coords.getZ() * 16;
         this.setBlockTileEntityInChunk(i, j, k, tileEntityIn);
         if (this.isCubeLoaded) {
