@@ -361,7 +361,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
      */
     @Overwrite
     public Block getBlock(int x, int y, int z) {
-        if (y >= getMaxHeight() || z < getMinHeight()) { // TODO: maybe avoid height check for cubic chunks world?
+        if (y >= getMaxHeight() || y < getMinHeight()) { // TODO: maybe avoid height check for cubic chunks world?
             return Blocks.air;
         }
         if (this.isCubicWorld) {
