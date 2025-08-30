@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.init.Blocks;
+import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.chunk.IChunkProvider;
@@ -113,7 +114,7 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
     }
 
     @Inject(method = "getRandomizedSpawnPoint", at = @At(value = "HEAD"), cancellable = true, remap = false)
-    private void findRandomizedSpawnPoint(CallbackInfoReturnable<BlockPos> cir) {
+    private void findRandomizedSpawnPoint(CallbackInfoReturnable<ChunkCoordinates> cir) {
         if (((ICubicWorld) worldObj).isCubicWorld()) {
             cir.setReturnValue(SpawnPlaceFinder.getRandomizedSpawnPoint(worldObj));
 
