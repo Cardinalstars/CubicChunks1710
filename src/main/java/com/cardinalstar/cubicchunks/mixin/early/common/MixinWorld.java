@@ -378,7 +378,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
                 CubicChunks.LOGGER.info("NULL chunk found at {}, {}, {}, returning Blocks.air", x, y, z);
                 return Blocks.air;
             }
-            return chunk.getBlock(x, y, z);
+            return chunk.getBlock(x & 15, y, z & 15);
         }
     }
 
