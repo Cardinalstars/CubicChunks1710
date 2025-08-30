@@ -148,8 +148,18 @@ public class CubicChunks {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
-        MinecraftForge.EVENT_BUS.register(new CommonEventHandler());
-        SideUtils.runForClient(() -> () -> MinecraftForge.EVENT_BUS.register(new ClientEventHandler()));
+        CommonEventHandler eventHandler = new CommonEventHandler();
+        MinecraftForge.EVENT_BUS.register(eventHandler);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(eventHandler);
+        SideUtils.runForClient(() -> () -> {
+            ClientEventHandler clientEventHandler = new ClientEventHandler();
+            MinecraftForge.EVENT_BUS.register(clientEventHandler);
+            FMLCommonHandler.instance()
+                .bus()
+                .register(clientEventHandler);
+        });
         PacketDispatcher.registerPackets();
     }
 
