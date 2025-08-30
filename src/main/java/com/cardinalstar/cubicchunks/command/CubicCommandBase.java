@@ -1,5 +1,8 @@
 package com.cardinalstar.cubicchunks.command;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
@@ -34,5 +37,10 @@ public abstract class CubicCommandBase extends CommandBase {
         ALL,
         OP,
         NONE
+    }
+
+    @Override
+    public List<String> getCommandAliases() {
+        return new ArrayList<>();
     }
 }
