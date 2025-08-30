@@ -61,6 +61,6 @@ public class VanillaCubicWorldType extends WorldType implements ICubicWorldType 
 
     @Override
     public boolean hasCubicGeneratorForWorld(World object) {
-        return false;
+        return true;
     }
 }
