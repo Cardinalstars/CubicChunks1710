@@ -56,13 +56,15 @@ public class CubeIOProvider implements AsynchronousExecutor.CallBackProvider<Que
     {
         if (cubeData == null)
         {
-            queuedCube.provider.getCube(queuedCube.x, queuedCube.y, queuedCube.z); // TODO ESPECIALLY WATCH THIS
             return;
         }
-        queuedCube.loader.loadCubeSyncPart(cubeData);
-        ICube cube = cubeData.getObject();
-        assert cube != null;
-        MinecraftForge.EVENT_BUS.post(new CubeDataEvent.Load(cube, cubeData.getNbt()));
+        if (cubeData.getObject() != null)
+        {
+            queuedCube.loader.loadCubeSyncPart(cubeData);
+            ICube cube = cubeData.getObject();
+            assert cube != null;
+            MinecraftForge.EVENT_BUS.post(new CubeDataEvent.Load(cube, cubeData.getNbt()));
+        }
     }
 
     @Override

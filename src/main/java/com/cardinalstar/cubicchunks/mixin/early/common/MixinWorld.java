@@ -73,6 +73,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
 import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
+import static com.cardinalstar.cubicchunks.util.Coords.coordsSeedHash;
 
 /**
  * Contains implementation of {@link ICubicWorld} interface.
@@ -338,7 +339,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         int minY = currentY - 64;
         while (currentY >= minY) {
             int nextY = currentY - 1;
-            Block block = chunk.getBlock(x, nextY, z);
+            Block block = chunk.getBlock(Coords.blockToLocal(x), nextY, Coords.blockToLocal(z));
 
             if (block.getMaterial().blocksMovement()
                 && !block.isLeaves((IBlockAccess) this, x, nextY, z)

@@ -179,8 +179,6 @@ public class CubicPlayerManager extends PlayerManager {
      */
     private long previousWorldTime = 0;
 
-    private final CubeProviderServer cubeCache;
-
     private final Object2ObjectOpenHashMap<EntityPlayerMP, ObjectOpenHashSet<Cube>> cubesToSend = new Object2ObjectOpenHashMap<>(2);
 
     // these player adds will be processed on the next tick
@@ -201,7 +199,6 @@ public class CubicPlayerManager extends PlayerManager {
 
     public CubicPlayerManager(WorldServer worldServer) {
         super(worldServer);
-        this.cubeCache = ((ICubicWorldInternal.Server) worldServer).getCubeCache();
         this.setPlayerViewDistance(worldServer.func_73046_m().getConfigurationManager().getViewDistance(),
             ((ICubicPlayerList) worldServer.func_73046_m().getConfigurationManager()).getVerticalViewDistance());
         this.chunkGc = new ChunkGc(((ICubicWorldInternal.Server) worldServer).getCubeCache());
