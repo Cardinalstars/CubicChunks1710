@@ -598,7 +598,7 @@ public abstract class MixinChunk_Cubes {
     private ExtendedBlockStorage[] setBlockWithMeta_CubicChunks_EBSPutRedirect(Chunk instance, @Local(name = "p_150807_2_") int index) {
         ExtendedBlockStorage newStorage = new ExtendedBlockStorage(index >> 4 << 4, !this.worldObj.provider.hasNoSky);
         setEBS_CubicChunks(index, newStorage);
-        ExtendedBlockStorage[] TempStorage = new ExtendedBlockStorage[index >> 4];
+        ExtendedBlockStorage[] TempStorage = new ExtendedBlockStorage[(index >> 4) + 1];
         TempStorage[index >> 4] = newStorage;
         return TempStorage;
     }
