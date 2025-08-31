@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.Slice;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -42,31 +42,54 @@ public abstract class MixinChunkCache_HeightLimits {
 
     @Shadow private World worldObj;
 
-    @ModifyConstant(method = "getLightFor",
-        constant = @Constant(intValue = 0, expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO))
-    private int getLightFor_getMinHeight(int orig) {
+    // Interestingly enough this hits both the < 0 or >= 0 calls which sort of makes sense.
+    @ModifyConstant(method = "getSkyBlockTypeBrightness", constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, ordinal = 0, intValue = 0))
+    private int getSkyBlockTypeBrightness_getMinHeight(int orig)
+    {
         return ((ICubicWorld) worldObj).getMinHeight();
     }
 
-    @ModifyConstant(method = "getLightFor", constant = @Constant(intValue = 256))
-    private int getLightFor_getMaxHeight(int orig) {
+    @ModifyConstant(method = "getSkyBlockTypeBrightness", constant = @Constant(intValue = 0, ordinal = 0))
+    private int getSkyBlockTypeBrightness_getMinHeightDefault(int orig)
+    {
+        return ((ICubicWorld) worldObj).getMinHeight();
+    }
+
+    @ModifyConstant(method = "getSkyBlockTypeBrightness", constant = @Constant(intValue = 256))
+    private int getSkyBlockTypeBrightness_getMaxHeight(int orig)
+    {
         return ((ICubicWorld) worldObj).getMaxHeight();
     }
 
-    @ModifyConstant(method = "getLightForExt",
-        constant = @Constant(intValue = 0, expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO),
-        slice = @Slice(
-            from = @At(value = "INVOKE:FIRST", target = "Lnet/minecraft/util/math/BlockPos;getY()I"),
-            to = @At(value = "INVOKE:FIRST",
-                target = "Lnet/minecraft/world/ChunkCache;getBlockState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/state/IBlockState;")
-        )
-    )
-    private int getLightForExt_getMinHeight(int orig) {
+    @ModifyConstant(method = "getSkyBlockTypeBrightness", constant = @Constant(intValue = 255))
+    private int getSkyBlockTypeBrightness_getMaxHeightDefault(int orig)
+    {
+        return ((ICubicWorld) worldObj).getMaxHeight() - 1;
+    }
+
+    // Interestingly enough this hits both the < 0 or >= 0 calls which sort of makes sense.
+    @ModifyConstant(method = "getSpecialBlockBrightness", constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, intValue = 0))
+    private int getSpecialBlockBrightness_getMinHeight(int orig)
+    {
         return ((ICubicWorld) worldObj).getMinHeight();
     }
 
-    @ModifyConstant(method = "getLightForExt", constant = @Constant(intValue = 256))
-    private int getLightForExt_getMaxHeight(int orig) {
+    @ModifyConstant(method = "getSpecialBlockBrightness", constant = @Constant(intValue = 256))
+    private int getSpecialBlockBrightness_getMaxHeight(int orig)
+    {
+        return ((ICubicWorld) worldObj).getMaxHeight();
+    }
+
+    @ModifyConstant(method = "getSpecialBlockBrightness", constant = @Constant(intValue = 255))
+    private int getSpecialBlockBrightness_getMaxHeightDefault(int orig)
+    {
+        return ((ICubicWorld) worldObj).getMaxHeight() - 1;
+    }
+
+    // getHeight
+    @ModifyConstant(method = "getHeight", constant = @Constant(intValue = 256))
+    private int getHeightFix(int orig)
+    {
         return ((ICubicWorld) worldObj).getMaxHeight();
     }
 }
