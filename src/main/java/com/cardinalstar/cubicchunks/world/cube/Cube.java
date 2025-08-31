@@ -403,7 +403,7 @@ public class Cube implements ICube {
      */
     @Override
     public int getBlockMetadata(int x, int y, int z) {
-        return storage != null ? storage.getExtBlockMetadata(x, y, z) : 0;
+        return storage != null ? storage.getExtBlockMetadata(blockToLocal(x), blockToLocal(y), blockToLocal(z)) : 0;
     }
 
     @Override
