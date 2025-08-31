@@ -30,8 +30,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.block.Block;
 import net.minecraft.command.IEntitySelector;
 import net.minecraft.entity.Entity;
@@ -71,6 +69,7 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
@@ -81,8 +80,7 @@ import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.core.StagingHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 
 /**
  * Modifies vanilla code in Chunk to use Cubes
@@ -595,7 +593,8 @@ public abstract class MixinChunk_Cubes {
             value = "FIELD",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
             args = "array=put"))
-    private ExtendedBlockStorage[] setBlockWithMeta_CubicChunks_EBSPutRedirect(Chunk instance, @Local(name = "p_150807_2_") int index) {
+    private ExtendedBlockStorage[] setBlockWithMeta_CubicChunks_EBSPutRedirect(Chunk instance,
+        @Local(name = "p_150807_2_") int index) {
         ExtendedBlockStorage newStorage = new ExtendedBlockStorage(index >> 4 << 4, !this.worldObj.provider.hasNoSky);
         setEBS_CubicChunks(index, newStorage);
         ExtendedBlockStorage[] TempStorage = new ExtendedBlockStorage[(index >> 4) + 1];
@@ -603,18 +602,20 @@ public abstract class MixinChunk_Cubes {
         return TempStorage;
     }
 
-
-     @Inject(method = "func_150807_a", at = @At(
-         value = "FIELD",
-         target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-         args = "array=put"
-     ), cancellable = true)
-     private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta,
-         CallbackInfoReturnable<Boolean> cir) {
-         if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
+    @Inject(
+        method = "func_150807_a",
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+            args = "array=put"),
+        cancellable = true)
+    private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta,
+        CallbackInfoReturnable<Boolean> cir) {
+        if (isColumn && getWorldObj().getCubeCache()
+            .getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
             cir.setReturnValue(null);
-         }
-     }
+        }
+    }
 
     @Redirect(
         method = "func_150807_a",
