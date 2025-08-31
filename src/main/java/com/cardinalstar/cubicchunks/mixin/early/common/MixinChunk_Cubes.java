@@ -729,7 +729,7 @@ public abstract class MixinChunk_Cubes {
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
             args = "array=get"))
     private ExtendedBlockStorage getLightFor_CubicChunks_EBSGetRedirect(ExtendedBlockStorage[] array, int index) {
-        return getEBS_CubicChunks(index >> 4);
+        return getEBS_CubicChunks(index);
     }
 
     // ==============================================
