@@ -62,20 +62,23 @@ public class CommonEventHandler {
 
     @SubscribeEvent // this event is fired early enough to replace world with cubic chunks without any issues
     public void onCreateSpawnPoint(WorldEvent.CreateSpawnPosition event) {
-        if (event.world.isRemote || !(event.world instanceof WorldServer world)) {
+        onCreateSpawnPoint2(event.world);
+    }
+    public void onCreateSpawnPoint2(World world) {
+        if (world.isRemote || !(world instanceof WorldServer)) {
             return; // we will send packet to the client when it joins, client shouldn't change world types as it wants
         }
 
-        WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) event.world.perWorldStorage
+        WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) world.perWorldStorage
             .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
-        boolean ccWorldType = event.world.getWorldInfo()
+        boolean ccWorldType = world.getWorldInfo()
             .getTerrainType() instanceof ICubicWorldType;
-        boolean ccGenerator = ccWorldType && ((ICubicWorldType) event.world.getWorldInfo()
-            .getTerrainType()).hasCubicGeneratorForWorld(event.world);
+        boolean ccGenerator = ccWorldType && ((ICubicWorldType) world.getWorldInfo()
+            .getTerrainType()).hasCubicGeneratorForWorld(world);
         boolean savedCC = savedData != null && savedData.isCubicChunks;
         boolean ccWorldInfo = ((ICubicWorldSettings) world.getWorldInfo()).isCubic()
             && (savedData == null || savedData.isCubicChunks);
-        boolean excludeCC = CubicChunksConfig.isDimensionExcluded(event.world.provider.dimensionId);
+        boolean excludeCC = CubicChunksConfig.isDimensionExcluded(world.provider.dimensionId);
         boolean forceExclusions = CubicChunksConfig.forceDimensionExcludes;
         // TODO: simplify this mess of booleans and document where each of them comes from
         // these espressions are generated using Quine McCluskey algorithm
@@ -110,8 +113,8 @@ public class CommonEventHandler {
             savedData = new WorldSavedCubicChunksData("cubicChunksData", isCC, minY, maxY);
         }
         savedData.markDirty();
-        event.world.perWorldStorage.setData("cubicChunksData", savedData);
-        event.world.perWorldStorage.saveAllData();
+        world.perWorldStorage.setData("cubicChunksData", savedData);
+        world.perWorldStorage.saveAllData();
 
         if (!isCC) {
             return;
@@ -119,25 +122,25 @@ public class CommonEventHandler {
 
         if (shouldSkipWorld(world)) {
             CubicChunks.LOGGER.info(
-                "Skipping world " + event.world
+                "Skipping world " + world
                     + " with type "
-                    + event.world.getWorldInfo()
+                    + world.getWorldInfo()
                         .getTerrainType()
                     + " due to potential "
                     + "compatibility issues");
             return;
         }
         CubicChunks.LOGGER.info(
-            "Initializing world " + event.world
+            "Initializing world " + world
                 + " with type "
-                + event.world.getWorldInfo()
+                + world.getWorldInfo()
                     .getTerrainType());
 
         IntRange generationRange = new IntRange(0, ((ICubicWorldProvider) world.provider).getOriginalActualHeight());
-        WorldType type = event.world.getWorldInfo()
+        WorldType type = world.getWorldInfo()
             .getTerrainType();
         if (type instanceof ICubicWorldType && ((ICubicWorldType) type).hasCubicGeneratorForWorld(world)) {
-            generationRange = ((ICubicWorldType) type).calculateGenerationHeightRange(world);
+            generationRange = ((ICubicWorldType) type).calculateGenerationHeightRange((WorldServer) world);
         }
 
         int minHeight = savedData.minHeight;
@@ -147,10 +150,11 @@ public class CommonEventHandler {
     }
 
     @SubscribeEvent
-    void onWorldLoad(WorldEvent.Load event) {
+    public void onWorldLoad(WorldEvent.Load event) {
         if (event.world.isRemote || !(event.world instanceof WorldServer world)) {
             return; // we will send packet to the client when it joins, client shouldn't change world types as it wants
         }
+        onCreateSpawnPoint2(world);
         ((ICubicWorldInternal.Server) world).initCubicWorldServerPart2();
     }
 

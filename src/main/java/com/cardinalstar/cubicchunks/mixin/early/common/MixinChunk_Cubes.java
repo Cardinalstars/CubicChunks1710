@@ -597,8 +597,8 @@ public abstract class MixinChunk_Cubes {
             args = "array=put"))
     private ExtendedBlockStorage[] setBlockWithMeta_CubicChunks_EBSPutRedirect(Chunk instance, @Local(name = "p_150807_2_") int index) {
         ExtendedBlockStorage newStorage = new ExtendedBlockStorage(index >> 4 << 4, !this.worldObj.provider.hasNoSky);
-        setEBS_CubicChunks(index, newStorage);
-        ExtendedBlockStorage[] TempStorage = new ExtendedBlockStorage[index >> 4];
+        setEBS_CubicChunks(index >> 4, newStorage);
+        ExtendedBlockStorage[] TempStorage = new ExtendedBlockStorage[(index >> 4) + 1];
         TempStorage[index >> 4] = newStorage;
         return TempStorage;
     }
@@ -611,7 +611,7 @@ public abstract class MixinChunk_Cubes {
      ), cancellable = true)
      private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta,
          CallbackInfoReturnable<Boolean> cir) {
-         if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
+         if (isColumn && getWorldObj().getCubeCache().getLoadedCube(new CubePos(xPosition, y >> 4, zPosition)) == null) {
             cir.setReturnValue(null);
          }
      }
@@ -729,7 +729,7 @@ public abstract class MixinChunk_Cubes {
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
             args = "array=get"))
     private ExtendedBlockStorage getLightFor_CubicChunks_EBSGetRedirect(ExtendedBlockStorage[] array, int index) {
-        return getEBS_CubicChunks(index);
+        return getEBS_CubicChunks(index >> 4);
     }
 
     // ==============================================
@@ -1012,7 +1012,7 @@ public abstract class MixinChunk_Cubes {
                 continue;
             }
             for (Entity entity : cube.getEntityContainer()) {
-                if (!entity.getBoundingBox()
+                if (entity.getBoundingBox() == null || !entity.getBoundingBox()
                     .intersectsWith(aabb) || entity == entityIn) {
                     continue;
                 }
@@ -1055,7 +1055,7 @@ public abstract class MixinChunk_Cubes {
 
         for (Cube cube : cubeMap.cubes(minY, maxY)) {
             for (Entity entity : cube.getEntityContainer()) {
-                if (entityClass.isAssignableFrom(entity.getClass()) && entity.getBoundingBox()
+                if (entityClass.isAssignableFrom(entity.getClass()) && entity.getBoundingBox() != null && entity.getBoundingBox()
                     .intersectsWith(aabb) && (filter == null || filter.isEntityApplicable(entity))) {
                     listToFill.add((T) entity);
                 }

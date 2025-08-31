@@ -20,7 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.world.cube;
 
-import static com.cardinalstar.cubicchunks.util.ChunkStorageUtils.getCubeBlockIndexFromChunkData;
 import static com.cardinalstar.cubicchunks.util.Coords.*;
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
@@ -230,7 +229,7 @@ public class Cube implements ICube {
 
                     if (block != null && block.getMaterial() != Material.air) {
                         if (this.storage == null) {
-                            this.storage = new ExtendedBlockStorage(cubeY, flag);
+                            this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), flag);
                         }
                         this.storage.func_150818_a(x, y, z, block);
                     }
@@ -256,7 +255,7 @@ public class Cube implements ICube {
                         if (block != null && block != Blocks.air) {
 
                             if (this.storage == null) {
-                                this.storage = new ExtendedBlockStorage(cubeY, flag);
+                                this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), flag);
                             }
 
                             this.storage.func_150818_a(x, y, z, block);
@@ -269,13 +268,13 @@ public class Cube implements ICube {
             for (int y = Cube.SIZE - 1; y >= 0; y--) {
                 for (int z = 0; z < Cube.SIZE; z++) {
                     for (int x = 0; x < Cube.SIZE; x++) {
-                        int blockIter = getCubeBlockIndexFromChunkData(x, y, z, cubeY);
+                        int blockIter = x << 12 | z << 8 | y;;
                         Block block = blocks[blockIter];
 
                         if (block != null && block != Blocks.air) {
 
                             if (this.storage == null) {
-                                this.storage = new ExtendedBlockStorage(cubeY, flag);
+                                this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), flag);
                             }
 
                             this.storage.func_150818_a(x, y, z, block);
@@ -419,7 +418,7 @@ public class Cube implements ICube {
     @Override
     public void addTileEntity(TileEntity tileEntityIn) {
         int i = tileEntityIn.xCoord - this.coords.getX() * 16;
-        int j = tileEntityIn.yCoord;
+        int j = tileEntityIn.yCoord - this.coords.getY() * 16;
         int k = tileEntityIn.zCoord - this.coords.getZ() * 16;
         this.setBlockTileEntityInChunk(i, j, k, tileEntityIn);
         if (this.isCubeLoaded) {

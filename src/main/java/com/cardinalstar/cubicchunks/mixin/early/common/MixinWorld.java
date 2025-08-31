@@ -361,7 +361,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
      */
     @Overwrite
     public Block getBlock(int x, int y, int z) {
-        if (y >= getMaxHeight() || z < getMinHeight()) { // TODO: maybe avoid height check for cubic chunks world?
+        if (y >= getMaxHeight() || y < getMinHeight()) { // TODO: maybe avoid height check for cubic chunks world?
             return Blocks.air;
         }
         if (this.isCubicWorld) {
@@ -378,7 +378,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
                 CubicChunks.LOGGER.info("NULL chunk found at {}, {}, {}, returning Blocks.air", x, y, z);
                 return Blocks.air;
             }
-            return chunk.getBlock(x, y, z);
+            return chunk.getBlock(x & 15, y, z & 15);
         }
     }
 
