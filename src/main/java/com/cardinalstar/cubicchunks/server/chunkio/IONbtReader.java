@@ -211,6 +211,11 @@ public class IONbtReader {
 
             byte[] abyte = nbt.getByteArray("Blocks");
             NibbleArray data = new NibbleArray(nbt.getByteArray("Data"), 4);
+            byte[] dataMetaBytes = nbt.getByteArray("DataMeta");
+            if (dataMetaBytes.length == 0) {
+                dataMetaBytes = new byte[2048];
+            }
+            NibbleArray dataMeta = new NibbleArray(dataMetaBytes, 4);
             NibbleArray add = nbt.hasKey("Add", Constants.NBT.TAG_BYTE_ARRAY)
                 ? new NibbleArray(nbt.getByteArray("Add"), 4)
                 : null;
@@ -227,7 +232,7 @@ public class IONbtReader {
                 toAdd = (toAdd & 0xF) | (add2neid == null ? 0 : add2neid.get(x, y, z) << 4);
                 int id = (toAdd << 12) | ((abyte[i] & 0xFF) << 4) | data.get(x, y, z);
                 ebs.func_150818_a(x, y, z, Block.getBlockById(id));
-                ebs.setExtBlockMetadata(x, y, z, data.get(x, y, z));
+                ebs.setExtBlockMetadata(x, y, z, dataMeta.get(x, y, z));
             }
 
             ebs.setBlocklightArray(new NibbleArray(nbt.getByteArray("BlockLight"), 4));

@@ -166,6 +166,7 @@ class IONbtWriter {
         cubeNbt.setTag("Sections", sectionList);
         byte[] abyte = new byte[Cube.SIZE * Cube.SIZE * Cube.SIZE];
         NibbleArray data = new NibbleArray(new byte[2048], 4);
+        NibbleArray dataMeta = new NibbleArray(new byte[2048], 4);
         NibbleArray add = null;
         NibbleArray add2neid = null;
 
@@ -176,6 +177,7 @@ class IONbtWriter {
 
             @SuppressWarnings("deprecation")
             int id = Block.getIdFromBlock(ebs.getBlockByExtId(x, y, z));
+            int meta = ebs.getExtBlockMetadata(x, y, z);
 
             int in1 = (id >> 12) & 0xF;
             int in2 = (id >> 16) & 0xF;
@@ -195,10 +197,12 @@ class IONbtWriter {
 
             abyte[i] = (byte) (id >> 4 & 255);
             data.set(x, y, z, id & 15);
+            dataMeta.set(x, y, z, meta & 15);
         }
 
         section.setByteArray("Blocks", abyte);
         section.setByteArray("Data", data.data);
+        section.setByteArray("DataMeta", dataMeta.data);
 
         if (add != null) {
             section.setByteArray("Add", add.data);
