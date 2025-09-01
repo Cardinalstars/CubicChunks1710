@@ -134,6 +134,9 @@ public enum Mixins implements IMixins {
         .addClientMixins("client.MixinChunkCache_HeightLimits")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_CLIENT_PLAYER(new MixinBuilder("Fix player handling").addClientMixins("client.MixinEntityClientPlayerMP")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
     MIXIN_EMPTY_CHUNK(new MixinBuilder("Client empty chunk fix.").addClientMixins("client.MixinEmptyChunk")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
