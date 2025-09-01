@@ -61,6 +61,7 @@ import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubes;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
+import com.cardinalstar.cubicchunks.server.chunkio.async.forge.CubeIOExecutor;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList2D;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList3D;
@@ -372,6 +373,9 @@ public class CubicPlayerManager extends PlayerManager {
 
             getWorldServer().theProfiler.endSection(); // columns
         }
+
+        CubeIOExecutor.tick();
+
         if (!this.cubesToGenerate.isEmpty()) {
             getWorldServer().theProfiler.startSection("cubes");
 
