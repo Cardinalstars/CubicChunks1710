@@ -107,6 +107,9 @@ public enum Mixins implements IMixins {
         new MixinBuilder("I believe this is for compat but IDK").addCommonMixins("common.MixinRegionFileCache")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+    MIXIN_ENTITY_LIVING_BASE(new MixinBuilder("Fix enttiy handling").addClientMixins("common.MixinEntityLivingBase")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
 
     // =============================================================
     // Client Mixins
