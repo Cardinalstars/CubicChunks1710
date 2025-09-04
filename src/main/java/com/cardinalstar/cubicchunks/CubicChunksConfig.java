@@ -223,7 +223,9 @@ public class CubicChunksConfig {
         public int horizontalSliceSize = 65536;
     }
 
+    @Config.Ignore
     public static int defaultMaxCubesPerChunkloadingTicket = 25 * 16;
+    @Config.Ignore
     public static Map<String, Integer> modMaxCubesPerChunkloadingTicket = new HashMap<>();
 
     static {
@@ -343,6 +345,7 @@ public class CubicChunksConfig {
         }
     }
 
+    @SubscribeEvent
     public static void registerCommands(FMLServerStartingEvent evt) {
         evt.registerServerCommand(new BaseCubicChunksCommand());
     }
