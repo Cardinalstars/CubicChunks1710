@@ -30,6 +30,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.gtnewhorizon.gtnhlib.GTNHLibConfig;
+import com.gtnewhorizon.gtnhlib.config.ConfigException;
+import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraftforge.common.MinecraftForge;
@@ -117,6 +120,11 @@ public class CubicChunks {
 
         registerVanillaCompatibilityGeneratorProvider();
         registerAnvil3dStorageFormatProvider();
+        try {
+            ConfigurationManager.registerConfig(CubicChunksConfig.class);
+        } catch (ConfigException ex) {
+            throw new RuntimeException(ex);
+        }
         FMLCommonHandler.instance()
             .registerCrashCallable(new ICrashCallable() {
 
