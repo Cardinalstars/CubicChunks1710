@@ -184,7 +184,7 @@ public class LightingManager implements ILightingManager {
             BlockPos max = cube.getCoords()
                 .getMaxBlockPos();
             for (BlockPos pos : BlockPos
-                .getAllInBox(min.getY(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ())) {
+                .getAllInBox(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ())) {
                 ((CubicPlayerManager) ((WorldServer) world).getPlayerManager()).heightUpdated(pos.getX(), pos.getZ());
             }
             tryScheduleOnLoadHeightChangeRelight(cube);
