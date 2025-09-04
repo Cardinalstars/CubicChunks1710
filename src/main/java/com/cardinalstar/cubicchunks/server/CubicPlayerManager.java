@@ -61,6 +61,7 @@ import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubes;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
+import com.cardinalstar.cubicchunks.server.chunkio.async.forge.CubeIOExecutor;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList2D;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList3D;
@@ -372,6 +373,9 @@ public class CubicPlayerManager extends PlayerManager {
 
             getWorldServer().theProfiler.endSection(); // columns
         }
+
+        CubeIOExecutor.tick();
+
         if (!this.cubesToGenerate.isEmpty()) {
             getWorldServer().theProfiler.startSection("cubes");
 
@@ -488,10 +492,10 @@ public class CubicPlayerManager extends PlayerManager {
                 ((ICubicWorldInternal) getWorldServer()).getLightingManager()
                     .onSendCubes(cubes);
                 // if (vanillaNetworkHandler.hasCubicChunks(player)) {
-                ArrayList<Cube> list = new ArrayList<>(1024);
+                ArrayList<Cube> list = new ArrayList<>(100);
                 for (Cube cube : cubes) {
                     list.add(cube);
-                    if (list.size() >= 1024) {
+                    if (list.size() >= 100) {
                         PacketCubes packet = new PacketCubes(list);
                         PacketDispatcher.sendTo(packet, player);
                         list.clear();

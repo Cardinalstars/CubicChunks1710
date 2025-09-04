@@ -34,6 +34,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IBlockAccess;
@@ -53,7 +54,9 @@ import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -70,6 +73,7 @@ import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+import com.llamalad7.mixinextras.sugar.Local;
 
 /**
  * Contains implementation of {@link ICubicWorld} interface.
@@ -407,5 +411,15 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Override
     public boolean isBlockColumnLoaded(int x, int y, int z) {
         return this.chunkExists(blockToCube(x), blockToCube(z));
+    }
+
+    @ModifyConstant(method = "getCollidingBoundingBoxes", constant = @Constant(intValue = 64), require = 1)
+    private int collidingBoxFix1(int constant, @Local(argsOnly = true) AxisAlignedBB box) {
+        return (int) ((box.maxY - box.minY) / 2 + box.minY);
+    }
+
+    @ModifyConstant(method = "func_147461_a", constant = @Constant(intValue = 64), require = 1)
+    private int collidingBoxFix2(int constant, @Local(argsOnly = true) AxisAlignedBB box) {
+        return (int) ((box.maxY - box.minY) / 2 + box.minY);
     }
 }

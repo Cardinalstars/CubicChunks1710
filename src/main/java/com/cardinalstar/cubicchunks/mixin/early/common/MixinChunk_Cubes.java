@@ -992,8 +992,7 @@ public abstract class MixinChunk_Cubes {
                 continue;
             }
             for (Entity entity : cube.getEntityContainer()) {
-                if (entity.getBoundingBox() == null || !entity.getBoundingBox()
-                    .intersectsWith(aabb) || entity == entityIn) {
+                if (!entity.boundingBox.intersectsWith(aabb) || entity == entityIn) {
                     continue;
                 }
                 if (filter == null || filter.isEntityApplicable(entity)) {
@@ -1004,8 +1003,8 @@ public abstract class MixinChunk_Cubes {
 
                 if (parts != null) {
                     for (Entity part : parts) {
-                        if (part != entityIn && part.getBoundingBox()
-                            .intersectsWith(aabb) && (filter == null || filter.isEntityApplicable(entity))) {
+                        if (part != entityIn && part.boundingBox.intersectsWith(aabb)
+                            && (filter == null || filter.isEntityApplicable(entity))) {
                             listToFill.add(part);
                         }
                     }
@@ -1035,9 +1034,7 @@ public abstract class MixinChunk_Cubes {
 
         for (Cube cube : cubeMap.cubes(minY, maxY)) {
             for (Entity entity : cube.getEntityContainer()) {
-                if (entityClass.isAssignableFrom(entity.getClass()) && entity.getBoundingBox() != null
-                    && entity.getBoundingBox()
-                        .intersectsWith(aabb)
+                if (entityClass.isAssignableFrom(entity.getClass()) && entity.boundingBox.intersectsWith(aabb)
                     && (filter == null || filter.isEntityApplicable(entity))) {
                     listToFill.add((T) entity);
                 }
