@@ -25,14 +25,14 @@
 package com.cardinalstar.cubicchunks.mixin.early.client;
 
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.world.ChunkCache;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
