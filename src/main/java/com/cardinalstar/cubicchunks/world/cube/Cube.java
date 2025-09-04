@@ -268,7 +268,7 @@ public class Cube implements ICube {
             for (int y = Cube.SIZE - 1; y >= 0; y--) {
                 for (int z = 0; z < Cube.SIZE; z++) {
                     for (int x = 0; x < Cube.SIZE; x++) {
-                        int blockIter = x << 12 | z << 8 | y;;
+                        int blockIter = x << 12 | z << 8 | (y + cubeY * 16);
                         Block block = blocks[blockIter];
 
                         if (block != null && block != Blocks.air) {
