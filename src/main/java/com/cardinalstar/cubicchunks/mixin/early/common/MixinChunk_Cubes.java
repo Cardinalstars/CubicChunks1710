@@ -20,17 +20,27 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
-import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.IHeightMap;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
+import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
+import com.cardinalstar.cubicchunks.world.column.CubeMap;
+import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
+import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
+import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
+import com.cardinalstar.cubicchunks.world.core.StagingHeightMap;
+import com.cardinalstar.cubicchunks.world.cube.BlankCube;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.block.Block;
 import net.minecraft.command.IEntitySelector;
@@ -44,7 +54,6 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkEvent.Load;
-
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
@@ -65,24 +74,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import com.cardinalstar.cubicchunks.CubicChunksConfig;
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.IHeightMap;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
-import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
-import com.cardinalstar.cubicchunks.world.column.CubeMap;
-import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
-import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
-import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
-import com.cardinalstar.cubicchunks.world.core.StagingHeightMap;
-import com.cardinalstar.cubicchunks.world.cube.BlankCube;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
 
 /**
  * Modifies vanilla code in Chunk to use Cubes
@@ -185,6 +184,7 @@ public abstract class MixinChunk_Cubes {
         }
         return cube.getStorage();
     }
+
 
     // setEBS is unlikely to be used extremely frequently, no caching
     @Unique
@@ -507,7 +507,6 @@ public abstract class MixinChunk_Cubes {
     // return isColumn ? Integer.MIN_VALUE : getWorldObj().getMinHeight(); // this one is in block coords, max is in
     // cube coords. Mojang logic.
     // }
-
     @Redirect(
         method = "getBlock(III)Lnet/minecraft/block/Block;",
         at = @At(
@@ -588,33 +587,13 @@ public abstract class MixinChunk_Cubes {
         return getEBS_CubicChunks(index);
     }
 
-    // TODO Make this less fucking stupid
-    @Redirect(
-        method = "func_150807_a",
-        at = @At(
-            value = "FIELD",
-            target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-            args = "array=put"))
-    private ExtendedBlockStorage[] setBlockWithMeta_CubicChunks_EBSPutRedirect(Chunk instance, @Local(name = "p_150807_2_") int index) {
-        ExtendedBlockStorage newStorage = new ExtendedBlockStorage(index >> 4 << 4, !this.worldObj.provider.hasNoSky);
-        setEBS_CubicChunks(index >> 4, newStorage);
-        ExtendedBlockStorage[] TempStorage = new ExtendedBlockStorage[(index >> 4) + 1];
-        TempStorage[index >> 4] = newStorage;
-        return TempStorage;
+    @Definition(id = "storageArrays", field = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;")
+    @Expression("this.storageArrays[? >> 4] = ?")
+    @WrapOperation(
+        method = "func_150807_a", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private void setBlockWithMeta_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage value, Operation<Void> original) {
+        setEBS_CubicChunks(index, value);
     }
-
-
-     @Inject(method = "func_150807_a", at = @At(
-         value = "FIELD",
-         target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-         args = "array=put"
-     ), cancellable = true)
-     private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta,
-         CallbackInfoReturnable<Boolean> cir) {
-         if (isColumn && getWorldObj().getCubeCache().getLoadedCube(new CubePos(xPosition, y >> 4, zPosition)) == null) {
-            cir.setReturnValue(null);
-         }
-     }
 
     @Redirect(
         method = "func_150807_a",
@@ -760,16 +739,13 @@ public abstract class MixinChunk_Cubes {
         return getEBS_CubicChunks(index);
     }
 
-    // @Redirect(method = "setLightValue", at = @At(
-    // value = "FIELD",
-    // target =
-    // "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-    // args = "array=set"
-    // ))
-    // private void setLightValue_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index,
-    // ExtendedBlockStorage ebs) {
-    // setEBS_CubicChunks(index, ebs);
-    // }
+    @Definition(id = "storageArrays", field = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;")
+    @Expression("this.storageArrays[? >> 4] = ?")
+    @WrapOperation(
+        method = "setLightValue", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private void setLightValue_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index, ExtendedBlockStorage value, Operation<Void> original) {
+        setEBS_CubicChunks(index, value);
+    }
 
     @Redirect(
         method = "setLightValue",
