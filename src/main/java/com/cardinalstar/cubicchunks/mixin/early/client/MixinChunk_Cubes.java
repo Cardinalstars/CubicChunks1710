@@ -22,7 +22,6 @@ package com.cardinalstar.cubicchunks.mixin.early.client;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
@@ -80,7 +79,8 @@ public abstract class MixinChunk_Cubes implements IColumn {
     // ==============================================
 
     @Inject(method = "fillChunk", at = @At(value = "HEAD"))
-    private void fillChunk_CubicChunks_NotSupported(byte[] p_76607_1_, int p_76607_2_, int p_76607_3_, boolean p_76607_4_, CallbackInfo ci) {
+    private void fillChunk_CubicChunks_NotSupported(byte[] p_76607_1_, int p_76607_2_, int p_76607_3_,
+        boolean p_76607_4_, CallbackInfo ci) {
         if (false) if (isColumn) {
             throw new UnsupportedOperationException("setting storage arrays it not supported with cubic chunks");
         }

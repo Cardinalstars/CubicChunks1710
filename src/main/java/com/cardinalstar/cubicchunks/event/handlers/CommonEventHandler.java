@@ -64,6 +64,7 @@ public class CommonEventHandler {
     public void onCreateSpawnPoint(WorldEvent.CreateSpawnPosition event) {
         onCreateSpawnPoint2(event.world);
     }
+
     public void onCreateSpawnPoint2(World world) {
         if (world.isRemote || !(world instanceof WorldServer)) {
             return; // we will send packet to the client when it joins, client shouldn't change world types as it wants

@@ -117,11 +117,9 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Shadow
     @Mutable
-    @Final
     private Set<NextTickListEntry> pendingTickListEntriesHashSet;
     @Shadow
     @Mutable
-    @Final
     private List<NextTickListEntry> pendingTickListEntriesThisTick;
 
     @Shadow

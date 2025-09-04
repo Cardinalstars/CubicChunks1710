@@ -30,8 +30,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.block.Block;
 import net.minecraft.command.IEntitySelector;
 import net.minecraft.entity.Entity;
@@ -81,6 +79,8 @@ import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.core.StagingHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
@@ -507,7 +507,6 @@ public abstract class MixinChunk_Cubes {
     // return isColumn ? Integer.MIN_VALUE : getWorldObj().getMinHeight(); // this one is in block coords, max is in
     // cube coords. Mojang logic.
     // }
-
     @Redirect(
         method = "getBlock(III)Lnet/minecraft/block/Block;",
         at = @At(
@@ -588,33 +587,15 @@ public abstract class MixinChunk_Cubes {
         return getEBS_CubicChunks(index);
     }
 
-    // TODO Make this less fucking stupid
-    @Redirect(
-        method = "func_150807_a",
-        at = @At(
-            value = "FIELD",
-            target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-            args = "array=put"))
-    private ExtendedBlockStorage[] setBlockWithMeta_CubicChunks_EBSPutRedirect(Chunk instance, @Local(name = "p_150807_2_") int index) {
-        ExtendedBlockStorage newStorage = new ExtendedBlockStorage(index >> 4 << 4, !this.worldObj.provider.hasNoSky);
-        setEBS_CubicChunks(index >> 4, newStorage);
-        ExtendedBlockStorage[] TempStorage = new ExtendedBlockStorage[(index >> 4) + 1];
-        TempStorage[index >> 4] = newStorage;
-        return TempStorage;
+    @Definition(
+        id = "storageArrays",
+        field = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;")
+    @Expression("this.storageArrays[? >> 4] = ?")
+    @WrapOperation(method = "func_150807_a", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private void setBlockWithMeta_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index,
+        ExtendedBlockStorage value, Operation<Void> original) {
+        setEBS_CubicChunks(index, value);
     }
-
-
-     @Inject(method = "func_150807_a", at = @At(
-         value = "FIELD",
-         target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-         args = "array=put"
-     ), cancellable = true)
-     private void setBlockWithMeta_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta,
-         CallbackInfoReturnable<Boolean> cir) {
-         if (isColumn && getWorldObj().getCubeCache().getLoadedCube(new CubePos(xPosition, y >> 4, zPosition)) == null) {
-            cir.setReturnValue(null);
-         }
-     }
 
     @Redirect(
         method = "func_150807_a",
@@ -760,16 +741,15 @@ public abstract class MixinChunk_Cubes {
         return getEBS_CubicChunks(index);
     }
 
-    // @Redirect(method = "setLightValue", at = @At(
-    // value = "FIELD",
-    // target =
-    // "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-    // args = "array=set"
-    // ))
-    // private void setLightValue_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index,
-    // ExtendedBlockStorage ebs) {
-    // setEBS_CubicChunks(index, ebs);
-    // }
+    @Definition(
+        id = "storageArrays",
+        field = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;")
+    @Expression("this.storageArrays[? >> 4] = ?")
+    @WrapOperation(method = "setLightValue", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private void setLightValue_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index,
+        ExtendedBlockStorage value, Operation<Void> original) {
+        setEBS_CubicChunks(index, value);
+    }
 
     @Redirect(
         method = "setLightValue",
@@ -1055,8 +1035,10 @@ public abstract class MixinChunk_Cubes {
 
         for (Cube cube : cubeMap.cubes(minY, maxY)) {
             for (Entity entity : cube.getEntityContainer()) {
-                if (entityClass.isAssignableFrom(entity.getClass()) && entity.getBoundingBox() != null && entity.getBoundingBox()
-                    .intersectsWith(aabb) && (filter == null || filter.isEntityApplicable(entity))) {
+                if (entityClass.isAssignableFrom(entity.getClass()) && entity.getBoundingBox() != null
+                    && entity.getBoundingBox()
+                        .intersectsWith(aabb)
+                    && (filter == null || filter.isEntityApplicable(entity))) {
                     listToFill.add((T) entity);
                 }
             }
