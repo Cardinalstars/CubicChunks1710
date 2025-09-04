@@ -349,7 +349,7 @@ public class Cube implements ICube {
 
     @Override
     public void setLightFor(EnumSkyBlock lightType, int x, int y, int z, int light) {
-        column.setLightValue(lightType, Coords.blockToLocal(x), Coords.blockToLocal(y), Coords.blockToLocal(z), light);
+        column.setLightValue(lightType, Coords.blockToLocal(x), y, Coords.blockToLocal(z), light);
     }
 
     /**
@@ -403,7 +403,7 @@ public class Cube implements ICube {
      */
     @Override
     public int getBlockMetadata(int x, int y, int z) {
-        return storage != null ? storage.getExtBlockMetadata(x, y, z) : 0;
+        return storage != null ? storage.getExtBlockMetadata(blockToLocal(x), blockToLocal(y), blockToLocal(z)) : 0;
     }
 
     @Override
