@@ -28,6 +28,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
@@ -61,30 +62,30 @@ class WorldEncoder {
         cubes.forEach(cube -> {
             if (!cube.isEmpty()) {
                 // noinspection ConstantConditions
-                out.writeBytes(
-                    cube.getStorage()
-                        .getBlockLSBArray());
-                out.writeBytes(
-                    cube.getStorage()
-                        .getBlockMSBArray().data);
+                ExtendedBlockStorage storage = cube.getStorage();
+                out.writeBytes(storage.getBlockLSBArray());
+                NibbleArray msb = storage.getBlockMSBArray();
+                out.writeBoolean(msb != null);
+                if (msb != null) {
+                    out.writeBytes(msb.data);
+                }
+                out.writeBytes(storage.getMetadataArray().data);
             }
         });
 
         // 3. block light
         cubes.forEach(cube -> {
-            if (cube.getStorage() != null) {
-                out.writeBytes(
-                    cube.getStorage()
-                        .getBlocklightArray().data);
+            ExtendedBlockStorage storage = cube.getStorage();
+            if (storage != null) {
+                out.writeBytes(storage.getBlocklightArray().data);
             }
         });
 
         // 4. sky light
         cubes.forEach(cube -> {
-            if (cube.getStorage() != null && !cube.getWorld().provider.hasNoSky) {
-                out.writeBytes(
-                    cube.getStorage()
-                        .getSkylightArray().data);
+            ExtendedBlockStorage storage = cube.getStorage();
+            if (storage != null && !cube.getWorld().provider.hasNoSky) {
+                out.writeBytes(storage.getSkylightArray().data);
             }
         });
 
@@ -147,17 +148,23 @@ class WorldEncoder {
         for (int i = 0; i < cubes.size(); i++) {
             if (!isEmpty[i]) {
                 // noinspection ConstantConditions
-                if (cubes.get(i)
-                    .getStorage() != null) {
-                    byte[] lsbData = cubes.get(i)
-                        .getStorage()
-                        .getBlockLSBArray();
+                ExtendedBlockStorage storage = cubes.get(i)
+                    .getStorage();
+                if (storage != null) {
+                    byte[] lsbData = storage.getBlockLSBArray();
                     in.readBytes(lsbData);
 
-                    byte[] msbData = cubes.get(i)
-                        .getStorage()
-                        .getBlockMSBArray().data;
-                    in.readBytes(msbData);
+                    boolean hasMsb = in.readBoolean();
+                    if (hasMsb) {
+                        if (storage.getBlockMSBArray() == null) {
+                            storage.createBlockMSBArray();
+                        }
+
+                        byte[] msbData = storage.getBlockMSBArray().data;
+                        in.readBytes(msbData);
+                    }
+                    byte[] meta = storage.getMetadataArray().data;
+                    in.readBytes(meta);
                 }
             }
         }
@@ -236,19 +243,21 @@ class WorldEncoder {
 
         // 2. block IDs and metadata
         for (Cube cube : cubes) {
+            ExtendedBlockStorage storage = cube.getStorage();
             if (!cube.isEmpty()) {
                 // noinspection ConstantConditions
-                size += cube.getStorage()
-                    .getBlockLSBArray().length;
-                size += cube.getStorage()
-                    .getBlockMSBArray().data.length;
+                size += storage.getBlockLSBArray().length;
+                NibbleArray msb = storage.getBlockMSBArray();
+                size++; // Account for boolean hasMSB
+                if (msb != null) {
+                    size += msb.data.length;
+                }
+                size += storage.getMetadataArray().data.length;
             }
-            if (cube.getStorage() != null) {
-                size += cube.getStorage()
-                    .getBlocklightArray().data.length;
+            if (storage != null) {
+                size += storage.getBlocklightArray().data.length;
                 if (!cube.getWorld().provider.hasNoSky) {
-                    size += cube.getStorage()
-                        .getSkylightArray().data.length;
+                    size += storage.getSkylightArray().data.length;
                 }
             }
         }
