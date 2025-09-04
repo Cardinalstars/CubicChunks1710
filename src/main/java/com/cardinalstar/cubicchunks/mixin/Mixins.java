@@ -4,7 +4,6 @@ import javax.annotation.Nonnull;
 
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
-import scala.tools.nsc.transform.Mixin;
 
 public enum Mixins implements IMixins {
 
@@ -112,10 +111,10 @@ public enum Mixins implements IMixins {
     // =============================================================
     // Client Mixins
     // =============================================================
-    MIXIN_I_CHUNK_PROVIDER_CLIENT(
-        new MixinBuilder("Implements IChunkProviderClient on ChunkProviderClient").addClientMixins("client.IChunkProviderClient")
-            .setPhase(Phase.EARLY)
-            .setApplyIf(() -> true)),
+    MIXIN_I_CHUNK_PROVIDER_CLIENT(new MixinBuilder("Implements IChunkProviderClient on ChunkProviderClient")
+        .addClientMixins("client.IChunkProviderClient")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
     MIXIN_IGUI_VIDEO_SETTINGS(
         new MixinBuilder("Allows access to the getOptionsRowList field.").addClientMixins("client.IGuiVideoSettings")
             .setPhase(Phase.EARLY)
@@ -127,24 +126,28 @@ public enum Mixins implements IMixins {
     MIXIN_IGUI_SCREEN(new MixinBuilder("Allows access to the buttonList field.").addClientMixins("client.IGuiScreen")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_CHUNK_CUBES_CLIENT(new MixinBuilder("Client chunk fix to turn them to cubes.").addClientMixins("client.MixinChunk_Cubes")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
-    MIXIN_CHUNK_CACHE_HEIGHT_LIMITS_CLIENT(new MixinBuilder("Client chunk cache fixes for height limits.").addClientMixins("client.MixinChunkCache_HeightLimits")
+    MIXIN_CHUNK_CUBES_CLIENT(
+        new MixinBuilder("Client chunk fix to turn them to cubes.").addClientMixins("client.MixinChunk_Cubes")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
+    MIXIN_CHUNK_CACHE_HEIGHT_LIMITS_CLIENT(new MixinBuilder("Client chunk cache fixes for height limits.")
+        .addClientMixins("client.MixinChunkCache_HeightLimits")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
     MIXIN_EMPTY_CHUNK(new MixinBuilder("Client empty chunk fix.").addClientMixins("client.MixinEmptyChunk")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_WORLD_HEIGHT_LIMITS_CLIENT(new MixinBuilder("Height limits fix for client world.").addClientMixins("client.MixinWorld_HeightLimits")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_WORLD_HEIGHT_LIMITS_CLIENT(
+        new MixinBuilder("Height limits fix for client world.").addClientMixins("client.MixinWorld_HeightLimits")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
     MIXIN_WORLD_CLIENT(new MixinBuilder("Cubic world init for client.").addClientMixins("client.MixinWorldClient")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_WORLD_PROVIDER_CLIENT(new MixinBuilder("World provider fix for Y fog.").addClientMixins("client.MixinWorldProvider")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_WORLD_PROVIDER_CLIENT(
+        new MixinBuilder("World provider fix for Y fog.").addClientMixins("client.MixinWorldProvider")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
     // =============================================================
     // Server Mixins
     // =============================================================
