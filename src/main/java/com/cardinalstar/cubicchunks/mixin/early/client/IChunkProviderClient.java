@@ -34,7 +34,4 @@ public interface IChunkProviderClient {
 
     @Accessor
     LongHashMap getChunkMapping();
-
-    @Accessor
-    List<Chunk> getChunkListing();
 }
