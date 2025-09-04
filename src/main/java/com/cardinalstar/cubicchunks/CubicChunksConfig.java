@@ -343,6 +343,7 @@ public class CubicChunksConfig {
         }
     }
 
+    @SubscribeEvent
     public static void registerCommands(FMLServerStartingEvent evt) {
         evt.registerServerCommand(new BaseCubicChunksCommand());
     }
