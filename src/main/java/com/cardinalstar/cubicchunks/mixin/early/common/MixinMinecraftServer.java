@@ -43,6 +43,7 @@ public class MixinMinecraftServer {
             ((ICubicWorldInternal.Server) world).setSpawnArea(new SpawnCubes());
             ((ICubicWorldInternal.Server) world).getSpawnArea()
                 .update(world);
+            ci.cancel();
         }
     }
 }
