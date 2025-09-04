@@ -75,6 +75,18 @@ public abstract class MixinChunkCache_HeightLimits {
         return ((ICubicWorld) worldObj).getMaxHeight();
     }
 
+    @ModifyConstant(
+        method = "getBlockMetadata",
+        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, intValue = 0))
+    private int getBlockMetadata_getMinHeight(int orig) {
+        return ((ICubicWorld) worldObj).getMinHeight();
+    }
+
+    @ModifyConstant(method = "getBlockMetadata", constant = @Constant(intValue = 256))
+    private int getBlockMetadata_getMaxHeight(int orig) {
+        return ((ICubicWorld) worldObj).getMaxHeight();
+    }
+
     @ModifyConstant(method = "getSpecialBlockBrightness", constant = @Constant(intValue = 255))
     private int getSpecialBlockBrightness_getMaxHeightDefault(int orig) {
         return ((ICubicWorld) worldObj).getMaxHeight() - 1;
