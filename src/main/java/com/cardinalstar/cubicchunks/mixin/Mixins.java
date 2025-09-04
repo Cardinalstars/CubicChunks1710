@@ -165,6 +165,9 @@ public enum Mixins implements IMixins {
         new MixinBuilder("World provider fix for Y fog.").addClientMixins("client.MixinWorldProvider")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+    MIXIN_RENDERGLOBAL(new MixinBuilder("Fix rendering.").addClientMixins("client.MixinRenderGlobal")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
     // =============================================================
     // Server Mixins
     // =============================================================
