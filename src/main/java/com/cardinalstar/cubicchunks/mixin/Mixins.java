@@ -34,6 +34,12 @@ public enum Mixins implements IMixins {
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
 
+    // ITEM
+    MIXIN_ITEM_BLOCK(
+        new MixinBuilder("Mixin to to allow placing items everywhere").addCommonMixins("common.MixinItemBlock")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
+
     // WORLD
     MIXIN_WORLD_SERVER(new MixinBuilder("Mixin for making world server into a ICubicWorldInternal.Server")
         .addCommonMixins("common.MixinWorldServer")
