@@ -57,8 +57,8 @@ public class MixinEntityTrackerEntry implements ICubicEntityTracker.Entry {
             value = "FIELD",
             target = "Lnet/minecraft/entity/EntityTrackerEntry;blocksDistanceThreshold:I",
             ordinal = 0))
-    private int modifyThreshold(int original, @Local(argsOnly = true) EntityPlayerMP player, @Local(ordinal = 0) double d0,
-        @Local(ordinal = 1) double d1) {
+    private int modifyThreshold(int original, @Local(argsOnly = true) EntityPlayerMP player,
+        @Local(ordinal = 0) double d0, @Local(ordinal = 1) double d1) {
         if (d0 >= (double) (-original) && ((ICubicWorld) player.worldObj).isCubicWorld()) {
             int rangeY = Math.min(this.blocksDistanceThreshold, this.cubic_chunks$maxVertRange);
             double dy = player.posY - this.lastScaledYPosition / 32.0D;
