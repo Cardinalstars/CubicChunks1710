@@ -86,8 +86,6 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
         Chunk column = new Chunk((World) this.world, cubeX, cubeZ); // make a new one
         ((IChunkProviderClient) this).getChunkMapping()
             .add(ChunkCoordIntPair.chunkXZ2Int(cubeX, cubeZ), column);
-        ((IChunkProviderClient) this).getChunkListing()
-            .add(column);
 
         // fire a forge event... make mods happy :)
         net.minecraftforge.common.MinecraftForge.EVENT_BUS
@@ -188,13 +186,7 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
 
     @Override
     public String makeString() {
-        return "MultiplayerChunkCache: " + ((IChunkProviderClient) this).getChunkListing()
-            .stream()
-            .map(
-                c -> ((IColumn) c).getLoadedCubes()
-                    .size())
-            .reduce(Integer::sum)
-            .orElse(-1)
+        return "MultiplayerChunkCache: " + cubeMap.getSize()
             + "/"
             + ((IChunkProviderClient) this).getChunkMapping()
                 .getNumHashElements();
