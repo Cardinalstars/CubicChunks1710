@@ -10,7 +10,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(NextTickListEntry.class)
 public class MixinNextTickListEntry {
 
-    @Redirect(method = "equals", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;isEqualTo(Lnet/minecraft/block/Block;Lnet/minecraft/block/Block;)Z"))
+    @Redirect(
+        method = "equals",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/block/Block;isEqualTo(Lnet/minecraft/block/Block;Lnet/minecraft/block/Block;)Z"))
     public boolean cc$noopBlockEquals(Block left, Block right) {
         return true;
     }
