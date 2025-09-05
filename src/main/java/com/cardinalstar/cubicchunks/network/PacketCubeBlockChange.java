@@ -81,7 +81,9 @@ public class PacketCubeBlockChange implements IMessage {
         TIntIterator it = xzAddresses.iterator();
         while (it.hasNext()) {
             int v = it.next();
-            int height = ((IColumnInternal) cube.getColumn()).getTopYWithStaging(blockToLocal(v), blockToLocal(v));
+            int x = AddressTools.getLocalX(v);
+            int z = AddressTools.getLocalZ(v);
+            int height = ((IColumnInternal) cube.getColumn()).getTopYWithStaging(x, z);
             v |= height << 8;
             heightValues[i] = v;
             i++;
