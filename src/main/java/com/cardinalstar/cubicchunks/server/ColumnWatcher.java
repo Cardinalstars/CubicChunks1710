@@ -31,7 +31,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkWatchEvent;
 
@@ -67,8 +66,6 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
 
     private CubeProviderServer.EagerColumnLoadRequest request;
 
-    private final ForgeChunkManager.Ticket ticket;
-
     public ColumnWatcher(CubicPlayerManager cubicPlayerManager, ChunkCoordIntPair pos) {
         this.cubicPlayerManager = cubicPlayerManager;
         this.pos = pos;
@@ -79,14 +76,11 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         if (column == null) {
             request = cubeCache.loadColumnEagerly(pos.chunkXPos, pos.chunkZPos, ICubeProviderServer.Requirement.GENERATE);
         }
-
-        ticket = ForgeChunkManager.requestTicket(CubicChunks.MODID, cubicPlayerManager.getWorldServer(), ForgeChunkManager.Type.ENTITY);
     }
 
     public void onColumnLoaded(Chunk column) {
         this.column = column;
         request = null;
-        ForgeChunkManager.forceChunk(ticket, pos);
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
@@ -136,7 +130,6 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         }
 
         if (playersWatchingChunk.isEmpty()) {
-            ForgeChunkManager.releaseTicket(ticket);
             cubicPlayerManager.removeEntry(this);
         }
     }
