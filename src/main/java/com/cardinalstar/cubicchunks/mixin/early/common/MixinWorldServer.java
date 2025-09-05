@@ -138,7 +138,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     @Inject(method = "<init>", at = @At(value = "TAIL"))
     public void initCubicWorldServer(MinecraftServer p_i45284_1_, ISaveHandler p_i45284_2_, String p_i45284_3_,
         int p_i45284_4_, WorldSettings p_i45284_5_, Profiler p_i45284_6_, CallbackInfo ci) {
-        this.lightingManager = new LightingManager((World) (Object) this);
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>(0.75f, 64 * 1024);
         this.forcedColumns = new XZMap<>(0.75f, 2048);

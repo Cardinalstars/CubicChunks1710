@@ -454,7 +454,7 @@ public class CubeProviderServer extends ChunkProviderServer
             }
         }
 
-        if (!cube.isFullyPopulated()) {
+        if (!cube.isFullyPopulated() || req == Requirement.POPULATE) {
             if (!forceNow
                 && cubeGen.pollAsyncCubePopulator(cubeX, cubeY, cubeZ) != ICubeGenerator.GeneratorReadyState.READY) {
                 return emptyCube;

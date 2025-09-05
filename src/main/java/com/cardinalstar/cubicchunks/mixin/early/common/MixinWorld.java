@@ -221,32 +221,6 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Shadow
     protected abstract IChunkProvider createChunkProvider();
 
-    // Make this call a no-op because we will intialize the ChunkProvider in the Init world (after perWorldStorage is
-    // valid)
-    // @Definition(id = "createChunkProvider", method =
-    // "Lnet/minecraft/world/World;createChunkProvider()Lnet/minecraft/world/chunk/IChunkProvider;")
-    // @Expression("this.createChunkProvider()")
-    // @Redirect(
-    // method =
-    // "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
-    // at = @At("MIXINEXTRAS:EXPRESSION")
-    // )
-    // private IChunkProvider cancelCreateChunkProvider(World instance) {
-    // // Either return null or your CubeProviderServer
-    // return null;
-    // }
-
-    // @Definition(id = "ambientTickCountdown", field = "Lnet/minecraft/world/World;ambientTickCountdown:I")
-    // @Expression("this.ambientTickCountdown = ?")
-    // @Inject(method =
-    // "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
-    // at = @At(value = "MIXINEXTRAS:EXPRESSION"))
-    // public void makeCubic(ISaveHandler p_i45369_1_, String p_i45369_2_, WorldSettings p_i45369_3_, WorldProvider
-    // p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci)
-    // {
-    // this.isCubicWorld = true;
-    // }
-
     @Definition(id = "isInitialized", method = "Lnet/minecraft/world/storage/WorldInfo;isInitialized()Z")
     @Definition(
         id = "worldInfo",
@@ -261,15 +235,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
             .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
         boolean ccWorldType = this.worldInfo.getTerrainType() instanceof ICubicWorldType;
         boolean ccGenerator = ccWorldType
-            && ((ICubicWorldType) this.worldInfo.getTerrainType()).hasCubicGeneratorForWorld((World) (Object) this); // TODO
-                                                                                                                     // Why
-                                                                                                                     // does
-                                                                                                                     // VSCode
-                                                                                                                     // flag
-                                                                                                                     // this
-                                                                                                                     // as
-                                                                                                                     // always
-                                                                                                                     // false?
+            && ((ICubicWorldType) this.worldInfo.getTerrainType()).hasCubicGeneratorForWorld((World) (Object) this);
         boolean savedCC = savedData != null && savedData.isCubicChunks;
         boolean ccWorldInfo = ((ICubicWorldSettings) this.worldInfo).isCubic()
             && (savedData == null || savedData.isCubicChunks);
@@ -350,6 +316,8 @@ public abstract class MixinWorld implements ICubicWorldInternal {
 
         this.minGenerationHeight = generationRange.getMin();
         this.maxGenerationHeight = generationRange.getMax();
+
+        this.lightingManager = new LightingManager((World) (Object) this);
     }
 
     @Override
