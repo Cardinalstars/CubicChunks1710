@@ -519,7 +519,7 @@ public class PhosphorLightEngine {
             }
         } else {
             if (type == EnumSkyBlock.Block) {
-                return storage.getExtSkylightValue(localX, localY, localZ);
+                return storage.getExtBlocklightValue(localX, localY, localZ);
             } else {
                 return type.defaultLightValue;
             }
