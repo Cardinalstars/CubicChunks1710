@@ -144,6 +144,7 @@ public class PhosphorLightEngine {
         this.acquireLock();
 
         try {
+            this.world.func_147479_m(x, y, z);
             this.scheduleLightUpdateInternal(lightType, x, y, z);
         } finally {
             this.releaseLock();
