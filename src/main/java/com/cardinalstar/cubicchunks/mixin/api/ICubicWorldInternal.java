@@ -94,6 +94,7 @@ public interface ICubicWorldInternal extends ICubicWorld {
     }
 
     interface Server extends ICubicWorldInternal, ICubicWorldServer {
+
         @Override
         CubeProviderServer getCubeCache();
 

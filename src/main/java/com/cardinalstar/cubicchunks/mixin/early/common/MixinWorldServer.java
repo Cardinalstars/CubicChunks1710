@@ -31,7 +31,6 @@ import java.util.Set;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
@@ -70,7 +69,6 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
-import com.cardinalstar.cubicchunks.api.IntRange;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.XZMap;
 import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
@@ -85,11 +83,11 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickList;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
 import com.cardinalstar.cubicchunks.world.CubeSpawnerAnimals;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.ISpawnerAnimals;
 import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Implementation of {@link ICubicWorldServer} interface.
@@ -137,13 +135,9 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     // @Shadow protected abstract boolean canAddEntity(Entity entityIn);
 
-    @Inject(
-        method = "<init>",
-        at = @At(
-            value = "TAIL"
-        )
-    )
-    public void initCubicWorldServer(MinecraftServer p_i45284_1_, ISaveHandler p_i45284_2_, String p_i45284_3_, int p_i45284_4_, WorldSettings p_i45284_5_, Profiler p_i45284_6_, CallbackInfo ci) {
+    @Inject(method = "<init>", at = @At(value = "TAIL"))
+    public void initCubicWorldServer(MinecraftServer p_i45284_1_, ISaveHandler p_i45284_2_, String p_i45284_3_,
+        int p_i45284_4_, WorldSettings p_i45284_5_, Profiler p_i45284_6_, CallbackInfo ci) {
         this.lightingManager = new LightingManager((World) (Object) this);
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>(0.75f, 64 * 1024);
@@ -157,11 +151,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Redirect(
         method = "<init>", // constructor
-        at = @At(
-            value = "NEW",
-            target = "net/minecraft/world/SpawnerAnimals"
-        )
-    )
+        at = @At(value = "NEW", target = "net/minecraft/world/SpawnerAnimals"))
     private SpawnerAnimals redirectSpawnerAnimals() {
         SpawnerAnimals animalsSpawner = new SpawnerAnimals();
         ISpawnerAnimals spawner = new CubeSpawnerAnimals();
@@ -175,27 +165,20 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         at = @At(
             value = "NEW",
             target = "(Lnet/minecraft/world/WorldServer;)Lnet/minecraft/server/management/PlayerManager;"))
-    private PlayerManager redirectPlayerManagerInit(WorldServer server)
-    {
+    private PlayerManager redirectPlayerManagerInit(WorldServer server) {
         return new CubicPlayerManager(server);
     }
 
-
     @Redirect(
         method = "createChunkProvider",
-        at = @At(
-            value = "NEW",
-            target = "net/minecraft/world/gen/ChunkProviderServer"
-        )
-    )
-    private ChunkProviderServer redirectChunkProviderServer(
-        WorldServer world, IChunkLoader chunkLoader, IChunkProvider chunkGenerator) {
+        at = @At(value = "NEW", target = "net/minecraft/world/gen/ChunkProviderServer"))
+    private ChunkProviderServer redirectChunkProviderServer(WorldServer world, IChunkLoader chunkLoader,
+        IChunkProvider chunkGenerator) {
         if (((ICubicWorld) world).isCubicWorld()) {
             return new CubeProviderServer(
                 world,
                 chunkLoader,
-                ((ICubicWorldProvider) world.provider).createCubeGenerator()
-            );
+                ((ICubicWorldProvider) world.provider).createCubeGenerator());
         }
         return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
     }

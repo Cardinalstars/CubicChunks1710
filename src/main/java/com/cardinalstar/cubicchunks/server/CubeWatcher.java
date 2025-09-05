@@ -42,7 +42,6 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubeBlockChange;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.network.PacketUnloadCube;
-import com.cardinalstar.cubicchunks.server.chunkio.async.forge.CubeIOExecutor;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
@@ -175,14 +174,14 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     void invalidate() {
-//        if (loading) {
-//            CubeIOExecutor.dropQueuedCubeLoad(
-//                this.cubicPlayerManager.getWorldServer(),
-//                cubePos.getX(),
-//                cubePos.getY(),
-//                cubePos.getZ(),
-//                c -> this.cube = c);
-//        }
+        // if (loading) {
+        // CubeIOExecutor.dropQueuedCubeLoad(
+        // this.cubicPlayerManager.getWorldServer(),
+        // cubePos.getX(),
+        // cubePos.getY(),
+        // cubePos.getZ(),
+        // c -> this.cube = c);
+        // }
         invalid = true;
         playersToAdd.clear();
     }

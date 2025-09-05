@@ -44,7 +44,6 @@ import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.ForgeChunkManager;
@@ -112,7 +111,7 @@ public class CubeProviderServer extends ChunkProviderServer
     public CubeProviderServer(WorldServer worldServer, IChunkLoader chunkLoader, ICubeGenerator cubeGen) {
         super(
             worldServer,
-            chunkLoader,                                  // forge uses this in
+            chunkLoader, // forge uses this in
             worldServer.provider.createChunkGenerator()); // let's create the chunk generator, for now the vanilla one
                                                           // may be enough
 

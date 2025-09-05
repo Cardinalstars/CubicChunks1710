@@ -28,7 +28,6 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.api.IntRange;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
 

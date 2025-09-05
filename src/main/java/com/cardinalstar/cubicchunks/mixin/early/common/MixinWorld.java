@@ -20,28 +20,16 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.CubicChunksConfig;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.IntRange;
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
-import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
-import com.cardinalstar.cubicchunks.lighting.LightingManager;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.util.ReflectionUtil;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
-import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
-import com.google.common.collect.ImmutableList;
-import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
-import com.llamalad7.mixinextras.sugar.Local;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
+
+import java.util.List;
+import java.util.Random;
+import java.util.function.Predicate;
+
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
@@ -65,6 +53,7 @@ import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.DimensionManager;
+
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
@@ -76,18 +65,31 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.List;
-import java.util.Random;
-import java.util.function.Predicate;
-
-import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
-import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.IntRange;
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
+import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
+import com.cardinalstar.cubicchunks.lighting.LightingManager;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.ReflectionUtil;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
+import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
+import com.google.common.collect.ImmutableList;
+import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.sugar.Local;
 
 /**
  * Contains implementation of {@link ICubicWorld} interface.
@@ -219,36 +221,55 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Shadow
     protected abstract IChunkProvider createChunkProvider();
 
-    // Make this call a no-op because we will intialize the ChunkProvider in the Init world (after perWorldStorage is valid)
-//    @Definition(id = "createChunkProvider", method = "Lnet/minecraft/world/World;createChunkProvider()Lnet/minecraft/world/chunk/IChunkProvider;")
-//    @Expression("this.createChunkProvider()")
-//    @Redirect(
-//        method = "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
-//        at = @At("MIXINEXTRAS:EXPRESSION")
-//    )
-//    private IChunkProvider cancelCreateChunkProvider(World instance) {
-//        // Either return null or your CubeProviderServer
-//        return null;
-//    }
+    // Make this call a no-op because we will intialize the ChunkProvider in the Init world (after perWorldStorage is
+    // valid)
+    // @Definition(id = "createChunkProvider", method =
+    // "Lnet/minecraft/world/World;createChunkProvider()Lnet/minecraft/world/chunk/IChunkProvider;")
+    // @Expression("this.createChunkProvider()")
+    // @Redirect(
+    // method =
+    // "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
+    // at = @At("MIXINEXTRAS:EXPRESSION")
+    // )
+    // private IChunkProvider cancelCreateChunkProvider(World instance) {
+    // // Either return null or your CubeProviderServer
+    // return null;
+    // }
 
-//    @Definition(id = "ambientTickCountdown", field = "Lnet/minecraft/world/World;ambientTickCountdown:I")
-//    @Expression("this.ambientTickCountdown = ?")
-//    @Inject(method = "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
-//        at = @At(value = "MIXINEXTRAS:EXPRESSION"))
-//    public void makeCubic(ISaveHandler p_i45369_1_, String p_i45369_2_, WorldSettings p_i45369_3_, WorldProvider p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci)
-//    {
-//        this.isCubicWorld = true;
-//    }
+    // @Definition(id = "ambientTickCountdown", field = "Lnet/minecraft/world/World;ambientTickCountdown:I")
+    // @Expression("this.ambientTickCountdown = ?")
+    // @Inject(method =
+    // "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
+    // at = @At(value = "MIXINEXTRAS:EXPRESSION"))
+    // public void makeCubic(ISaveHandler p_i45369_1_, String p_i45369_2_, WorldSettings p_i45369_3_, WorldProvider
+    // p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci)
+    // {
+    // this.isCubicWorld = true;
+    // }
 
     @Definition(id = "isInitialized", method = "Lnet/minecraft/world/storage/WorldInfo;isInitialized()Z")
-    @Definition(id = "worldInfo", field = "Lnet/minecraft/world/World;worldInfo:Lnet/minecraft/world/storage/WorldInfo;")
+    @Definition(
+        id = "worldInfo",
+        field = "Lnet/minecraft/world/World;worldInfo:Lnet/minecraft/world/storage/WorldInfo;")
     @Expression("this.worldInfo.isInitialized()")
-    @Inject(method = "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
+    @Inject(
+        method = "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
         at = @At("MIXINEXTRAS:EXPRESSION"))
-    public void initWorld(ISaveHandler p_i45369_1_, String p_i45369_2_, WorldSettings p_i45369_3_, WorldProvider p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci) {
-        WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) this.perWorldStorage.loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
+    public void initWorld(ISaveHandler p_i45369_1_, String p_i45369_2_, WorldSettings p_i45369_3_,
+        WorldProvider p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci) {
+        WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) this.perWorldStorage
+            .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
         boolean ccWorldType = this.worldInfo.getTerrainType() instanceof ICubicWorldType;
-        boolean ccGenerator = ccWorldType && ((ICubicWorldType) this.worldInfo.getTerrainType()).hasCubicGeneratorForWorld((World) (Object) this); // TODO Why does VSCode flag this as always false?
+        boolean ccGenerator = ccWorldType
+            && ((ICubicWorldType) this.worldInfo.getTerrainType()).hasCubicGeneratorForWorld((World) (Object) this); // TODO
+                                                                                                                     // Why
+                                                                                                                     // does
+                                                                                                                     // VSCode
+                                                                                                                     // flag
+                                                                                                                     // this
+                                                                                                                     // as
+                                                                                                                     // always
+                                                                                                                     // false?
         boolean savedCC = savedData != null && savedData.isCubicChunks;
         boolean ccWorldInfo = ((ICubicWorldSettings) this.worldInfo).isCubic()
             && (savedData == null || savedData.isCubicChunks);
@@ -294,26 +315,21 @@ public abstract class MixinWorld implements ICubicWorldInternal {
             return;
         }
 
-        if (shouldSkipWorld((World)(Object) this)) {
+        if (shouldSkipWorld((World) (Object) this)) {
             CubicChunks.LOGGER.info(
                 "Skipping world " + this
                     + " with type "
-                    + this.worldInfo
-                    .getTerrainType()
+                    + this.worldInfo.getTerrainType()
                     + " due to potential "
                     + "compatibility issues");
             return;
         }
-        CubicChunks.LOGGER.info(
-            "Initializing world " + this
-                + " with type "
-                + this.worldInfo
-                .getTerrainType());
+        CubicChunks.LOGGER.info("Initializing world " + this + " with type " + this.worldInfo.getTerrainType());
 
         IntRange generationRange = new IntRange(0, ((ICubicWorldProvider) this.provider).getOriginalActualHeight());
-        WorldType type = this.worldInfo
-            .getTerrainType();
-        if (type instanceof ICubicWorldType && ((ICubicWorldType) type).hasCubicGeneratorForWorld((World) (Object) this)) {
+        WorldType type = this.worldInfo.getTerrainType();
+        if (type instanceof ICubicWorldType
+            && ((ICubicWorldType) type).hasCubicGeneratorForWorld((World) (Object) this)) {
             generationRange = ((ICubicWorldType) type).calculateGenerationHeightRange((WorldServer) (Object) this);
         }
 
@@ -566,7 +582,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
             ReflectionUtil.getClassOrDefault("net.optifine.override.WorldServerMultiOF", Object.class), // OptiFine's
             // WorldServerMulti
             ReflectionUtil.getClassOrDefault("com.forgeessentials.multiworld.WorldServerMultiworld", Object.class) // ForgeEssentials
-            // world
+        // world
         });
 
     @SuppressWarnings("unchecked")

@@ -127,9 +127,7 @@ public abstract class MixinChunk_Column {
         }
         int ret = Math.max(opacityIndex.getTopBlockY(localX, localZ), stagingHeightMap.getTopBlockY(localX, localZ));
 
-
         ret = Math.max(0, ret);
-
 
         return ret;
     }
