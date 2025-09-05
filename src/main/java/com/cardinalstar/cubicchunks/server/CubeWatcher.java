@@ -274,16 +274,16 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         } else {
             // send all the dirty blocks
             PacketCubeBlockChange packet = null;
-            // for (EntityPlayerMP player : this.players) {
-            // if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
-            // if (packet == null) { // create packet lazily
-            // packet = new PacketCubeBlockChange(this.cube, this.dirtyBlocks);
-            // }
-            // PacketDispatcher.sendTo(packet, player);
-            // } else {
-            // cubicPlayerManager.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
-            // }
-            // }
+            for (EntityPlayerMP player : this.players) {
+                // if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
+                if (packet == null) { // create packet lazily
+                    packet = new PacketCubeBlockChange(this.cube, this.dirtyBlocks);
+                }
+                PacketDispatcher.sendTo(packet, player);
+                // } else {
+                // cubicPlayerManager.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
+                // }
+            }
             // send the block entites on those blocks too
             this.dirtyBlocks.forEach(localAddress -> {
                 BlockPos pos = cube.localAddressToBlockPos(localAddress);
