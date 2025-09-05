@@ -45,12 +45,15 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.MinecraftForge;
 
+import org.joml.Vector3ic;
+
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.XZMap;
+import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.api.world.CubeWatchEvent;
 import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
@@ -62,6 +65,7 @@ import com.cardinalstar.cubicchunks.util.WatchersSortingList2D;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList3D;
 import com.cardinalstar.cubicchunks.visibility.CubeSelector;
 import com.cardinalstar.cubicchunks.visibility.CuboidalCubeSelector;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.MultimapBuilder;
@@ -682,7 +686,16 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
                 columnWatcher.removePlayer(entry.playerEntity);
             }
         });
-        getWorldServer().theProfiler.endSection();// removeColumns
+        getWorldServer().theProfiler.endStartSection("Immediate nearby cube loading");
+
+        CubeProviderServer cubeCache = ((ICubicWorldInternal.Server) getWorldServer()).getCubeCache();
+
+        // Force load the cube the player is in along with its 27 neighbours
+        for (Vector3ic v : new Box(-1, -1, -1, 1, 1, 1)) {
+            cubeCache.getCube(newPos.getX() + v.x(), newPos.getY() + v.y(), newPos.getZ() + v.z(), ICubeProviderServer.Requirement.LIGHT);
+        }
+
+        getWorldServer().theProfiler.endSection();// Immediate nearby cube loading
         getWorldServer().theProfiler.endSection();// updateMovedPlayer
     }
 
