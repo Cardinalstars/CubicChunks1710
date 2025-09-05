@@ -117,7 +117,6 @@ public class CubeProviderServer extends ChunkProviderServer
     private static final int MAX_LOADS_PER_TICK = 8192;
 
     private final ListMultimap<ChunkCoordIntPair, Runnable> pendingAsyncChunkLoads = MultimapBuilder.hashKeys().arrayListValues().build();
-    private final ListMultimap<CubePos, Runnable> pendingAsyncCubeLoads = MultimapBuilder.hashKeys().arrayListValues().build();
 
     private final ObjectLinkedOpenHashSet<CubeLoaderCallback> callbacks = new ObjectLinkedOpenHashSet<>();
 
@@ -192,8 +191,6 @@ public class CubeProviderServer extends ChunkProviderServer
 
         @Override
         public void onCubeLoaded(Cube cube) {
-            pendingAsyncCubeLoads.removeAll(cube.getCoords()).forEach(Runnable::run);
-
             cubesLoadedThisTick++;
 
             callbacks.forEach(c -> c.onCubeLoaded(cube));
@@ -362,8 +359,13 @@ public class CubeProviderServer extends ChunkProviderServer
 
             Cube cube = cubeLoader.getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
 
-            if (cube.getInitState() != CubeLoaderServer.CubeInitLevel.fromRequirement(request.effort)) {
-                CubicChunks.LOGGER.error("Could not init cube for eager request " + cube);
+            CubeLoaderServer.CubeInitLevel actual = cube == null ? null : cube.getInitState();
+            CubeLoaderServer.CubeInitLevel wanted = CubeLoaderServer.CubeInitLevel.fromRequirement(request.effort);
+
+            if (actual != wanted) {
+                CubicChunks.LOGGER.error("Could not init cube {},{},{} for eager request (wanted {}, returned {})",
+                    request.pos.getX(), request.pos.getY(), request.pos.getZ(),
+                    wanted, actual);
             }
 
             cubes++;
