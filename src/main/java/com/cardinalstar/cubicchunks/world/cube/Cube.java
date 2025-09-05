@@ -438,13 +438,13 @@ public class Cube implements ICube {
     public void setBlockTileEntityInChunk(int x, int y, int z, TileEntity tileEntityIn) {
         tileEntityIn.setWorldObj(this.world);
         tileEntityIn.xCoord = this.coords.getX() * 16 + x;
-        tileEntityIn.yCoord = y;
+        tileEntityIn.yCoord = this.coords.getY() * 16 + y;
         tileEntityIn.zCoord = this.coords.getZ() * 16 + z;
 
         int metadata = getBlockMetadata(x, y, z);
         if (this.getBlock(x, y, z)
             .hasTileEntity(metadata)) {
-            ChunkPosition chunkposition = new ChunkPosition(x, y, z);
+            ChunkPosition chunkposition = new ChunkPosition(x, tileEntityIn.yCoord , z);
 
             TileEntity existing = this.cubeTileEntityMap.remove(chunkposition);
 
