@@ -34,6 +34,12 @@ public enum Mixins implements IMixins {
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
 
+    // ITEM
+    MIXIN_ITEM_BLOCK(
+        new MixinBuilder("Mixin to to allow placing items everywhere").addCommonMixins("common.MixinItemBlock")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
+
     // WORLD
     MIXIN_WORLD_SERVER(new MixinBuilder("Mixin for making world server into a ICubicWorldInternal.Server")
         .addCommonMixins("common.MixinWorldServer")
@@ -69,6 +75,11 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Redirecting some things to use Y values.").addCommonMixins("common.MixinWorld_Tick")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+    MIXIN_NEXT_TICK_LIST_ENTRY(
+        new MixinBuilder("Remove block check from tick list entry").addCommonMixins("common.MixinNextTickListEntry")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
+
     // ENTITY
     MIXIN_ENTITY_DEATH_FIX(new MixinBuilder("Replace -64 constant, to avoid killing entities below y=-64")
         .addCommonMixins("common.MixinEntity_DeathFix")
@@ -154,6 +165,9 @@ public enum Mixins implements IMixins {
         new MixinBuilder("World provider fix for Y fog.").addClientMixins("client.MixinWorldProvider")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+    MIXIN_RENDERGLOBAL(new MixinBuilder("Fix rendering.").addClientMixins("client.MixinRenderGlobal")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
     // =============================================================
     // Server Mixins
     // =============================================================

@@ -73,6 +73,7 @@ import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
 import com.cardinalstar.cubicchunks.world.column.CubeMap;
+import com.cardinalstar.cubicchunks.world.column.EmptyEBS;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
@@ -159,6 +160,9 @@ public abstract class MixinChunk_Cubes {
 
     @Shadow
     public abstract int getSavedLightValue(EnumSkyBlock p_76614_1_, int p_76614_2_, int p_76614_3_, int p_76614_4_);
+
+    @Shadow
+    public boolean isTerrainPopulated;
 
     @Unique
     @SuppressWarnings({ "unchecked", "AddedMixinMembersNamePattern" })
@@ -738,7 +742,9 @@ public abstract class MixinChunk_Cubes {
             args = "array=get"))
     @Nullable
     private ExtendedBlockStorage setLightValue_CubicChunks_EBSGetRedirect(ExtendedBlockStorage[] array, int index) {
-        return getEBS_CubicChunks(index);
+        ExtendedBlockStorage ebs = getEBS_CubicChunks(index);
+
+        return ebs == null ? EmptyEBS.INSTANCE : ebs;
     }
 
     @Definition(
@@ -943,9 +949,6 @@ public abstract class MixinChunk_Cubes {
         }
         cbi.cancel();
         this.isChunkLoaded = true;
-        for (Cube cube : cubeMap) {
-            cube.onCubeLoad();
-        }
         MinecraftForge.EVENT_BUS.post(new Load((Chunk) (Object) this));
     }
 
@@ -1070,6 +1073,7 @@ public abstract class MixinChunk_Cubes {
         }
         this.field_150815_m = true;
         this.isLightPopulated = true;
+        this.isTerrainPopulated = true;
         // do nothing, we tick cubes directly
     }
 

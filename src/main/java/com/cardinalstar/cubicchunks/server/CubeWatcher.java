@@ -20,8 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.server;
 
-import java.util.function.Consumer;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -42,16 +40,18 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubeBlockChange;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.network.PacketUnloadCube;
+<<<<<<< HEAD
+=======
+import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
+>>>>>>> master
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ITicket;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
-import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.base.Predicate;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import gnu.trove.list.TShortList;
 import gnu.trove.list.array.TShortArrayList;
@@ -60,58 +60,61 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 @ParametersAreNonnullByDefault
 public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
-    private final Consumer<Cube> consumer;
-
     private final CubeProviderServer cubeCache;
-    private CubicPlayerManager cubicPlayerManager;
+    private final CubicPlayerManager cubicPlayerManager;
     @Nullable
     private Cube cube;
     // Note: using wrap() so that the internal array is not Object[], and can be safely cast to EntityPlayerMP[]
     private final ObjectArrayList<EntityPlayerMP> players = ObjectArrayList.wrap(new EntityPlayerMP[0]);
     private final ObjectArrayList<EntityPlayerMP> playersToAdd = ObjectArrayList.wrap(new EntityPlayerMP[1], 0);
 
-    private final TShortList dirtyBlocks = new TShortArrayList(64);
+    private final TShortList dirtyBlocks = new TShortArrayList(8);
     private final CubePos cubePos;
     private long previousWorldTime = 0;
     private boolean sentToPlayers = false;
-    private boolean loading = true;
     private boolean invalid = false;
+    private CubeProviderServer.EagerCubeLoadRequest request;
 
     // CHECKED: 1.10.2-12.18.1.2092
     CubeWatcher(CubicPlayerManager cubicPlayerManager, CubePos cubePos) {
         this.cubePos = cubePos;
         this.cubicPlayerManager = cubicPlayerManager;
         this.cubeCache = ((ICubicWorldInternal.Server) cubicPlayerManager.getWorldServer()).getCubeCache();
-        this.consumer = (c) -> {
-            if (this.invalid) {
-                return;
-            }
-            this.cube = c;
-            this.loading = false;
-            if (this.cube != null) {
-                this.cube.getTickets()
-                    .add(this);
-            }
-        };
-        this.cubeCache.asyncGetCube(
-            cubePos.getX(),
-            cubePos.getY(),
-            cubePos.getZ(),
-            ICubeProviderServer.Requirement.LOAD,
-            consumer);
+
+        Cube loaded = cubeCache.getLoadedCube(cubePos);
+
+        if (loaded != null && loaded.isInitializedToLevel(CubeLoaderServer.CubeInitLevel.Lit)) {
+            onCubeLoaded(loaded);
+        } else {
+            request = cubeCache.loadCubeEagerly(
+                cubePos.getX(), cubePos.getY(), cubePos.getZ(),
+                ICubeProviderServer.Requirement.LIGHT);
+        }
     }
 
-    void scheduleAddPlayer(EntityPlayerMP player) {
+    public void onCubeLoaded(Cube c) {
+        if (this.invalid) return;
+        if (c.getInitState() != CubeLoaderServer.CubeInitLevel.Lit) {
+            if (request != null && request.isCompleted()) {
+                request = cubeCache.loadCubeEagerly(
+                    cubePos.getX(), cubePos.getY(), cubePos.getZ(),
+                    ICubeProviderServer.Requirement.LIGHT);
+            }
+
+            return;
+        }
+        this.cube = c;
+        this.cube.getTickets().add(this);
+        this.request = null;
+    }
+
+    public void scheduleAddPlayer(EntityPlayerMP player) {
         if (!playersToAdd.contains(player)) {
             playersToAdd.add(player);
         }
     }
 
-    void removeScheduledAddPlayer(EntityPlayerMP player) {
-        playersToAdd.remove(player); // TODO: why does rem() and remove() exist separately?
-    }
-
-    void addScheduledPlayers() {
+    public void addScheduledPlayers() {
         if (!playersToAdd.isEmpty()) {
             for (EntityPlayerMP player : playersToAdd.elements()) {
                 if (player == null) {
@@ -124,7 +127,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
-    void addPlayer(EntityPlayerMP player) {
+    private void addPlayer(EntityPlayerMP player) {
         if (this.players.contains(player)) {
             CubicChunks.LOGGER.debug("Failed to add player. {} already is in cube at {}", player, cubePos);
             return;
@@ -144,12 +147,13 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     // CHECKED: 1.10.2-12.18.1.2092
     void removePlayer(EntityPlayerMP player) {
         if (!this.players.contains(player)) {
-            removeScheduledAddPlayer(player);
+            playersToAdd.remove(player);
             if (this.players.isEmpty()) {
                 cubicPlayerManager.removeEntry(this);
             }
             return;
         }
+
         // If we haven't loaded yet don't load the chunk just so we can clean it up
         if (this.cube == null) {
             this.players.remove(player);
@@ -173,56 +177,10 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         }
     }
 
-    void invalidate() {
-        // if (loading) {
-        // CubeIOExecutor.dropQueuedCubeLoad(
-        // this.cubicPlayerManager.getWorldServer(),
-        // cubePos.getX(),
-        // cubePos.getY(),
-        // cubePos.getZ(),
-        // c -> this.cube = c);
-        // }
+    public void invalidate() {
+        if (request != null) request.cancel();
         invalid = true;
         playersToAdd.clear();
-    }
-
-    // CHECKED: 1.10.2-12.18.1.2092
-    boolean providePlayerCube(boolean canGenerate) {
-        if (loading) {
-            return false;
-        }
-        if (isWaitingForColumn()) {
-            return false;
-        }
-        if (this.cube != null && (!canGenerate || !isWaitingForCube())) {
-            return true;
-        }
-        int cubeX = cubePos.getX();
-        int cubeY = cubePos.getY();
-        int cubeZ = cubePos.getZ();
-
-        cubicPlayerManager.getWorldServer().theProfiler.startSection("getCube");
-        if (canGenerate) {
-            this.cube = this.cubeCache.getCube(cubeX, cubeY, cubeZ, ICubeProviderServer.Requirement.LIGHT);
-            assert this.cube != null;
-            if (this.cube instanceof BlankCube) {
-                this.cube = null;
-                return false;
-            }
-            if (!this.cube.isFullyPopulated()) {
-                return false;
-            }
-        } else {
-            this.cube = this.cubeCache.getCube(cubeX, cubeY, cubeZ, ICubeProviderServer.Requirement.LOAD);
-        }
-        if (this.cube != null) {
-            this.cube.getTickets()
-                .add(this);
-        }
-        cubicPlayerManager.getWorldServer().theProfiler.endStartSection("light");
-        cubicPlayerManager.getWorldServer().theProfiler.endSection();
-
-        return this.cube != null;
     }
 
     @Override
@@ -230,33 +188,28 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         return sentToPlayers;
     }
 
-    boolean isWaitingForCube() {
-        return this.cube == null || !this.cube.isFullyPopulated()
+    public boolean isWaitingForCube() {
+        return this.cube == null || !this.cube.isPopulated()
             || !this.cube.isInitialLightingDone()
             || !this.cube.isSurfaceTracked();
     }
 
-    boolean isWaitingForColumn() {
+    public boolean isWaitingForColumn() {
         ColumnWatcher columnEntry = cubicPlayerManager.getColumnWatcher(this.cubePos.chunkPos());
         return columnEntry == null || !columnEntry.isSentToPlayers;
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
-    SendToPlayersResult sendToPlayers() {
-        if (this.sentToPlayers) {
-            return SendToPlayersResult.ALREADY_DONE;
-        }
-        if (isWaitingForCube()) {
-            return SendToPlayersResult.WAITING;
-        }
+    public boolean sendToPlayers() {
+        if (this.sentToPlayers) return true;
+
+        if (isWaitingForCube()) return false;
+
         // can't send cubes before columns
-        if (isWaitingForColumn()) {
-            return SendToPlayersResult.WAITING;
-        }
-        if (!cubicPlayerManager.getColumnWatcher(cubePos.chunkPos()).isSentToPlayers) {
-            return SendToPlayersResult.WAITING;
-        }
+        if (isWaitingForColumn()) return false;
+
         this.dirtyBlocks.clear();
+
         // set to true before adding to queue so that sendToPlayer can actually add it
         this.sentToPlayers = true;
 
@@ -264,7 +217,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             sendToPlayer(playerEntry);
         }
 
-        return SendToPlayersResult.CUBE_SENT;
+        return true;
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
@@ -277,7 +230,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
-    void updateInhabitedTime() {
+    public void updateInhabitedTime() {
         final long now = getWorldTime();
         if (this.cube == null) {
             this.previousWorldTime = now;
@@ -324,16 +277,16 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         } else {
             // send all the dirty blocks
             PacketCubeBlockChange packet = null;
-            // for (EntityPlayerMP player : this.players) {
-            // if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
-            // if (packet == null) { // create packet lazily
-            // packet = new PacketCubeBlockChange(this.cube, this.dirtyBlocks);
-            // }
-            // PacketDispatcher.sendTo(packet, player);
-            // } else {
-            // cubicPlayerManager.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
-            // }
-            // }
+            for (EntityPlayerMP player : this.players) {
+                // if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
+                if (packet == null) { // create packet lazily
+                    packet = new PacketCubeBlockChange(this.cube, this.dirtyBlocks);
+                }
+                PacketDispatcher.sendTo(packet, player);
+                // } else {
+                // cubicPlayerManager.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
+                // }
+            }
             // send the block entites on those blocks too
             this.dirtyBlocks.forEach(localAddress -> {
                 BlockPos pos = cube.localAddressToBlockPos(localAddress);
@@ -360,7 +313,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         sendPacketToAllPlayers(packet);
     }
 
-    boolean containsPlayer(EntityPlayerMP player) {
+    public boolean containsPlayer(EntityPlayerMP player) {
         return this.players.contains(player);
     }
 
@@ -376,8 +329,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         return false;
     }
 
-    boolean hasPlayer() {
-        return players.elements().length != 0;
+    public boolean hasPlayer() {
+        return !players.isEmpty();
     }
 
     boolean hasPlayerMatchingInRange(Predicate<EntityPlayerMP> predicate, int range) {
@@ -421,13 +374,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         return dx * dx + dy * dy + dz * dz;
     }
 
-    @Override
-    @Nullable
-    public Cube getCube() {
-        return this.cube;
-    }
-
-    double getClosestPlayerDistance() {
+    private double getClosestPlayerDistance() {
         double min = Double.MAX_VALUE;
 
         for (EntityPlayerMP entry : this.players.elements()) {
@@ -462,7 +409,14 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         }
     }
 
-    CubePos getCubePos() {
+    @Override
+    @Nullable
+    public Cube getCube() {
+        return this.cube;
+    }
+
+    @Override
+    public CubePos getCubePos() {
         return cubePos;
     }
 
@@ -496,11 +450,5 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     @Override
     public void setBucketEntryData(long[] data) {
         bucketDataEntry = data;
-    }
-
-    public enum SendToPlayersResult {
-        ALREADY_DONE,
-        CUBE_SENT,
-        WAITING
     }
 }

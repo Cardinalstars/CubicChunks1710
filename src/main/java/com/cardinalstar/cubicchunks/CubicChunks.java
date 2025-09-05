@@ -52,6 +52,8 @@ import com.cardinalstar.cubicchunks.util.SideUtils;
 import com.cardinalstar.cubicchunks.world.type.VanillaCubicWorldType;
 import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
 import com.cardinalstar.cubicchunks.worldgen.WorldgenHangWatchdog;
+import com.gtnewhorizon.gtnhlib.config.ConfigException;
+import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -117,6 +119,11 @@ public class CubicChunks {
 
         registerVanillaCompatibilityGeneratorProvider();
         registerAnvil3dStorageFormatProvider();
+        try {
+            ConfigurationManager.registerConfig(CubicChunksConfig.class);
+        } catch (ConfigException ex) {
+            throw new RuntimeException(ex);
+        }
         FMLCommonHandler.instance()
             .registerCrashCallable(new ICrashCallable() {
 

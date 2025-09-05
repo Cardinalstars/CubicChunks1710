@@ -144,6 +144,7 @@ public class PhosphorLightEngine {
         this.acquireLock();
 
         try {
+            this.world.func_147479_m(x, y, z);
             this.scheduleLightUpdateInternal(lightType, x, y, z);
         } finally {
             this.releaseLock();
@@ -180,7 +181,7 @@ public class PhosphorLightEngine {
 
     /**
      * Processes light updates of the given light type
-     * 
+     *
      * @param lightType light type
      */
     public void processLightUpdatesForType(final EnumSkyBlock lightType) {
@@ -389,15 +390,11 @@ public class PhosphorLightEngine {
                         final int nPosZ = info.posZ;
 
                         // schedule neighbor for darkening if we possibly light it
-                        if (curLight
-                            - this
-                                .getPosOpacity(
-                                    nPosX,
-                                    nPosY,
-                                    nPosZ,
-                                    LightingEngineHelpers
-                                        .posToBlock(this.curPosX, this.curPosY, this.curPosZ, info.section))
-                            >= nLight) {
+                        if (curLight - this.getPosOpacity(
+                            nPosX,
+                            nPosY,
+                            nPosZ,
+                            LightingEngineHelpers.posToBlock(nPosX, nPosY, nPosZ, info.section)) >= nLight) {
                             this.enqueueDarkening(
                                 nPosX,
                                 nPosY,
@@ -469,8 +466,9 @@ public class PhosphorLightEngine {
             final int nPosY = info.blockY = this.curDataY + (byte) (neighborShiftsY >> bitIdx);
             final int nPosZ = info.blockZ = this.curDataZ + (byte) (neighborShiftsZ >> bitIdx);
 
-            // TODO IS THIS A PROBLEM?
-            // final MutableBlockPos nPos = info.setPos(nPosX, nPosY, nPosZ);
+            info.posX = nPosX;
+            info.posY = nPosY;
+            info.posZ = nPosZ;
 
             final ICube nCube;
 
@@ -519,7 +517,7 @@ public class PhosphorLightEngine {
             }
         } else {
             if (type == EnumSkyBlock.Block) {
-                return storage.getExtSkylightValue(localX, localY, localZ);
+                return storage.getExtBlocklightValue(localX, localY, localZ);
             } else {
                 return type.defaultLightValue;
             }

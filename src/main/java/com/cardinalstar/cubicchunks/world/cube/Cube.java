@@ -20,10 +20,19 @@
  */
 package com.cardinalstar.cubicchunks.world.cube;
 
-import static com.cardinalstar.cubicchunks.util.Coords.*;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
+import static com.cardinalstar.cubicchunks.util.Coords.cubeToMaxBlock;
+import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
+import static com.cardinalstar.cubicchunks.util.Coords.localToBlock;
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BooleanSupplier;
@@ -427,7 +436,6 @@ public class Cube implements ICube {
     }
 
     public void setBlockTileEntityInChunk(int x, int y, int z, TileEntity tileEntityIn) {
-        ChunkPosition chunkposition = new ChunkPosition(x, y, z);
         tileEntityIn.setWorldObj(this.world);
         tileEntityIn.xCoord = this.coords.getX() * 16 + x;
         tileEntityIn.yCoord = y;
@@ -436,9 +444,11 @@ public class Cube implements ICube {
         int metadata = getBlockMetadata(x, y, z);
         if (this.getBlock(x, y, z)
             .hasTileEntity(metadata)) {
-            if (this.cubeTileEntityMap.containsKey(chunkposition)) {
-                ((TileEntity) this.cubeTileEntityMap.get(chunkposition)).invalidate();
-            }
+            ChunkPosition chunkposition = new ChunkPosition(x, y, z);
+
+            TileEntity existing = this.cubeTileEntityMap.remove(chunkposition);
+
+            if (existing != null) existing.invalidate();
 
             tileEntityIn.validate();
             this.cubeTileEntityMap.put(chunkposition, tileEntityIn);
@@ -642,8 +652,9 @@ public class Cube implements ICube {
             CubicChunks.LOGGER.error("Attempting to load already loaded cube at " + this.getCoords());
             return;
         }
+        isCubeLoaded = true;
+
         // tell the world about tile entities
-        this.isCubeLoaded = true;
         this.world.func_147448_a(this.cubeTileEntityMap.values());
         this.world.addLoadedEntities(this.entities);
 
@@ -726,14 +737,13 @@ public class Cube implements ICube {
     }
 
     // TODO Check that is this is updated correctly in the CubeProviderServer
-    // /**
-    // * Mark this cube as saved to disk
-    // */
-    // public void markSaved() {
-    // this.entities.markSaved(this.world.getTotalWorldTime());
-    // this.isModified = false;
-    // this.cubeLightData.markSaved(this);
-    // }
+     /**
+     * Mark this cube as saved to disk
+     */
+     public void markSaved() {
+         this.isModified = false;
+         this.cubeLightData.markSaved(this);
+     }
 
     /**
      * Mark this cube as one, who need to be saved to disk
@@ -802,8 +812,7 @@ public class Cube implements ICube {
 
     /**
      * Mark this cube as fully populated. This means that any cube potentially writing to this cube was passed as an
-     * argument to {@link ICubeGenerator#populate(ICube)}. Check there for more
-     * information regarding population
+     * argument to {@link ICubeGenerator#populate(ICube)}. Check there for more information regarding population
      *
      * @param populated whether this cube was fully populated
      */

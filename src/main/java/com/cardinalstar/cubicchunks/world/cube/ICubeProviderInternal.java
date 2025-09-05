@@ -24,7 +24,7 @@ package com.cardinalstar.cubicchunks.world.cube;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.CubePos;
 
 /**
@@ -49,6 +49,6 @@ public interface ICubeProviderInternal extends ICubeProvider {
 
     interface Server extends ICubeProviderInternal {
 
-        ICubeIO getCubeIO();
+        ICubeLoader getCubeLoader();
     }
 }

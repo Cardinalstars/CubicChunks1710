@@ -471,6 +471,9 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         }
     }
 
+    @Shadow
+    public abstract Block getBlock(int x, int y, int z);
+
     /**
      * @param x block x position
      * @param y block y position
@@ -479,26 +482,29 @@ public abstract class MixinWorld implements ICubicWorldInternal {
      * @author Barteks2x
      * @reason Injection causes performance issues, overwrite for cubic chunks version
      */
-    @Overwrite
-    public Block getBlock(int x, int y, int z) {
+    @Inject(method = "getBlock", at = @At("HEAD"), cancellable = true)
+    public void getBlock(int x, int y, int z, CallbackInfoReturnable<Block> cir) {
         if (y >= getMaxHeight() || y < getMinHeight()) { // TODO: maybe avoid height check for cubic chunks world?
-            return Blocks.air;
+            cir.setReturnValue(Blocks.air);
+            return;
         }
         if (this.isCubicWorld) {
             ICube cube = ((ICubeProviderInternal) this.chunkProvider)
                 .getCube(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z));
             if (cube == null) {
                 CubicChunks.LOGGER.info("NULL cube found at {}, {}, {}, returning Blocks.air", x, y, z);
-                return Blocks.air;
+                cir.setReturnValue(Blocks.air);
+                return;
             }
-            return cube.getBlock(x, y, z);
+            cir.setReturnValue(cube.getBlock(x, y, z));
         } else {
             Chunk chunk = this.getChunkFromBlockCoords(x, z);
             if (chunk == null) {
                 CubicChunks.LOGGER.info("NULL chunk found at {}, {}, {}, returning Blocks.air", x, y, z);
-                return Blocks.air;
+                cir.setReturnValue(Blocks.air);
+                return;
             }
-            return chunk.getBlock(x & 15, y, z & 15);
+            cir.setReturnValue(chunk.getBlock(x & 15, y, z & 15));
         }
     }
 

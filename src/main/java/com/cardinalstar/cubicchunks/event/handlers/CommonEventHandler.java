@@ -38,12 +38,11 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubicWorldData;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
-import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.google.common.collect.ImmutableList;
-
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -109,9 +108,9 @@ public class CommonEventHandler {
             return;
         }
 
-        ICubeIO io = ((ICubeProviderInternal.Server) world.getCubeCache()).getCubeIO();
+        ICubeLoader loader = ((ICubeProviderInternal.Server) world.getCubeCache()).getCubeLoader();
         try {
-            io.close();
+            loader.close();
         } catch (IOException e) {
             CubicChunks.LOGGER.catching(e);
         }

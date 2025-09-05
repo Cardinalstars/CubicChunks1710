@@ -72,10 +72,8 @@ import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.XZMap;
 import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.lighting.LightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.server.ChunkGc;
 import com.cardinalstar.cubicchunks.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
@@ -115,7 +113,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     private XYZMap<ICube> forcedCubes;
     private XZMap<IColumn> forcedColumns;
 
-    private ChunkGc worldChunkGc;
     private SpawnCubes spawnArea;
     private boolean runningCompatibilityGenerator;
     // private VanillaNetworkHandler vanillaNetworkHandler;
@@ -145,7 +142,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         // It's not possible to Inject on these constructors because they return different types.
         this.pendingTickListEntriesHashSet = new CubeSplitTickSet();
         this.pendingTickListEntriesThisTick = new CubeSplitTickList();
-        this.worldChunkGc = new ChunkGc(getCubeCache());
     }
 
     @Redirect(
@@ -222,11 +218,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     }
 
     @Override
-    public ICubeGenerator getCubeGenerator() {
-        return getCubeCache().getCubeGenerator();
-    }
-
-    @Override
     public void removeForcedCube(ICube cube) {
         if (!forcedChunksCubes.get(cube.getColumn())
             .remove(cube)) {
@@ -262,7 +253,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Override
     public void unloadOldCubes() {
-        worldChunkGc.chunkGc();
+        this.getCubeCache().getCubeLoader().doGC();
     }
 
     /**
@@ -271,8 +262,8 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
      * Can accept tickets from different worlds.
      */
     @Override
-    public void forceChunk(ForgeChunkManager.Ticket ticket, CubePos chunk) {
-        CubicChunkManager.forceChunk(ticket, chunk);
+    public void forceChunk(ForgeChunkManager.Ticket ticket, CubePos cube) {
+        CubicChunkManager.forceChunk(ticket, cube);
     }
 
     /**
