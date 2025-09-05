@@ -356,7 +356,7 @@ public class LightingHooks {
                 for (int z = 0; z < 16; ++z) {
                     if (((IColumnInternal) chunk).getTopYWithStaging(x, z) < section.getYLocation()) {
                         for (int y = 0; y < 16; ++y) {
-                            section.setExtBlocklightValue(x, y, z, EnumSkyBlock.Sky.defaultLightValue);
+                            section.setExtSkylightValue(x, y, z, EnumSkyBlock.Sky.defaultLightValue);
                         }
                     }
                 }
