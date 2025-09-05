@@ -35,6 +35,7 @@ import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.util.Box;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 @ParametersAreNonnullByDefault
@@ -66,24 +67,8 @@ public interface ICubeGenerator {
      * @param cubeZ the cube's Z coordinate
      *
      * @return A CubePrimer with the generated blocks
-     * @deprecated generators are advised to implement {@link #provideCube(Chunk, int, int, int)}
      */
-    @Deprecated
-    Cube loadCube(Chunk chunk, int cubeX, int cubeY, int cubeZ);
-
-    /**
-     * Generate a new cube
-     *
-     * @param cubeX the cube's X coordinate
-     * @param cubeY the cube's Y coordinate
-     * @param cubeZ the cube's Z coordinate
-     *
-     * @return A CubePrimer with the generated blocks
-     */
-    default Cube provideCube(Chunk chunk, int cubeX, int cubeY, int cubeZ) {
-        // proxy to legacy generateCube method to retain API backwards-compatibility
-        return this.loadCube(chunk, cubeX, cubeY, cubeZ);
-    }
+    Cube provideCube(Chunk chunk, int cubeX, int cubeY, int cubeZ);
 
     /**
      * Generate column-global information such as biome data
@@ -94,23 +79,25 @@ public interface ICubeGenerator {
 
     /**
      * Populate a cube with multi-block structures that can cross cube boundaries such as trees and ore veins.
-     * Population should* be done with the restriction that it may not affect cubes whose call to
-     * {@link ICubeGenerator#getFullPopulationRequirements(ICube)} would does include {@code cube}.
-     *
+     * <p />
      * Note: Unlike vanilla this method will NEVER cause recursive generation, thus the area that it populates is not as
      * strict.
      * Generation should still be restricted as the player might see something generate in a chunk they have already
-     * been sent
+     * been sent.
+     * <p />
+     * This method should generate all cubes that may be affected by the population of {@code cube} before population.
+     * It is also responsible for calling {@link Cube#setPopulated(boolean)} as necessary.
      *
-     * @param cube the cube to populate
+     * @param loader The cube loader from which cubes should be retreived when adjacent cubes have to be generated
+     * @param cube   The cube to populate
      */
-    void populate(ICube cube);
+    void populate(ICubeLoader loader, Cube cube);
 
     default Optional<Cube> tryGenerateCube(Chunk chunk, int cubeX, int cubeY, int cubeZ, boolean forceGenerate) {
         return Optional.of(this.provideCube(chunk, cubeX, cubeY, cubeZ));
     }
 
-    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, Block[] blocks, byte[] blockMeta,
+    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, @Nullable Block[] blocks, @Nullable byte[] blockMeta,
         boolean forceGenerate) {
         Chunk column = new Chunk(world, columnX, columnZ);
         this.generateColumn(column);
@@ -162,84 +149,6 @@ public interface ICubeGenerator {
     default GeneratorReadyState pollAsyncCubePopulator(int cubeX, int cubeY, int cubeZ) {
         return GeneratorReadyState.READY;
     }
-
-    /**
-     * Get the bounding box defining a range of cubes whose population contributes to {@code cube} being fully
-     * populated. The requested cubes will all be generated and populated when the cube that they affect needs to be
-     * fully populated.
-     *
-     * Consider the following example: A call to some implementation of
-     * {@link ICubeGenerator#populate(ICube)} populates a 16x16x16 block area in a 2x2x2 area of cubes around the
-     * center.
-     * 
-     * <pre>
-     *
-     * Shown: Which cubes affect the current cube (marked with dots), and their corresponding areas of population.
-     *
-     * +----------+----------+  . .  The chunk provided as a parameter
-     * |          | . . . . .|  . .  to this method (getFullPopulationRequirements).
-     * |          | . . . . .|
-     * |     #####|#####. . .|  x x  The chunk provided as a parameter
-     * |     #####|#####. . .|  x x  to populate()
-     * +----------+----------+
-     * | x x #####|#####     |  ###  The area being populated by 'x'
-     * | x x #####|#####     |  ###
-     * | x x x x x|          |
-     * | x x x x x|          |
-     * +----------+----------+
-     *
-     * +----------+----------+  . .  The chunk provided as a parameter
-     * |          | . . . . .|  . .  to this method (getFullPopulationRequirements).
-     * |          | . . . . .|
-     * |          | . . #####|  x x  The chunk provided as a parameter
-     * |          | . . #####|  x x  to populate()
-     * +----------+----------+
-     * |          | x x #####|  ###  The area being populated by 'x'
-     * |          | x x #####|  ###
-     * |          | x x x x x|
-     * |          | x x x x x|
-     * +----------+----------+
-     *
-     * +----------+----------+  . .  The chunk provided as a parameter
-     * | x x #####|#####. . .|  . .  to this method (getFullPopulationRequirements).
-     * | x x #####|#####. . .|
-     * | x x x x x| . . . . .|  x x  The chunk provided as a parameter
-     * | x x x x x| . . . . .|  x x  to populate()
-     * +----------+----------+
-     * |          |          |  ###  The area being populated by 'x'
-     * |          |          |  ###
-     * |          |          |
-     * |          |          |
-     * +----------+----------+
-     *
-     * </pre>
-     *
-     * This method would return {@code {(-1,-1,-1), (0, 0, 0)}}, indicating that populate calls to all cubes in
-     * that area write to this cube.<br>
-     * <br>
-     *
-     * Note: Large ranges are not recommended. If you need to generate a large structure like a nether fort, look at how
-     * MInecraft generates such
-     * structures
-     *
-     * Also @{see #getPopulationPregenerationRequirements}
-     *
-     * @param cube The target cube
-     *
-     * @return The bounding box of all cubes potentially writing to {@code cube}
-     */
-    Box getFullPopulationRequirements(ICube cube);
-
-    /**
-     * Get the Box will all the cubes that populating this cube will affect this cube. These cubes will be generated
-     * before the cube is populated,
-     * even if it's not full population.
-     *
-     * @param cube The target cube
-     *
-     * @return The bounding box of all cubes that the target cube may modify or use
-     */
-    Box getPopulationPregenerationRequirements(ICube cube);
 
     /**
      * Called to reload structures that apply to {@code cube}. Mostly used to prepare calls to

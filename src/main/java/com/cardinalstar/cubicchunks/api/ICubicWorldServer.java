@@ -25,7 +25,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraftforge.common.ForgeChunkManager;
 
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
@@ -34,8 +33,6 @@ import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 public interface ICubicWorldServer extends ICubicWorld {
 
     ICubeProviderServer getCubeCache();
-
-    ICubeGenerator getCubeGenerator();
 
     /**
      * Unloads or schedules unloading of no longer needed chunks from the world.
@@ -55,18 +52,18 @@ public interface ICubicWorldServer extends ICubicWorld {
 
     /**
      * CubicChunks equivalent of
-     * {@link ForgeChunkManager#forceChunk(ForgeChunkManager.Ticket ticket, ChunkCoordIntPair chunk)}.
+     * {@link ForgeChunkManager#forceChunk(ForgeChunkManager.Ticket, ChunkCoordIntPair)}.
      *
      * Can accept tickets from different worlds.
      *
      * @param ticket ForgeChunkManager ticket
-     * @param chunk  position of the cube to force load
+     * @param cube  position of the cube to force load
      */
-    void forceChunk(ForgeChunkManager.Ticket ticket, CubePos chunk);
+    void forceChunk(ForgeChunkManager.Ticket ticket, CubePos cube);
 
     /**
      * CubicChunks equivalent of
-     * {@link ForgeChunkManager#reorderChunk(ForgeChunkManager.Ticket ticket, ChunkCoordIntPair chunk)}
+     * {@link ForgeChunkManager#reorderChunk(ForgeChunkManager.Ticket, ChunkCoordIntPair)}
      *
      * Can accept tickets from different worlds.
      *
@@ -77,7 +74,7 @@ public interface ICubicWorldServer extends ICubicWorld {
 
     /**
      * CubicChunks equivalent of
-     * {@link ForgeChunkManager#unforceChunk(ForgeChunkManager.Ticket ticket, ChunkCoordIntPair chunk)}
+     * {@link ForgeChunkManager#unforceChunk(ForgeChunkManager.Ticket, ChunkCoordIntPair)}
      *
      * Can accept tickets from different worlds.
      *

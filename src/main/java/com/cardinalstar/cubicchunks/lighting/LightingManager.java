@@ -172,8 +172,14 @@ public class LightingManager implements ILightingManager {
     @Override
     public void onHeightUpdate(int x, int y, int z) {
         if (!world.isRemote) {
-            ((CubicPlayerManager) ((WorldServer) world).getPlayerManager()).heightUpdated(x, z);
+            CubicPlayerManager playerManager = getPlayerManager();
+
+            if (playerManager != null) playerManager.heightUpdated(x, z);
         }
+    }
+
+    private CubicPlayerManager getPlayerManager() {
+        return (CubicPlayerManager) ((WorldServer) world).getPlayerManager();
     }
 
     @Override
@@ -185,7 +191,10 @@ public class LightingManager implements ILightingManager {
                 .getMaxBlockPos();
             for (BlockPos pos : BlockPos
                 .getAllInBox(min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ())) {
-                ((CubicPlayerManager) ((WorldServer) world).getPlayerManager()).heightUpdated(pos.getX(), pos.getZ());
+
+                CubicPlayerManager playerManager = getPlayerManager();
+
+                if (playerManager != null) playerManager.heightUpdated(pos.getX(), pos.getZ());
             }
             tryScheduleOnLoadHeightChangeRelight(cube);
         }

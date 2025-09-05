@@ -56,6 +56,7 @@ public class PacketCubes implements IMessage {
     public PacketCubes() {}
 
     public PacketCubes(List<Cube> cubes) {
+        CubicChunks.LOGGER.info("Sending packet with {} cubes", cubes.size());
         cubes.sort(
             Comparator.<Cube>comparingInt(
                 c -> c.getCoords()
