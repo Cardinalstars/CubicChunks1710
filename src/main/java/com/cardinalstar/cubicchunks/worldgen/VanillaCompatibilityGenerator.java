@@ -58,6 +58,7 @@ import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import cpw.mods.fml.common.IWorldGenerator;
+import cpw.mods.fml.common.registry.GameRegistry;
 
 /**
  * A cube generator that tries to mirror vanilla world generation. Cubes in the normal world range will be copied from a
@@ -388,66 +389,81 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
             CubeGeneratorsRegistry.populateVanillaCubic(world, rand, cube);
 
+            Cube withinVanillaChunk = cube;
+
             // Cubes outside this range are only filled with their respective block
             // No population takes place
             if (cube.getY() < 0 || cube.getY() >= worldHeightCubes) {
-                return;
+                try {
+                    withinVanillaChunk = loader.getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
+                } catch (IOException e) {
+                    CubicChunks.LOGGER.error("Could not load cube at y=0 within vanilla chunk {},{} for vanilla chunk population", cube.getX(), cube.getZ(), e);
+                    withinVanillaChunk = null;
+                }
             }
 
+            if (withinVanillaChunk != null && !withinVanillaChunk.isFullyPopulated()) populateChunk(loader, cube);
 
             cube.setPopulated(true);
-
-            // First we have to generate all surrounding cubes
-            for (Vector3ic v : getPopulationPregenerationRequirements(cube)) {
-                if (v.equals(0, 0, 0)) continue;
-
-                int x = v.x() + cube.getX();
-                int y = v.y() + cube.getY();
-                int z = v.z() + cube.getZ();
-
-                try {
-                    loader.getCube(x, y, z, ICubeProviderServer.Requirement.GENERATE);
-                } catch (IOException e) {
-                    CubicChunks.LOGGER.error("Could not generate cube {},{},{}", x, y, z, e);
-                }
-            }
-
-            // Second, we mark the cubes in the current chunk as populated
-            for (int y = 0; y < worldHeightCubes; y++) {
-                try {
-                    loader.getCube(cube.getX(), y, cube.getZ(), ICubeProviderServer.Requirement.GENERATE).setPopulated(true);
-                } catch (IOException e) {
-                    CubicChunks.LOGGER.error("Could not mark cube {},{},{} as populated", cube.getX(), y, cube.getZ(), e);
-                }
-            }
-
-            ((IColumnInternal) cube.getColumn()).recalculateStagingHeightmap();
-
-            try {
-                CompatHandler.beforePopulate(world, vanilla);
-
-                // Then we can populate this cube
-//                vanilla.populate(vanilla, cube.getX(), cube.getZ());
-
-//                GameRegistry.generateWorld(
-//                    cube.getX(),
-//                    cube.getZ(),
-//                    world,
-//                    vanilla,
-//                    world.getChunkProvider());
-            } catch (Throwable t) {
-                CubicChunks.LOGGER.error("Could not populate cube {},{},{}", cube.getX(), cube.getY(), cube.getZ(), t);
-                ((IColumnInternal) cube.getColumn()).recalculateStagingHeightmap();
-            } finally {
-                CompatHandler.afterPopulate(world);
-            }
-
-//            applyModGenerators(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
+            cube.setFullyPopulated(true);
         } finally {
             WorldgenHangWatchdog.endWorldGen();
 
             loader.unpauseLoadCalls();
         }
+    }
+
+    private void populateChunk(ICubeLoader loader, Cube cube) {
+        // First we have to generate all surrounding cubes
+        for (Vector3ic v : getPopulationPregenerationRequirements(cube)) {
+            if (v.equals(0, 0, 0)) continue;
+
+            int x = v.x() + cube.getX();
+            int y = v.y() + cube.getY();
+            int z = v.z() + cube.getZ();
+
+            try {
+                loader.getCube(x, y, z, ICubeProviderServer.Requirement.GENERATE);
+            } catch (IOException e) {
+                CubicChunks.LOGGER.error("Could not generate cube {},{},{}", x, y, z, e);
+            }
+        }
+
+        // Second, we mark the cubes in the current chunk as populated
+        for (int y = 0; y < worldHeightCubes; y++) {
+            try {
+                Cube inColumn = loader.getCube(cube.getX(), y, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
+
+                inColumn.setPopulated(true);
+                inColumn.setFullyPopulated(true);
+            } catch (IOException e) {
+                CubicChunks.LOGGER.error("Could not mark cube {},{},{} as populated", cube.getX(), y, cube.getZ(), e);
+            }
+        }
+
+        ((IColumnInternal) cube.getColumn()).recalculateStagingHeightmap();
+
+        try {
+            CompatHandler.beforePopulate(world, vanilla);
+
+            // Then we can populate this cube
+            vanilla.populate(vanilla, cube.getX(), cube.getZ());
+
+            GameRegistry.generateWorld(
+                cube.getX(),
+                cube.getZ(),
+                world,
+                vanilla,
+                world.getChunkProvider());
+
+            applyModGenerators(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
+        } catch (Throwable t) {
+            CubicChunks.LOGGER.error("Could not populate cube {},{},{}", cube.getX(), cube.getY(), cube.getZ(), t);
+            ((IColumnInternal) cube.getColumn()).recalculateStagingHeightmap();
+        } finally {
+            CompatHandler.afterPopulate(world);
+        }
+
     }
 
     // First proider is the ChunkProviderGenerate/Hell/End/Flat second is the serverChunkProvider
