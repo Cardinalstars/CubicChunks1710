@@ -31,20 +31,28 @@ import java.util.Set;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
 import net.minecraft.entity.effect.EntityLightningBolt;
 import net.minecraft.init.Blocks;
+import net.minecraft.profiler.Profiler;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerManager;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.SpawnerAnimals;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.WorldSettings;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.minecraft.world.chunk.storage.IChunkLoader;
+import net.minecraft.world.gen.ChunkProviderServer;
+import net.minecraft.world.storage.ISaveHandler;
 import net.minecraftforge.common.ForgeChunkManager;
 
 import org.spongepowered.asm.mixin.Final;
@@ -55,6 +63,7 @@ import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
@@ -80,6 +89,7 @@ import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.ISpawnerAnimals;
 import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Implementation of {@link ICubicWorldServer} interface.
@@ -127,37 +137,68 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     // @Shadow protected abstract boolean canAddEntity(Entity entityIn);
 
-    @Override
-    public void initCubicWorldServerPart1(IntRange heightRange, IntRange generationRange) {
-        super.initCubicWorld(heightRange, generationRange);
-        this.isCubicWorld = true;
-        this.chunkProvider = new CubeProviderServer(
-            (WorldServer) (Object) this,
-            ((ICubicWorldProvider) this.provider).createCubeGenerator());
+    @Inject(
+        method = "<init>",
+        at = @At(
+            value = "TAIL"
+        )
+    )
+    public void initCubicWorldServer(MinecraftServer p_i45284_1_, ISaveHandler p_i45284_2_, String p_i45284_3_, int p_i45284_4_, WorldSettings p_i45284_5_, Profiler p_i45284_6_, CallbackInfo ci) {
         this.lightingManager = new LightingManager((World) (Object) this);
-    }
-
-    @Override
-    public void initCubicWorldServerPart2() {
-        ISpawnerAnimals spawner = new CubeSpawnerAnimals();
-        ISpawnerAnimals.Handler spawnHandler = cast(animalSpawner);
-        spawnHandler.setEntitySpawner(spawner);
-
-        // this.vanillaNetworkHandler = new VanillaNetworkHandler((WorldServer) (Object) this);
-        this.thePlayerManager = new CubicPlayerManager((WorldServer) (Object) this);
-
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>(0.75f, 64 * 1024);
         this.forcedColumns = new XZMap<>(0.75f, 2048);
 
+        // It's not possible to Inject on these constructors because they return different types.
         this.pendingTickListEntriesHashSet = new CubeSplitTickSet();
         this.pendingTickListEntriesThisTick = new CubeSplitTickList();
         this.worldChunkGc = new ChunkGc(getCubeCache());
     }
 
-    // @Override public VanillaNetworkHandler getVanillaNetworkHandler() {
-    // return vanillaNetworkHandler;
-    // }
+    @Redirect(
+        method = "<init>", // constructor
+        at = @At(
+            value = "NEW",
+            target = "net/minecraft/world/SpawnerAnimals"
+        )
+    )
+    private SpawnerAnimals redirectSpawnerAnimals() {
+        SpawnerAnimals animalsSpawner = new SpawnerAnimals();
+        ISpawnerAnimals spawner = new CubeSpawnerAnimals();
+        ISpawnerAnimals.Handler spawnHandler = cast(animalsSpawner);
+        spawnHandler.setEntitySpawner(spawner);
+        return animalsSpawner;
+    }
+
+    @Redirect(
+        method = "<init>",
+        at = @At(
+            value = "NEW",
+            target = "(Lnet/minecraft/world/WorldServer;)Lnet/minecraft/server/management/PlayerManager;"))
+    private PlayerManager redirectPlayerManagerInit(WorldServer server)
+    {
+        return new CubicPlayerManager(server);
+    }
+
+
+    @Redirect(
+        method = "createChunkProvider",
+        at = @At(
+            value = "NEW",
+            target = "net/minecraft/world/gen/ChunkProviderServer"
+        )
+    )
+    private ChunkProviderServer redirectChunkProviderServer(
+        WorldServer world, IChunkLoader chunkLoader, IChunkProvider chunkGenerator) {
+        if (((ICubicWorld) world).isCubicWorld()) {
+            return new CubeProviderServer(
+                world,
+                chunkLoader,
+                ((ICubicWorldProvider) world.provider).createCubeGenerator()
+            );
+        }
+        return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
+    }
 
     @Override
     public void setSpawnArea(SpawnCubes spawn) {

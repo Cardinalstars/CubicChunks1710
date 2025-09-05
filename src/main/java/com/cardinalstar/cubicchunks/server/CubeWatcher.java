@@ -175,14 +175,14 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     void invalidate() {
-        if (loading) {
-            CubeIOExecutor.dropQueuedCubeLoad(
-                this.cubicPlayerManager.getWorldServer(),
-                cubePos.getX(),
-                cubePos.getY(),
-                cubePos.getZ(),
-                c -> this.cube = c);
-        }
+//        if (loading) {
+//            CubeIOExecutor.dropQueuedCubeLoad(
+//                this.cubicPlayerManager.getWorldServer(),
+//                cubePos.getX(),
+//                cubePos.getY(),
+//                cubePos.getZ(),
+//                c -> this.cube = c);
+//        }
         invalid = true;
         playersToAdd.clear();
     }
