@@ -390,15 +390,11 @@ public class PhosphorLightEngine {
                         final int nPosZ = info.posZ;
 
                         // schedule neighbor for darkening if we possibly light it
-                        if (curLight
-                            - this
-                                .getPosOpacity(
-                                    nPosX,
-                                    nPosY,
-                                    nPosZ,
-                                    LightingEngineHelpers
-                                        .posToBlock(this.curPosX, this.curPosY, this.curPosZ, info.section))
-                            >= nLight) {
+                        if (curLight - this.getPosOpacity(
+                            nPosX,
+                            nPosY,
+                            nPosZ,
+                            LightingEngineHelpers.posToBlock(nPosX, nPosY, nPosZ, info.section)) >= nLight) {
                             this.enqueueDarkening(
                                 nPosX,
                                 nPosY,
