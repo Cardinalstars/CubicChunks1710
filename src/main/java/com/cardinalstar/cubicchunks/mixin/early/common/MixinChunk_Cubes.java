@@ -161,6 +161,9 @@ public abstract class MixinChunk_Cubes {
     @Shadow
     public abstract int getSavedLightValue(EnumSkyBlock p_76614_1_, int p_76614_2_, int p_76614_3_, int p_76614_4_);
 
+    @Shadow
+    public boolean isTerrainPopulated;
+
     @Unique
     @SuppressWarnings({ "unchecked", "AddedMixinMembersNamePattern" })
     public <T extends World & ICubicWorldInternal> T getWorldObj() {
@@ -1070,6 +1073,7 @@ public abstract class MixinChunk_Cubes {
         }
         this.field_150815_m = true;
         this.isLightPopulated = true;
+        this.isTerrainPopulated = true;
         // do nothing, we tick cubes directly
     }
 
