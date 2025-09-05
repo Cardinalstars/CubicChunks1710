@@ -946,9 +946,6 @@ public abstract class MixinChunk_Cubes {
         }
         cbi.cancel();
         this.isChunkLoaded = true;
-        for (Cube cube : cubeMap) {
-            cube.onCubeLoad();
-        }
         MinecraftForge.EVENT_BUS.post(new Load((Chunk) (Object) this));
     }
 

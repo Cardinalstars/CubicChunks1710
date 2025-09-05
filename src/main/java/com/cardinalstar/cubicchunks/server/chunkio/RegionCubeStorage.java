@@ -235,7 +235,7 @@ public class RegionCubeStorage implements ICubicStorage {
                                 entry -> entry.getValue()
                                     .nioBuffer())));
             }
-            CubicChunks.LOGGER.debug("Saved batch: {} columns and {} cubes", batch.columns.size(), batch.cubes.size());
+            CubicChunks.LOGGER.info("Saved batch: {} columns and {} cubes", batch.columns.size(), batch.cubes.size());
         } finally {
             compressedColumns.values()
                 .forEach(ByteBuf::release);

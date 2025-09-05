@@ -121,6 +121,10 @@ public abstract class MixinChunk_Column {
         stagingHeightMap.addStagedCube(cube);
     }
 
+    public void chunk_internal$recalculateStagingHeightmap() {
+        stagingHeightMap.recalculate();
+    }
+
     public int chunk_internal$getTopYWithStaging(int localX, int localZ) {
         if (!isColumn) {
             return heightMap[localZ << 4 | localX] - 1;

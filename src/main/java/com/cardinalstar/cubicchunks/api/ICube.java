@@ -38,6 +38,8 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
+import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
@@ -238,6 +240,20 @@ public interface ICube extends XYZAddressable {
      * @return {@code true} if it has been calculated, {@code false} otherwise
      */
     boolean isInitialLightingDone();
+
+    default CubeLoaderServer.CubeInitLevel getInitState() {
+        if (isPopulated() && isInitialLightingDone() && isSurfaceTracked()) {
+            return CubeLoaderServer.CubeInitLevel.Lit;
+        } else if (isPopulated()) {
+            return CubeLoaderServer.CubeInitLevel.Populated;
+        } else {
+            return CubeLoaderServer.CubeInitLevel.Generated;
+        }
+    }
+
+    default boolean isInitializedToLevel(CubeLoaderServer.CubeInitLevel initLevel) {
+        return getInitState().ordinal() >= initLevel.ordinal();
+    }
 
     boolean isCubeLoaded();
 

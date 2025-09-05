@@ -124,8 +124,10 @@ public class SpawnCubes implements ITicket {
             spawnCubeZ,
             r,
             ry,
-            (cubeX, cubeY, cubeZ) -> serverCubeCache
-                .asyncGetCube(cubeX, cubeY, cubeZ, ICubeProviderServer.Requirement.LOAD, c -> {}));
+            (x, y, z) -> {
+                serverCubeCache.loadCubeEagerly(x, y, z, ICubeProviderServer.Requirement.NBT);
+            });
+
         forEachCube(spawnCubeX, spawnCubeY, spawnCubeZ, r, ry, (cubeX, cubeY, cubeZ) -> {
             ICubeProviderServer.Requirement req;
 
@@ -140,7 +142,7 @@ public class SpawnCubes implements ITicket {
                 req = ICubeProviderServer.Requirement.LIGHT;
             }
 
-            Cube cube = serverCubeCache.getCubeNow(cubeX, cubeY, cubeZ, req);
+            Cube cube = serverCubeCache.getCube(cubeX, cubeY, cubeZ, req);
             assert cube != null;
 
             if (dx <= radiusXZForce && dz <= radiusXZForce) {

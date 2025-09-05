@@ -278,6 +278,10 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
         return this.remove(value.getX(), value.getY(), value.getZ());
     }
 
+    public T get(XYZAddressable pos) {
+        return get(pos.getX(), pos.getY(), pos.getZ());
+    }
+
     /**
      * Returns the value associated with the given coordinates or null if no
      * such value exists.
