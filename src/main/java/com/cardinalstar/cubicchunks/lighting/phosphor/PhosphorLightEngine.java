@@ -180,7 +180,7 @@ public class PhosphorLightEngine {
 
     /**
      * Processes light updates of the given light type
-     * 
+     *
      * @param lightType light type
      */
     public void processLightUpdatesForType(final EnumSkyBlock lightType) {
@@ -469,8 +469,9 @@ public class PhosphorLightEngine {
             final int nPosY = info.blockY = this.curDataY + (byte) (neighborShiftsY >> bitIdx);
             final int nPosZ = info.blockZ = this.curDataZ + (byte) (neighborShiftsZ >> bitIdx);
 
-            // TODO IS THIS A PROBLEM?
-            // final MutableBlockPos nPos = info.setPos(nPosX, nPosY, nPosZ);
+            info.posX = nPosX;
+            info.posY = nPosY;
+            info.posZ = nPosZ;
 
             final ICube nCube;
 
