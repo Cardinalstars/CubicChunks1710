@@ -46,9 +46,12 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
+import com.llamalad7.mixinextras.sugar.Local;
 
 /**
  * Contains fixes for hardcoded height checks and other height-related issues.
@@ -426,26 +429,34 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     @Redirect(
         method = "updateEntityWithOptionalForce",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;chunkExists(II)Z", ordinal = 0))
-    private boolean updateEntityWithOptionalForce_chunkExists0(World world, int chunkX, int chunkZ, Entity ent,
+    private boolean updateEntityWithOptionalForce_chunkExists0(World world, int chunkX, int chunkZ, Entity entity,
         boolean force) {
         assert this == (Object) world;
-        if (isCubicWorld()) {
-            return this.blockExists(cubeToMinBlock(chunkX), cubeToMinBlock(ent.chunkCoordY), cubeToMinBlock(chunkZ));
+        if (!isCubicWorld()) {
+            return this.blockExists(cubeToMinBlock(chunkX), cubeToMinBlock(entity.chunkCoordY), cubeToMinBlock(chunkZ));
         } else {
-            return this.chunkExists(chunkX, chunkZ);
+            ICube cube = this.getCubeCache().getLoadedCube(entity.chunkCoordX, entity.chunkCoordY, entity.chunkCoordZ);
+
+            return cube != null;
         }
     }
 
     @Redirect(
         method = "updateEntityWithOptionalForce",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;chunkExists(II)Z", ordinal = 1))
-    private boolean updateEntityWithOptionalForce_chunkExists1(World world, int chunkX, int chunkZ, Entity ent,
+    private boolean updateEntityWithOptionalForce_chunkExists1(World world, int chunkX, int chunkZ, Entity entity,
         boolean force) {
         assert this == (Object) world;
-        if (isCubicWorld()) {
-            return this.blockExists(cubeToMinBlock(chunkX), cubeToMinBlock(ent.chunkCoordY), cubeToMinBlock(chunkZ));
+        if (!isCubicWorld()) {
+            return this.blockExists(cubeToMinBlock(chunkX), cubeToMinBlock(entity.chunkCoordY), cubeToMinBlock(chunkZ));
         } else {
-            return this.chunkExists(chunkX, chunkZ);
+            int x = Coords.blockToCube(entity.posX);
+            int y = Coords.blockToCube(entity.posY);
+            int z = Coords.blockToCube(entity.posZ);
+
+            ICube cube = this.getCubeCache().getLoadedCube(x, y, z);
+
+            return cube != null;
         }
     }
 
@@ -529,5 +540,21 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         } else {
             return this.chunkExists(chunkX, chunkZ);
         }
+    }
+
+    @Redirect(method = "markAndNotifyBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;func_150802_k()Z"))
+    private boolean isValidForRendering(
+        Chunk column,
+        @Local(argsOnly = true, ordinal = 0) int x,
+        @Local(argsOnly = true, ordinal = 1) int y,
+        @Local(argsOnly = true, ordinal = 2) int z
+    ) {
+        if (!isCubicWorld()) return column.func_150802_k();
+
+        ICube cube = ((IColumn) column).getCube(Coords.blockToCube(y));
+
+        if (cube == null || cube.isEmpty()) return false;
+
+        return cube.isPopulated();
     }
 }

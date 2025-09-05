@@ -20,6 +20,7 @@
  */
 package com.cardinalstar.cubicchunks.worldgen;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,8 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
+import org.joml.Vector3ic;
+
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.ICube;
@@ -46,14 +49,16 @@ import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
 import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.early.common.IGameRegistry;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.ChunkStorageUtils;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-
 import cpw.mods.fml.common.IWorldGenerator;
+import cpw.mods.fml.common.registry.GameRegistry;
 
 /**
  * A cube generator that tries to mirror vanilla world generation. Cubes in the normal world range will be copied from a
@@ -203,12 +208,6 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         rand.setSeed(rand.nextInt() ^ cubeZ);
         rand.setSeed(rand.nextInt() ^ cubeY);
         return rand;
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public Cube loadCube(Chunk chunk, int cubeX, int cubeY, int cubeZ) {
-        return provideCube(chunk, cubeX, cubeY, cubeZ);
     }
 
     @Override
@@ -378,46 +377,93 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     }
 
     @Override
-    public void populate(ICube cube) {
+    public void populate(ICubeLoader loader, Cube cube) {
         try {
+            loader.pauseLoadCalls();
+
             WorldgenHangWatchdog.startWorldGen();
+
             tryInit(vanilla, world);
+
             Random rand = getCubeSpecificRandom(cube.getX(), cube.getY(), cube.getZ());
+
             CubeGeneratorsRegistry.populateVanillaCubic(world, rand, cube);
-            if (cube.getY() < 0 || cube.getY() >= worldHeightCubes) {
-                return;
-            }
+
+            Cube withinVanillaChunk = cube;
+
             // Cubes outside this range are only filled with their respective block
             // No population takes place
-            if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
-                for (int y = worldHeightCubes - 1; y >= 0; y--) {
-                    // normal populators would not do this... but we are populating more than one cube!
-                    ((ICubicWorldInternal) world).getCubeFromCubeCoords(cube.getX(), y, cube.getZ())
-                        .setPopulated(true);
-                }
-
+            if (cube.getY() < 0 || cube.getY() >= worldHeightCubes) {
                 try {
-                    CompatHandler.beforePopulate(world, vanilla);
-                    vanilla.populate(vanilla, cube.getX(), cube.getZ());
-                } catch (IllegalArgumentException ex) {
-                    StackTraceElement[] stack = ex.getStackTrace();
-                    if (stack == null || stack.length < 1
-                        || !stack[0].getClassName()
-                            .equals(Random.class.getName())
-                        || !stack[0].getMethodName()
-                            .equals("nextInt")) {
-                        throw ex;
-                    } else {
-                        CubicChunks.LOGGER.error("Error while populating. Likely known mod issue, ignoring...", ex);
-                    }
-                } finally {
-                    CompatHandler.afterPopulate(world);
+                    withinVanillaChunk = loader.getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
+                } catch (IOException e) {
+                    CubicChunks.LOGGER.error("Could not load cube at y=0 within vanilla chunk {},{} for vanilla chunk population", cube.getX(), cube.getZ(), e);
+                    withinVanillaChunk = null;
                 }
-                applyModGenerators(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
             }
+
+            if (withinVanillaChunk != null && !withinVanillaChunk.isFullyPopulated()) populateChunk(loader, cube);
+
+            cube.setPopulated(true);
+            cube.setFullyPopulated(true);
         } finally {
             WorldgenHangWatchdog.endWorldGen();
+
+            loader.unpauseLoadCalls();
         }
+    }
+
+    private void populateChunk(ICubeLoader loader, Cube cube) {
+        // First we have to generate all surrounding cubes
+        for (Vector3ic v : getPopulationPregenerationRequirements(cube)) {
+            if (v.equals(0, 0, 0)) continue;
+
+            int x = v.x() + cube.getX();
+            int y = v.y() + cube.getY();
+            int z = v.z() + cube.getZ();
+
+            try {
+                loader.getCube(x, y, z, ICubeProviderServer.Requirement.GENERATE);
+            } catch (IOException e) {
+                CubicChunks.LOGGER.error("Could not generate cube {},{},{}", x, y, z, e);
+            }
+        }
+
+        // Second, we mark the cubes in the current chunk as populated
+        for (int y = 0; y < worldHeightCubes; y++) {
+            try {
+                Cube inColumn = loader.getCube(cube.getX(), y, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
+
+                inColumn.setPopulated(true);
+                inColumn.setFullyPopulated(true);
+            } catch (IOException e) {
+                CubicChunks.LOGGER.error("Could not mark cube {},{},{} as populated", cube.getX(), y, cube.getZ(), e);
+            }
+        }
+
+        ((IColumnInternal) cube.getColumn()).recalculateStagingHeightmap();
+
+        try {
+            CompatHandler.beforePopulate(world, vanilla);
+
+            // Then we can populate this cube
+            vanilla.populate(vanilla, cube.getX(), cube.getZ());
+
+            GameRegistry.generateWorld(
+                cube.getX(),
+                cube.getZ(),
+                world,
+                vanilla,
+                world.getChunkProvider());
+
+            applyModGenerators(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
+        } catch (Throwable t) {
+            CubicChunks.LOGGER.error("Could not populate cube {},{},{}", cube.getX(), cube.getY(), cube.getZ(), t);
+            ((IColumnInternal) cube.getColumn()).recalculateStagingHeightmap();
+        } finally {
+            CompatHandler.afterPopulate(world);
+        }
+
     }
 
     // First proider is the ChunkProviderGenerate/Hell/End/Flat second is the serverChunkProvider
@@ -445,7 +491,13 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         }
     }
 
-    @Override
+    private Box getChunkBoxForCube(ICube cube) {
+        if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
+            return new Box(0, -cube.getY(), 0, 0, worldHeightCubes - cube.getY() - 1, 0);
+        }
+        return NO_REQUIREMENT;
+    }
+
     public Box getFullPopulationRequirements(ICube cube) {
         if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
             return new Box(-1, -cube.getY(), -1, 0, worldHeightCubes - cube.getY() - 1, 0);
@@ -453,10 +505,9 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         return NO_REQUIREMENT;
     }
 
-    @Override
     public Box getPopulationPregenerationRequirements(ICube cube) {
         if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
-            return new Box(0, -cube.getY(), 0, 1, worldHeightCubes - cube.getY() - 1, 1);
+            return new Box(-1, -cube.getY(), -1, 1, worldHeightCubes - cube.getY() - 1, 1);
         }
         return NO_REQUIREMENT;
     }

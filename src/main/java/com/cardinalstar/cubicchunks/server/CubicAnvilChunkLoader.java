@@ -35,52 +35,42 @@ import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.server.chunkio.ICubeIO;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 
 public class CubicAnvilChunkLoader extends AnvilChunkLoader {
 
-    private ICubeIO cubeIOValue;
-    private final Supplier<ICubeIO> cubeIOSource;
+    private final Supplier<ICubeProviderInternal.Server> cubeProvider;
 
     // cubeIO needs to be supplier and lazy initialized because of the cubic chunks initialization order
     // AnvilChunkLoader is constructed in CubeProviderServer constructor, which is before CubeIO
     // which is inside the CubeProviderServer exists.
-    public CubicAnvilChunkLoader(File chunkSaveLocationIn, Supplier<ICubeIO> cubeIO) {
+    public CubicAnvilChunkLoader(File chunkSaveLocationIn, Supplier<ICubeProviderInternal.Server> cubeProvider) {
         super(chunkSaveLocationIn);
-        this.cubeIOSource = cubeIO;
+        this.cubeProvider = cubeProvider;
     }
 
-    private ICubeIO getCubeIO() {
-        if (cubeIOValue == null) {
-            cubeIOValue = cubeIOSource.get();
-        }
-        return cubeIOValue;
+    private ICubeLoader getCubeLoader() {
+        return cubeProvider.get().getCubeLoader();
     }
 
     @Override
     @Nullable
-    public Chunk loadChunk(World worldIn, int x, int z) throws IOException {
-        ICubeIO.PartialData<Chunk> data = ((ICubeProviderInternal.Server) worldIn.getChunkProvider()).getCubeIO()
-            .loadColumnAsyncPart(worldIn, x, z);
-        ((ICubeProviderInternal.Server) worldIn.getChunkProvider()).getCubeIO()
-            .loadColumnSyncPart(data);
-        return data.getObject();
+    public Chunk loadChunk(World worldIn, int x, int z) {
+        return getCubeLoader().getColumn(x, z, ICubeProviderServer.Requirement.GENERATE);
     }
 
     @Override
     @Nullable
     public Object[] loadChunk__Async(World worldIn, int x, int z) throws IOException {
-        ICubeIO.PartialData<Chunk> data = ((ICubeProviderInternal.Server) worldIn.getChunkProvider()).getCubeIO()
-            .loadColumnAsyncPart(worldIn, x, z);
-        return new Object[] { data.getObject(), data.getNbt() };
+        return null;
     }
 
     @Override
     public boolean chunkExists(World world, int x, int z) {
-        return this.getCubeIO()
-            .columnExists(x, z);
+        return getCubeLoader().columnExists(x, z);
     }
 
     @Override
@@ -97,10 +87,12 @@ public class CubicAnvilChunkLoader extends AnvilChunkLoader {
 
     @Override
     public void saveChunk(World worldIn, Chunk chunkIn) {
-        getCubeIO().saveColumn(chunkIn);
+        getCubeLoader().saveColumn(chunkIn);
 
         for (ICube cube : ((IColumn) chunkIn).getLoadedCubes()) {
-            getCubeIO().saveCube((Cube) cube);
+            if (cube instanceof Cube realCube) {
+                getCubeLoader().saveCube(realCube);
+            }
         }
     }
 
@@ -111,7 +103,7 @@ public class CubicAnvilChunkLoader extends AnvilChunkLoader {
 
     @Override
     public boolean writeNextIO() {
-        return getCubeIO().writeNextIO();
+        return false;
     }
 
     @Override
@@ -126,7 +118,7 @@ public class CubicAnvilChunkLoader extends AnvilChunkLoader {
     @Override
     public void saveExtraData() {
         try {
-            getCubeIO().flush();
+            getCubeLoader().flush();
         } catch (IOException e) {
             CubicChunks.LOGGER.catching(e);
         }
@@ -136,9 +128,4 @@ public class CubicAnvilChunkLoader extends AnvilChunkLoader {
     public void loadEntities(World worldIn, NBTTagCompound compound, Chunk chunk) {
         throw new UnsupportedOperationException();
     }
-    //
-    // @Override public int getPendingSaveCount() {
-    // // guess what the right value is?
-    // return getCubeIO().getPendingColumnCount() + getCubeIO().getPendingCubeCount() / 16;
-    // }
 }

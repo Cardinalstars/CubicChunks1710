@@ -20,6 +20,7 @@
  */
 package com.cardinalstar.cubicchunks.server.chunkio;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import javax.annotation.Nullable;
@@ -107,8 +108,7 @@ public class IONbtReader {
         ((ServerHeightMap) hmap).readData(nbt.getByteArray("OpacityIndex"));
     }
 
-    @Nullable
-    static Cube readCubeAsyncPart(Chunk column, final int cubeX, final int cubeY, final int cubeZ, NBTTagCompound nbt) {
+    static Cube readCube(Chunk column, final int cubeX, final int cubeY, final int cubeZ, NBTTagCompound nbt) throws IOException {
         if (column.xPosition != cubeX || column.zPosition != cubeZ) {
             throw new IllegalArgumentException(
                 String.format(
@@ -119,86 +119,62 @@ public class IONbtReader {
                     cubeY,
                     cubeZ));
         }
+
         World world = column.worldObj;
         NBTTagCompound level = nbt.getCompoundTag("Level");
-        Cube cube = readBaseCube(column, cubeX, cubeY, cubeZ, level, world);
-        if (cube == null) {
-            return null;
-        }
-        readBiomes(cube, level);
-        readBlocks(level, world, cube);
 
-        return cube;
-    }
-
-    static void readCubeSyncPart(Cube cube, World world, NBTTagCompound nbt) {
-        // a hack so that the Column won't try to get cube from CubeCache/CubeProvider.
-        cube.getColumn()
-            .preCacheCube(cube);
-        NBTTagCompound level = nbt.getCompoundTag("Level");
-        readEntities(level, world, cube);
-        readTileEntities(level, world, cube);
-        readScheduledBlockTicks(level, world);
-        readLightingInfo(cube, level, world);
-        cube.onCubeLoad(); // its exactly the same as on disk so its not modified
-    }
-
-    @Nullable
-    private static Cube readBaseCube(Chunk column, int cubeX, int cubeY, int cubeZ, NBTTagCompound nbt, World world) {// check
-                                                                                                                      // the
-                                                                                                                      // version
-                                                                                                                      // number
-        byte version = nbt.getByte("v");
+        // check the version number
+        byte version = level.getByte("v");
         if (version != 1) {
             throw new IllegalArgumentException(
                 String.format("Cube at CubePos:(%d, %d, %d), has wrong version! %d", cubeX, cubeY, cubeZ, version));
         }
 
         // check the coordinates
-        int xCheck = nbt.getInteger("x");
-        int yCheck = nbt.getInteger("y");
-        int zCheck = nbt.getInteger("z");
-        if (xCheck != cubeX || yCheck != cubeY || zCheck != cubeZ) {
-            CubicChunks.LOGGER.error(
-                String.format(
-                    "Cube is corrupted! Expected (%d,%d,%d) but got (%d,%d,%d). Cube will be regenerated.",
-                    cubeX,
-                    cubeY,
-                    cubeZ,
-                    xCheck,
-                    yCheck,
-                    zCheck));
-            return null;
-        }
+        int xCheck = level.getInteger("x");
+        int yCheck = level.getInteger("y");
+        int zCheck = level.getInteger("z");
 
-        // check against column
-        assert cubeX == column.xPosition && cubeZ == column.zPosition : String.format(
-            "Cube is corrupted! Cube (%d,%d,%d) does not match column (%d,%d).",
-            cubeX,
-            cubeY,
-            cubeZ,
-            column.xPosition,
-            column.zPosition);
+        if (xCheck != cubeX || yCheck != cubeY || zCheck != cubeZ) {
+            throw new IOException(String.format(
+                "Cube is corrupted! Expected (%d,%d,%d) but got (%d,%d,%d). Cube will be regenerated.",
+                cubeX,
+                cubeY,
+                cubeZ,
+                xCheck,
+                yCheck,
+                zCheck));
+        }
 
         // build the cube
         final Cube cube = new Cube(column, cubeY);
 
         // set the worldgen stage
-        cube.setPopulated(nbt.getBoolean("populated"));
-        cube.setSurfaceTracked(nbt.getBoolean("isSurfaceTracked")); // previous versions will get their surface tracking
-                                                                    // redone. This is intended
-        cube.setFullyPopulated(nbt.getBoolean("fullyPopulated"));
+        cube.setPopulated(level.getBoolean("populated"));
+
+        // previous versions will get their surface tracking redone. This is intended
+        cube.setSurfaceTracked(level.getBoolean("isSurfaceTracked"));
+        cube.setFullyPopulated(level.getBoolean("fullyPopulated"));
 
         // this status will get unset again in readLightingInfo() if the lighting engine is changed (LightingInfoType).
-        cube.setInitialLightingDone(nbt.getBoolean("initLightDone"));
+        cube.setInitialLightingDone(level.getBoolean("initLightDone"));
 
         // if (cube.getCapabilities() != null && nbt.hasKey("ForgeCaps")) {
         // cube.getCapabilities().deserializeNBT(nbt.getCompoundTag("ForgeCaps"));
         // }
+
+        readBiomes(cube, level);
+        readBlocks(level, world, cube);
+        readEntities(level, world, cube);
+        readTileEntities(level, world, cube);
+        readScheduledBlockTicks(level, world);
+        readLightingInfo(cube, level, world);
+
+        cube.getColumn().preCacheCube(cube);
+
         return cube;
     }
 
-    @SuppressWarnings("deprecation")
     private static void readBlocks(NBTTagCompound nbt, World world, Cube cube) {
         boolean isEmpty = !nbt.hasKey("Sections");// is this an empty cube?
         if (!isEmpty) {

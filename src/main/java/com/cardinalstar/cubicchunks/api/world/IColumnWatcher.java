@@ -12,11 +12,11 @@ public interface IColumnWatcher {
 
     boolean containsPlayer(EntityPlayerMP playerMP);
 
-    Chunk getChunk();
+    Chunk getColumn();
 
     ChunkCoordIntPair getPos();
 
-    void IncreaseInhabitedTime();
+    void increaseInhabitedTime();
 
     void blockChanged(int x, int y, int z);
 
