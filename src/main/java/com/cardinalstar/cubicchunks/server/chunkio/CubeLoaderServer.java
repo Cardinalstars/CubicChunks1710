@@ -169,22 +169,17 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
         if (effort == Requirement.GET_CACHED) return null;
 
-        boolean created = false;
-
         if (cubeInfo == null) {
             cubes.put(cubeInfo = new CubeInfo(x, y, z));
-
-            created = true;
         }
 
-        if (cubeInfo.initialize(effort)) {
-            return cubeInfo.cube;
-        } else {
-            // We just created the cube and we couldn't load it to the requested level, unload it immediately because
-            // it can't be used.
-            if (created) unloadCube(x, y, z);
-            return null;
+        boolean success = cubeInfo.initialize(effort);
+
+        if (cubeInfo.cube == null) {
+            cubes.remove(cubeInfo);
         }
+
+        return success ? cubeInfo.cube : null;
     }
 
     @Override
@@ -270,9 +265,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
     }
 
     private void saveCube(CubeInfo cube) {
-        // Cube hasn't been generated, so we don't want to save it.
-        // Cubes on disk must have been generated.
-        if (cube.initLevel == CubeLoaderServer.CubeInitLevel.None) return;
+        if (cube.cube == null) return;
 
         // NOTE: this function blocks the world thread, so make it fast
 
@@ -285,12 +278,16 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
     }
 
     public void doGC() {
+        var persistentChunks = ForgeChunkManager.getPersistentChunksFor(world);
+
         List<CubePos> pendingCubeUnloads = new ArrayList<>();
 
         for (CubeInfo cubeInfo : cubes) {
             Cube cube = cubeInfo.cube;
 
             if (cube == null) continue;
+
+            if (persistentChunks.containsKey(cube.getColumn().getChunkCoordIntPair())) continue;
 
             if (cube.getTickets().canUnload()) {
                 pendingCubeUnloads.add(cubeInfo.pos);
@@ -302,8 +299,6 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         }
 
         List<ColumnInfo> pendingColumnUnloads = new ArrayList<>();
-
-        var persistentChunks = ForgeChunkManager.getPersistentChunksFor(world);
 
         for (ColumnInfo columnInfo : columns) {
             Chunk column = columnInfo.column;
@@ -510,7 +505,13 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
         public ColumnInfo column;
 
-        public CubeInitLevel initLevel = CubeInitLevel.None;
+        private CubeSource source = CubeSource.None;
+
+        enum CubeSource {
+            None,
+            Disk,
+            Generated
+        }
 
         public CubeInfo(int x, int y, int z) {
             this.pos = new CubePos(x, y, z);
@@ -536,6 +537,8 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
                 return cube != null;
             }
 
+            ensureColumn();
+
             // If we haven't already loaded the NBT tag from disk, try to load it
             if (tag == null) {
                 try {
@@ -551,15 +554,14 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             }
 
             // If we loaded the NBT from disk successfully and we don't already have a cube loaded, try to load it
-            if (tag != null && cube == null) {
+            if (tag != null && source == CubeSource.None) {
                 try {
                     loadCube();
                 } catch (IOException e) {
                     CubicChunks.LOGGER.error("Could not load cube into world (x={},y={},z={})", getX(), getY(), getZ(), e);
                 }
 
-                // If we only wanted to load it but failed, bail
-                if (effort == Requirement.LOAD && cube == null) return false;
+                if (effort == Requirement.LOAD) return cube != null;
             }
 
             CubeInitLevel requestedInitLevel = CubeInitLevel.fromRequirement(effort);
@@ -599,7 +601,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
             this.cube = IONbtReader.readCube(column.column, getX(), getY(), getZ(), tag);
 
-            initLevel = cube.getInitState();
+            source = CubeSource.Disk;
 
             onCubeLoaded();
 
@@ -611,7 +613,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         }
 
         public boolean isInitedTo(CubeInitLevel initLevel) {
-            return this.initLevel.ordinal() >= initLevel.ordinal();
+            return cube != null && cube.getInitState().ordinal() >= initLevel.ordinal();
         }
 
         private boolean generate(CubeInitLevel requestedInitLevel) {
@@ -619,7 +621,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             if (isInitedTo(requestedInitLevel)) return true;
 
             // If this cube hasn't been generated at all (i.e. it was never on the disk), generate it
-            if (this.initLevel == CubeInitLevel.None) {
+            if (source == CubeSource.None) {
                 ensureColumn();
 
                 Optional<Cube> generated = generator.tryGenerateCube(column.column, pos.getX(), pos.getY(), pos.getZ(), true);
@@ -627,27 +629,28 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
                 if (!generated.isPresent()) return false;
 
                 cube = generated.get();
-
-                this.initLevel = CubeInitLevel.Generated;
+                source = CubeSource.Generated;
 
                 onCubeLoaded();
 
                 saveCube(this);
             }
 
+            boolean generated = cube.getInitState() == CubeInitLevel.Generated;
+
             // We were only asked to generate it and we did so successfully
-            if (requestedInitLevel == CubeInitLevel.Generated) return true;
+            if (requestedInitLevel == CubeInitLevel.Generated) return generated;
 
             // If this cube hasn't been populated at all, generate the required cubes and populate this cube.
-            if (this.initLevel == CubeInitLevel.Generated) {
+            if (generated) {
                 generator.populate(CubeLoaderServer.this, cube);
-
-                this.initLevel = CubeInitLevel.Populated;
             }
 
-            if (requestedInitLevel == CubeInitLevel.Populated) return true;
+            boolean populated = cube.getInitState() == CubeInitLevel.Populated;
 
-            if (this.initLevel == CubeInitLevel.Populated) {
+            if (requestedInitLevel == CubeInitLevel.Populated) return populated;
+
+            if (populated) {
                 if (!cube.isInitialLightingDone() || !cube.isSurfaceTracked()) {
                     ((ICubicWorldInternal) world).getLightingManager().doFirstLight(cube);
                     cube.setInitialLightingDone(true);
@@ -656,11 +659,9 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
                 if (!cube.isSurfaceTracked()) {
                     cube.trackSurface();
                 }
-
-                this.initLevel = CubeInitLevel.Lit;
             }
 
-            return true;
+            return cube.getInitState() == CubeInitLevel.Lit;
         }
 
         public void onCubeLoaded() {

@@ -91,7 +91,15 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
     public void onCubeLoaded(Cube c) {
         if (this.invalid) return;
-        if (c.getInitState() != CubeLoaderServer.CubeInitLevel.Lit) return;
+        if (c.getInitState() != CubeLoaderServer.CubeInitLevel.Lit) {
+            if (request != null && request.isCompleted()) {
+                request = cubeCache.loadCubeEagerly(
+                    cubePos.getX(), cubePos.getY(), cubePos.getZ(),
+                    ICubeProviderServer.Requirement.LIGHT);
+            }
+
+            return;
+        }
         this.cube = c;
         this.cube.getTickets().add(this);
         this.request = null;
@@ -192,15 +200,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     public boolean sendToPlayers() {
         if (this.sentToPlayers) return true;
 
-        if (isWaitingForCube()) {
-            if (request == null || request.isCompleted()) {
-                request = cubeCache.loadCubeEagerly(
-                    cubePos.getX(), cubePos.getY(), cubePos.getZ(),
-                    ICubeProviderServer.Requirement.LIGHT);
-            }
-
-            return false;
-        }
+        if (isWaitingForCube()) return false;
 
         // can't send cubes before columns
         if (isWaitingForColumn()) return false;
