@@ -20,10 +20,18 @@
  */
 package com.cardinalstar.cubicchunks.api.util;
 
+import java.util.Iterator;
+
+import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import org.joml.Vector3i;
+import org.joml.Vector3ic;
+
+import com.google.common.collect.AbstractIterator;
+
 @ParametersAreNonnullByDefault
-public class Box {
+public class Box implements Iterable<Vector3ic> {
 
     protected int x1, y1, z1;
     protected int x2, y2, z2;
@@ -58,6 +66,39 @@ public class Box {
             }
         }
         return true;
+    }
+
+    @Override
+    public @Nonnull Iterator<Vector3ic> iterator() {
+        return new AbstractIterator<>() {
+
+            private final Vector3i v = new Vector3i();
+            private int i = 0;
+
+            private final int width = x2 - x1;
+            private final int height = y2 - y1;
+            private final int length = z2 - z1;
+            private final int count = width * height * length;
+
+            @Override
+            protected Vector3ic computeNext() {
+                if (i >= count) {
+                    this.endOfData();
+
+                    return null;
+                }
+
+                int x = i % width;
+                int y = i / width % height;
+                int z = i / (width * height);
+
+                i++;
+
+                v.set(x, y, z);
+
+                return v;
+            }
+        };
     }
 
     public Box add(Box o) {

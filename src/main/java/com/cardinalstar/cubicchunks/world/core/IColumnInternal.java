@@ -39,6 +39,8 @@ public interface IColumnInternal extends IColumn {
 
     void addToStagingHeightmap(ICube cube);
 
+    void recalculateStagingHeightmap();
+
     /**
      * Returns Y coordinate of the top non-transparent block
      *

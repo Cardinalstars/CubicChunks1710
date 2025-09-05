@@ -80,6 +80,18 @@ public class StagingHeightMap implements IHeightMap {
         return (localZ << 4) | localX;
     }
 
+    public void recalculate() {
+        dirtyFlag.clear();
+
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                int idx = index(x, z);
+
+                heightmap[idx] = computeHeightMap(x, z);
+            }
+        }
+    }
+
     @Override
     public int getTopBlockY(int localX, int localZ) {
         int idx = index(localX, localZ);

@@ -57,9 +57,6 @@ public interface ICubeProviderServer extends ICubeProvider {
     @Nullable
     ICube getCube(int cubeX, int cubeY, int cubeZ, Requirement req);
 
-    @Nullable
-    ICube getCubeNow(int cubeX, int cubeY, int cubeZ, ICubeProviderServer.Requirement req);
-
     /**
      * Returns true if the specified cube has been already generated (either loaded or saved
      * on disk).
@@ -80,11 +77,14 @@ public interface ICubeProviderServer extends ICubeProvider {
      */
     enum Requirement {
         // Warning, don't modify order of these constants - ordinals are used in comparisons
-        // TODO write a custom compare method
         /**
          * Only retrieve the cube/column if it is already cached
          */
         GET_CACHED,
+        /**
+         * Load the NBT from disk, but don't load the chunk into the world at all
+         */
+        NBT,
         /**
          * Load the cube/column from disk, if necessary
          */
@@ -100,6 +100,10 @@ public interface ICubeProviderServer extends ICubeProvider {
         /**
          * Generate lighting information for the cube, if necessary
          */
-        LIGHT
+        LIGHT;
+
+        public boolean contains(Requirement request) {
+            return request.ordinal() <= this.ordinal();
+        }
     }
 }
