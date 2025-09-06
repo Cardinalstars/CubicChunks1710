@@ -20,52 +20,13 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
-import static com.cardinalstar.cubicchunks.util.ReflectionUtil.cast;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.ParametersAreNonnullByDefault;
-
-import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityTracker;
-import net.minecraft.entity.effect.EntityLightningBolt;
-import net.minecraft.init.Blocks;
-import net.minecraft.server.management.PlayerManager;
-import net.minecraft.world.ChunkCoordIntPair;
-import net.minecraft.world.NextTickListEntry;
-import net.minecraft.world.SpawnerAnimals;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.BiomeGenBase;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.minecraftforge.common.ForgeChunkManager;
-
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
-import com.cardinalstar.cubicchunks.api.IntRange;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.XZMap;
 import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
-import com.cardinalstar.cubicchunks.lighting.LightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
@@ -74,10 +35,57 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickList;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
 import com.cardinalstar.cubicchunks.world.CubeSpawnerAnimals;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.ISpawnerAnimals;
 import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
+import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityTracker;
+import net.minecraft.entity.effect.EntityLightningBolt;
+import net.minecraft.init.Blocks;
+import net.minecraft.profiler.Profiler;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.management.PlayerManager;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.NextTickListEntry;
+import net.minecraft.world.SpawnerAnimals;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.WorldSettings;
+import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+import net.minecraft.world.chunk.storage.IChunkLoader;
+import net.minecraft.world.gen.ChunkProviderServer;
+import net.minecraft.world.storage.ISaveHandler;
+import net.minecraftforge.common.ForgeChunkManager;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Implements;
+import org.spongepowered.asm.mixin.Interface;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
+import static com.cardinalstar.cubicchunks.util.ReflectionUtil.cast;
 
 /**
  * Implementation of {@link ICubicWorldServer} interface.
@@ -101,59 +109,100 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     private EntityTracker theEntityTracker;
     @Shadow
     public boolean levelSaving; // TODO DO WE NEED TO NEGATE THIS?
-    private Map<Chunk, Set<ICube>> forcedChunksCubes;
-    private XYZMap<ICube> forcedCubes;
-    private XZMap<IColumn> forcedColumns;
 
+    @Unique
+    private Map<Chunk, Set<ICube>> forcedChunksCubes;
+    @Unique
+    private XYZMap<ICube> forcedCubes;
+    @Unique
+    private XZMap<IColumn> forcedColumns;
+    @Unique
     private SpawnCubes spawnArea;
+    @Unique
     private boolean runningCompatibilityGenerator;
     // private VanillaNetworkHandler vanillaNetworkHandler;
 
     @Shadow
     public abstract boolean addWeatherEffect(Entity entityIn);
-
     @Shadow
     @Mutable
     private Set<NextTickListEntry> pendingTickListEntriesHashSet;
     @Shadow
     @Mutable
     private List<NextTickListEntry> pendingTickListEntriesThisTick;
-
     @Shadow
     public abstract PlayerManager getPlayerManager();
 
-    // @Shadow protected abstract boolean canAddEntity(Entity entityIn);
 
-    @Override
-    public void initCubicWorldServerPart1(IntRange heightRange, IntRange generationRange) {
-        super.initCubicWorld(heightRange, generationRange);
-        this.isCubicWorld = true;
-        this.chunkProvider = new CubeProviderServer(
-            (WorldServer) (Object) this,
-            ((ICubicWorldProvider) this.provider).createCubeGenerator());
-        this.lightingManager = new LightingManager((World) (Object) this);
-    }
-
-    @Override
-    public void initCubicWorldServerPart2() {
-        ISpawnerAnimals spawner = new CubeSpawnerAnimals();
-        ISpawnerAnimals.Handler spawnHandler = cast(animalSpawner);
-        spawnHandler.setEntitySpawner(spawner);
-
-        // this.vanillaNetworkHandler = new VanillaNetworkHandler((WorldServer) (Object) this);
-        this.thePlayerManager = new CubicPlayerManager((WorldServer) (Object) this);
-
+    @Inject(method = "<init>", at = @At(value = "TAIL"))
+    public void initCubicWorldServer(MinecraftServer p_i45284_1_, ISaveHandler p_i45284_2_, String p_i45284_3_,
+        int p_i45284_4_, WorldSettings p_i45284_5_, Profiler p_i45284_6_, CallbackInfo ci) {
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>(0.75f, 64 * 1024);
         this.forcedColumns = new XZMap<>(0.75f, 2048);
+    }
 
+    @Redirect(
+        method = "<init>", // constructor
+        at = @At(value = "NEW", target = "net/minecraft/world/SpawnerAnimals"))
+    private SpawnerAnimals redirectSpawnerAnimals() {
+        SpawnerAnimals animalsSpawner = new SpawnerAnimals();
+        ISpawnerAnimals spawner = new CubeSpawnerAnimals();
+        ISpawnerAnimals.Handler spawnHandler = cast(animalsSpawner);
+        spawnHandler.setEntitySpawner(spawner);
+        return animalsSpawner;
+    }
+
+    @Redirect(
+        method = "<init>",
+        at = @At(
+            value = "NEW",
+            target = "(Lnet/minecraft/world/WorldServer;)Lnet/minecraft/server/management/PlayerManager;"))
+    private PlayerManager redirectPlayerManagerInit(WorldServer server) {
+        return new CubicPlayerManager(server);
+    }
+
+    @Redirect(
+        method = "createChunkProvider",
+        at = @At(value = "NEW", target = "net/minecraft/world/gen/ChunkProviderServer"))
+    private ChunkProviderServer redirectChunkProviderServer(WorldServer world, IChunkLoader chunkLoader,
+        IChunkProvider chunkGenerator) {
+        if (((ICubicWorld) world).isCubicWorld()) {
+            return new CubeProviderServer(
+                world,
+                chunkLoader,
+                ((ICubicWorldProvider) world.provider).createCubeGenerator());
+        }
+        return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
+    }
+
+    // The following two mixins are needed for different reasons.
+    //
+    // The first one, initTickContainers is needed for the chunkLoader to check if there are ticks to write. (No ticks are actually inserted into
+    // pendingTickListEntriesThisTick upon inspection, but it's needed to check if there are for saving the chunks).
+    @Definition(id = "createSpawnPosition", method = "Lnet/minecraft/world/WorldServer;createSpawnPosition(Lnet/minecraft/world/WorldSettings;)V")
+    @Expression("this.createSpawnPosition(?)")
+    @Inject(
+        method = "initialize",
+        at = @At(value = "MIXINEXTRAS:EXPRESSION")
+    )
+    public void initTickContainers(WorldSettings p_72963_1_, CallbackInfo ci)
+    {
         this.pendingTickListEntriesHashSet = new CubeSplitTickSet();
         this.pendingTickListEntriesThisTick = new CubeSplitTickList();
     }
 
-    // @Override public VanillaNetworkHandler getVanillaNetworkHandler() {
-    // return vanillaNetworkHandler;
-    // }
+    // We are then recreating the pendingTickListEntriesThisTick because it's empty always.
+    // This is valid because whenever it's called it's ALWAYS empty. It's also expected to be empty so it's all fine.
+    @Redirect(
+        method = "<init>",
+        at = @At(value = "NEW",
+            target = "()Ljava/util/ArrayList;",
+            ordinal = 0)
+    )
+    private ArrayList<NextTickListEntry> redirectPendingTickListArrayList() {
+        return new CubeSplitTickList();
+    }
 
     @Override
     public void setSpawnArea(SpawnCubes spawn) {

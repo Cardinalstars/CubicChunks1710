@@ -37,7 +37,7 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 /**
  * See {@link CubeSplitTickSet}
  */
-public class CubeSplitTickList extends AbstractList<NextTickListEntry> {
+public class CubeSplitTickList extends ArrayList<NextTickListEntry> {
 
     // byCube Lists are not ordered, it's only a list to allow the unlikely case of duplicates
     private final Map<CubePos, List<NextTickListEntry>> byCube = new HashMap<>();

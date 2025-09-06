@@ -207,7 +207,7 @@ public interface ICubicWorld extends IMinMaxHeight {
      * @param end   end cube position
      * @param test  the test to apply
      * @return false if any invokation of the given predicate returns false, true otherwise
-     * 
+     *
      */
     boolean testForCubes(CubePos start, CubePos end, Predicate<? super ICube> test);
 
@@ -244,4 +244,6 @@ public interface ICubicWorld extends IMinMaxHeight {
         BLOCKING_MOVEMENT,
         OPAQUE
     }
+
+    // void initCubicWorld(IntRange heightRange, IntRange generationRange);
 }
