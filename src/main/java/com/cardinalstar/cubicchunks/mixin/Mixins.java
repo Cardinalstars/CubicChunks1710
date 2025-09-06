@@ -75,6 +75,11 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Redirecting some things to use Y values.").addCommonMixins("common.MixinWorld_Tick")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+    MIXIN_MAP_GEN(
+        new MixinBuilder("Misc patches to pass Worlds around to various map gen objects")
+            .addCommonMixins("common.MixinChunkProviderHell", "common.MixinMapGenBase")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
 
     // ENTITY
     MIXIN_ENTITY_DEATH_FIX(new MixinBuilder("Replace -64 constant, to avoid killing entities below y=-64")
