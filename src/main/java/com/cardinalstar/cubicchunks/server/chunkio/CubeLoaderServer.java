@@ -45,7 +45,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
     private final ICubeGenerator generator;
     private final CubeLoaderCallback callback;
 
-    private final XYZMap<CubeInfo> cubes = new XYZMap<>(0.75f, 2048);
+    private final XYZMap<CubeInfo> cubes = new XYZMap<>();
     private final XZMap<ColumnInfo> columns = new XZMap<>();
 
     private final LinkedTransferQueue<Pair<ChunkCoordIntPair, NBTTagCompound>> columnQueue = new LinkedTransferQueue<>();
