@@ -190,11 +190,19 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Override
     public CubeSplitTickSet getScheduledTicks() {
+        if (!(pendingTickListEntriesHashSet instanceof CubeSplitTickSet))
+        {
+            pendingTickListEntriesHashSet = new CubeSplitTickSet();
+        }
         return (CubeSplitTickSet) pendingTickListEntriesHashSet;
     }
 
     @Override
     public CubeSplitTickList getThisTickScheduledTicks() {
+        if (!(pendingTickListEntriesThisTick instanceof CubeSplitTickSet))
+        {
+            pendingTickListEntriesThisTick = new CubeSplitTickList();
+        }
         return (CubeSplitTickList) pendingTickListEntriesThisTick;
     }
 

@@ -40,10 +40,7 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubeBlockChange;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.network.PacketUnloadCube;
-<<<<<<< HEAD
-=======
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
->>>>>>> master
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
