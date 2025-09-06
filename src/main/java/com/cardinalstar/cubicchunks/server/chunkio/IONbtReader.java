@@ -190,7 +190,7 @@ public class IONbtReader {
                 ebs.setBlockMSBArray(new NibbleArray(nbt.getByteArray("BlocksMSB"), 4));
             }
 
-            ebs.setBlockMetadataArray(new NibbleArray(nbt.getByteArray("DataMeta"), 4));
+            ebs.setBlockMetadataArray(new NibbleArray(nbt.getByteArray("BlocksMeta"), 4));
 
             ebs.setBlocklightArray(new NibbleArray(nbt.getByteArray("BlockLight"), 4));
 
