@@ -45,6 +45,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.common.ForgeChunkManager;
 
@@ -120,11 +121,10 @@ public class CubeProviderServer extends ChunkProviderServer
 
     private final ObjectLinkedOpenHashSet<CubeLoaderCallback> callbacks = new ObjectLinkedOpenHashSet<>();
 
-    public CubeProviderServer(WorldServer worldServer, ICubeGenerator cubeGen) {
+    public CubeProviderServer(WorldServer worldServer, IChunkLoader chunkLoader, ICubeGenerator cubeGen) {
         super(
             worldServer,
-            worldServer.getSaveHandler()
-                .getChunkLoader(worldServer.provider), // forge uses this in
+            chunkLoader, // forge uses this in
             worldServer.provider.createChunkGenerator()); // let's create the chunk generator, for now the vanilla one
                                                           // may be enough
 
@@ -546,6 +546,7 @@ public class CubeProviderServer extends ChunkProviderServer
             this.pos = new CubePos(cubeX, cubeY, cubeZ);
             this.effort = effort;
         }
+
 
         public Requirement getEffort() {
             return effort;
