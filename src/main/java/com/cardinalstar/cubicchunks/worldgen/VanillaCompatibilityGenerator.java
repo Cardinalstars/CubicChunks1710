@@ -56,6 +56,7 @@ import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
+import com.cardinalstar.cubicchunks.world.cube.ChunkArrayBlockView;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import cpw.mods.fml.common.IWorldGenerator;
 import cpw.mods.fml.common.registry.GameRegistry;
@@ -184,7 +185,7 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     public void generateColumn(Chunk column) {
 
         this.biomes = this.world.getWorldChunkManager().loadBlockGeneratorData(
-                this.biomes,
+            this.biomes,
             column.xPosition * 16, column.zPosition * 16, 16, 16);
 
         byte[] abyte = column.getBiomeArray();
@@ -215,8 +216,10 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             Random rand = new Random(world.getSeed());
             rand.setSeed(rand.nextInt() ^ cubeX);
             rand.setSeed(rand.nextInt() ^ cubeZ);
+
             Block[] blocks = new Block[4096];
             byte[] blockMeta = new byte[4096];
+
             if (cubeY < 0 || cubeY >= worldHeightCubes) {
                 // Fill with bottom block
                 for (int y = 0; y < Cube.SIZE; y++) {
@@ -276,7 +279,13 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 Block[] compatBlocks = ((IColumnInternal) lastChunk).getCompatGenerationBlockArray();
                 byte[] compatBlockMeta = ((IColumnInternal) lastChunk).getCompatGenerationByteArray();
                 if (compatBlocks != null && compatBlockMeta != null) {
-                    return new Cube(chunk, cubeY, compatBlocks, compatBlockMeta, true);
+                    return new Cube(
+                        chunk, cubeY,
+                        new ChunkArrayBlockView(
+                            16, worldHeightCubes * 16, 16,
+                            cubeY, 16,
+                            i -> compatBlocks[i],
+                            i -> compatBlockMeta[i]));
                 }
                 ExtendedBlockStorage storage = lastChunk.getBlockStorageArray()[cubeY];
                 if (((ICubicWorld) world).getMaxHeight() == 16) {
@@ -326,7 +335,12 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 }
             }
 
-            return new Cube(chunk, cubeY, blocks, blockMeta, false);
+            return new Cube(
+                chunk, cubeY,
+                new ChunkArrayBlockView(
+                    16, 16, 16,
+                    i -> blocks[i],
+                    i -> blockMeta[i]));
         } finally {
             WorldgenHangWatchdog.endWorldGen();
         }

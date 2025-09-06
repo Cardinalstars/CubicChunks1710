@@ -66,6 +66,7 @@ import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubeWatcher;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.Coords;
@@ -251,44 +252,23 @@ public class Cube implements ICube {
      * Constructor to be used from subclasses to provide all field values
      *
      */
-    public Cube(Chunk column, int cubeY, Block[] blocks, byte[] meta, boolean builtWithChunkData) {
+    public Cube(Chunk column, int cubeY, IBlockView blockSource) {
         this(column, cubeY);
-        boolean flag = !world.provider.hasNoSky;
-        if (!builtWithChunkData) {
-            for (int y = Cube.SIZE - 1; y >= 0; y--) {
+
+        boolean hasNoSky = !world.provider.hasNoSky;
+
+        for (int x = 0; x < Cube.SIZE; x++) {
+            for (int y = 0; y < Cube.SIZE; y++) {
                 for (int z = 0; z < Cube.SIZE; z++) {
-                    for (int x = 0; x < Cube.SIZE; x++) {
-                        int blockIter = x << 8 | z << 4 | y;
-                        Block block = blocks[blockIter];
+                    Block block = blockSource.getBlock(x, y, z);
 
-                        if (block != null && block != Blocks.air) {
-
-                            if (this.storage == null) {
-                                this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), flag);
-                            }
-
-                            this.storage.func_150818_a(x, y, z, block);
-                            this.storage.setExtBlockMetadata(x, y, z, meta[blockIter]);
+                    if (block != Blocks.air) {
+                        if (this.storage == null) {
+                            this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), hasNoSky);
                         }
-                    }
-                }
-            }
-        } else {
-            for (int y = Cube.SIZE - 1; y >= 0; y--) {
-                for (int z = 0; z < Cube.SIZE; z++) {
-                    for (int x = 0; x < Cube.SIZE; x++) {
-                        int blockIter = x << 12 | z << 8 | (y + cubeY * 16);
-                        Block block = blocks[blockIter];
 
-                        if (block != null && block != Blocks.air) {
-
-                            if (this.storage == null) {
-                                this.storage = new ExtendedBlockStorage(cubeToMinBlock(cubeY), flag);
-                            }
-
-                            this.storage.func_150818_a(x, y, z, block);
-                            this.storage.setExtBlockMetadata(x, y, z, meta[blockIter]);
-                        }
+                        this.storage.func_150818_a(x, y, z, block);
+                        this.storage.setExtBlockMetadata(x, y, z, blockSource.getBlockMetadata(x, y, z));
                     }
                 }
             }
@@ -794,7 +774,7 @@ public class Cube implements ICube {
 
     /**
      * Mark this cube as populated. This means that this cube was passed as argument to
-     * {@link com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator#populate(ICube)}. Check there for more
+     * {@link com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator#populate(ICubeLoader, Cube)}. Check there for more
      * information regarding
      * population.
      *
@@ -812,7 +792,8 @@ public class Cube implements ICube {
 
     /**
      * Mark this cube as fully populated. This means that any cube potentially writing to this cube was passed as an
-     * argument to {@link ICubeGenerator#populate(ICube)}. Check there for more information regarding population
+     * argument to {@link ICubeGenerator#populate(ICubeLoader, Cube)}. Check there for more information regarding
+     * population.
      *
      * @param populated whether this cube was fully populated
      */
