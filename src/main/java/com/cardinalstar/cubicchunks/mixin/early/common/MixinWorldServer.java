@@ -142,7 +142,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     private void initCubicWorldServer(WorldSettings p_72963_1_, CallbackInfo ci) {
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>(0.75f, 64 * 1024);
-        this.forcedColumns = new XZMap<>(0.75f, 2048);
+        this.forcedColumns = new XZMap<>();
         cubeTicks = new CubeSplitTicks();
     }
 

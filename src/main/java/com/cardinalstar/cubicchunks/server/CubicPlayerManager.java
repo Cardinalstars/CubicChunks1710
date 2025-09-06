@@ -107,7 +107,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
      * Exists for compatibility with vanilla and to send ColumnLoad/Unload packets to clients.
      * Columns cannot be managed by client because they have separate data, like heightmap and biome array.
      */
-    final XZMap<ColumnWatcher> columnWatchers = new XZMap<>(0.7f, 25 * 25);
+    final XZMap<ColumnWatcher> columnWatchers = new XZMap<>();
 
     /**
      * All cubeWatchers that have pending block updates to send.
