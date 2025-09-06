@@ -183,13 +183,9 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     @Override
     public void generateColumn(Chunk column) {
 
-        this.biomes = this.world.getWorldChunkManager()
-            .getBiomesForGeneration(
+        this.biomes = this.world.getWorldChunkManager().loadBlockGeneratorData(
                 this.biomes,
-                Coords.cubeToMinBlock(column.xPosition),
-                Coords.cubeToMinBlock(column.zPosition),
-                Cube.SIZE,
-                Cube.SIZE);
+            column.xPosition * 16, column.zPosition * 16, 16, 16);
 
         byte[] abyte = column.getBiomeArray();
         for (int i = 0; i < abyte.length; ++i) {
