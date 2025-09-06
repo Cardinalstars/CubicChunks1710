@@ -32,8 +32,7 @@ import com.cardinalstar.cubicchunks.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
 import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.util.world.CubeSplitTickList;
-import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
+import com.cardinalstar.cubicchunks.util.world.CubeSplitTicks;
 import com.cardinalstar.cubicchunks.world.CubeSpawnerAnimals;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
@@ -42,6 +41,8 @@ import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.llamalad7.mixinextras.expression.Definition;
 import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
@@ -83,6 +84,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
 import static com.cardinalstar.cubicchunks.util.ReflectionUtil.cast;
@@ -133,6 +135,9 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     @Shadow
     public abstract PlayerManager getPlayerManager();
 
+    @Unique
+    private CubeSplitTicks cubeTicks;
+
 
     @Inject(method = "<init>", at = @At(value = "TAIL"))
     public void initCubicWorldServer(MinecraftServer p_i45284_1_, ISaveHandler p_i45284_2_, String p_i45284_3_,
@@ -140,6 +145,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>(0.75f, 64 * 1024);
         this.forcedColumns = new XZMap<>(0.75f, 2048);
+        cubeTicks = new CubeSplitTicks();
     }
 
     @Redirect(
@@ -176,33 +182,18 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
     }
 
-    // The following two mixins are needed for different reasons.
-    //
-    // The first one, initTickContainers is needed for the chunkLoader to check if there are ticks to write. (No ticks are actually inserted into
-    // pendingTickListEntriesThisTick upon inspection, but it's needed to check if there are for saving the chunks).
-    @Definition(id = "createSpawnPosition", method = "Lnet/minecraft/world/WorldServer;createSpawnPosition(Lnet/minecraft/world/WorldSettings;)V")
-    @Expression("this.createSpawnPosition(?)")
-    @Inject(
-        method = "initialize",
-        at = @At(value = "MIXINEXTRAS:EXPRESSION")
-    )
-    public void initTickContainers(WorldSettings p_72963_1_, CallbackInfo ci)
-    {
-        this.pendingTickListEntriesHashSet = new CubeSplitTickSet();
-        this.pendingTickListEntriesThisTick = new CubeSplitTickList();
+    @WrapOperation(method = {"scheduleBlockUpdateWithPriority", "func_147446_b"}, at = @At(value = "INVOKE", target = "Ljava/util/TreeSet;add(Ljava/lang/Object;)Z", remap = false))
+    public boolean redirectAdd(TreeSet<NextTickListEntry> instance, Object o, Operation<Boolean> original) {
+        cubeTicks.add((NextTickListEntry)o);
+        return original.call(instance, o);
     }
 
-    // We are then recreating the pendingTickListEntriesThisTick because it's empty always.
-    // This is valid because whenever it's called it's ALWAYS empty. It's also expected to be empty so it's all fine.
-    @Redirect(
-        method = "<init>",
-        at = @At(value = "NEW",
-            target = "()Ljava/util/ArrayList;",
-            ordinal = 0)
-    )
-    private ArrayList<NextTickListEntry> redirectPendingTickListArrayList() {
-        return new CubeSplitTickList();
+    @WrapOperation(method = "tickUpdates", at = @At(value = "INVOKE", target = "Ljava/util/TreeSet;remove(Ljava/lang/Object;)Z", remap = false))
+    public boolean redirectRemove(TreeSet<NextTickListEntry> instance, Object o, Operation<Boolean> original) {
+        cubeTicks.remove((NextTickListEntry)o);
+        return original.call(instance, o);
     }
+
 
     @Override
     public void setSpawnArea(SpawnCubes spawn) {
@@ -215,13 +206,8 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     }
 
     @Override
-    public CubeSplitTickSet getScheduledTicks() {
-        return (CubeSplitTickSet) pendingTickListEntriesHashSet;
-    }
-
-    @Override
-    public CubeSplitTickList getThisTickScheduledTicks() {
-        return (CubeSplitTickList) pendingTickListEntriesThisTick;
+    public CubeSplitTicks getScheduledTicks() {
+        return cubeTicks;
     }
 
     @Override

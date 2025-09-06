@@ -29,6 +29,7 @@ import java.util.List;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompressedStreamTools;
@@ -318,12 +319,11 @@ class IONbtWriter {
         }
         WorldServer worldServer = cube.getWorld();
 
-        out.addAll(
-            ((ICubicWorldInternal.Server) worldServer).getScheduledTicks()
-                .getForCube(cube.getCoords()));
-        out.addAll(
-            ((ICubicWorldInternal.Server) worldServer).getThisTickScheduledTicks()
-                .getForCube(cube.getCoords()));
+        ObjectOpenHashSet<NextTickListEntry> ticks = ((ICubicWorldInternal.Server) worldServer).getScheduledTicks()
+            .getForCube(cube.getCoords());
+        if (ticks != null) {
+            out.addAll(ticks);
+        }
 
         return out;
     }

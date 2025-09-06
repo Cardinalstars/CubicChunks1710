@@ -22,6 +22,7 @@ package com.cardinalstar.cubicchunks.mixin.api;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.util.world.CubeSplitTicks;
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -32,8 +33,6 @@ import com.cardinalstar.cubicchunks.client.CubeProviderClient;
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
-import com.cardinalstar.cubicchunks.util.world.CubeSplitTickList;
-import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
@@ -106,9 +105,7 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
         XZMap<IColumn> getForcedColumns();
 
-        CubeSplitTickSet getScheduledTicks();
-
-        CubeSplitTickList getThisTickScheduledTicks();
+        CubeSplitTicks getScheduledTicks();
 
         SpawnCubes getSpawnArea();
 
