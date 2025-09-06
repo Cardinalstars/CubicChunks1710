@@ -366,7 +366,7 @@ public class CubeProviderServer extends ChunkProviderServer
 
             Cube cube = cubeLoader.getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
 
-            CubeLoaderServer.CubeInitLevel actual = cube == null ? null : cube.getInitLevel();
+            CubeLoaderServer.CubeInitLevel actual = cube == null ? CubeLoaderServer.CubeInitLevel.None : cube.getInitLevel();
             CubeLoaderServer.CubeInitLevel wanted = CubeLoaderServer.CubeInitLevel.fromRequirement(request.effort);
 
             if (actual.ordinal() < wanted.ordinal()) {
