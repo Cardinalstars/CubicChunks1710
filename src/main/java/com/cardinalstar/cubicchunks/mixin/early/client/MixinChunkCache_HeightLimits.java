@@ -47,6 +47,13 @@ public abstract class MixinChunkCache_HeightLimits {
         return ((ICubicWorld) worldObj).getMinHeight();
     }
 
+    @ModifyConstant(
+        method = "getSkyBlockTypeBrightness",
+        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, ordinal = 1))
+    private int getSkyBlockTypeBrightness_getMinHeight2(int orig) {
+        return ((ICubicWorld) worldObj).getMinHeight();
+    }
+
     @ModifyConstant(method = "getSkyBlockTypeBrightness", constant = @Constant(intValue = 0, ordinal = 0))
     private int getSkyBlockTypeBrightness_getMinHeightDefault(int orig) {
         return ((ICubicWorld) worldObj).getMinHeight();

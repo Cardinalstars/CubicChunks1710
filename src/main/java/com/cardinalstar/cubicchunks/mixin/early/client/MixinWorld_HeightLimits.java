@@ -41,7 +41,7 @@ public abstract class MixinWorld_HeightLimits implements ICubicWorld {
 
     @ModifyConstant(
         method = "getSkyBlockTypeBrightness",
-        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, intValue = 0, ordinal = 0))
+        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, ordinal = 0))
     private int getSkyBlockTypeBrightness_heightLimits_min(int original) {
         return getMinHeight();
     }
