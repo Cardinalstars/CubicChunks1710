@@ -138,10 +138,8 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     @Unique
     private CubeSplitTicks cubeTicks;
 
-
-    @Inject(method = "<init>", at = @At(value = "TAIL"))
-    public void initCubicWorldServer(MinecraftServer p_i45284_1_, ISaveHandler p_i45284_2_, String p_i45284_3_,
-        int p_i45284_4_, WorldSettings p_i45284_5_, Profiler p_i45284_6_, CallbackInfo ci) {
+    @Inject(method = "initialize", at = @At("HEAD"))
+    private void initCubicWorldServer(WorldSettings p_72963_1_, CallbackInfo ci) {
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>(0.75f, 64 * 1024);
         this.forcedColumns = new XZMap<>(0.75f, 2048);
