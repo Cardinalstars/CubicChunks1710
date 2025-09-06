@@ -165,52 +165,13 @@ class IONbtWriter {
         NBTTagCompound section = new NBTTagCompound();
         sectionList.appendTag(section);
         cubeNbt.setTag("Sections", sectionList);
-        byte[] abyte = new byte[Cube.SIZE * Cube.SIZE * Cube.SIZE];
-        NibbleArray data = new NibbleArray(new byte[2048], 4);
-        NibbleArray dataMeta = new NibbleArray(new byte[2048], 4);
-        NibbleArray add = null;
-        NibbleArray add2neid = null;
 
-        for (int i = 0; i < 4096; ++i) {
-            int x = i & 15;
-            int y = i >> 8 & 15;
-            int z = i >> 4 & 15;
-
-            @SuppressWarnings("deprecation")
-            int id = Block.getIdFromBlock(ebs.getBlockByExtId(x, y, z));
-            int meta = ebs.getExtBlockMetadata(x, y, z);
-
-            int in1 = (id >> 12) & 0xF;
-            int in2 = (id >> 16) & 0xF;
-
-            if (in1 != 0) {
-                if (add == null) {
-                    add = new NibbleArray(new byte[2048], 4);
-                }
-                add.set(x, y, z, in1);
-            }
-            if (in2 != 0) {
-                if (add2neid == null) {
-                    add2neid = new NibbleArray(new byte[2048], 4);
-                }
-                add2neid.set(x, y, z, in2);
-            }
-
-            abyte[i] = (byte) (id >> 4 & 255);
-            data.set(x, y, z, id & 15);
-            dataMeta.set(x, y, z, meta & 15);
+        ExtendedBlockStorage storage = cube.getStorage();
+        section.setByteArray("BlocksLSB", storage.getBlockLSBArray());
+        if (storage.getBlockMSBArray() != null) {
+            section.setByteArray("BlocksMSB", storage.getBlockMSBArray().data);
         }
-
-        section.setByteArray("Blocks", abyte);
-        section.setByteArray("Data", data.data);
-        section.setByteArray("DataMeta", dataMeta.data);
-
-        if (add != null) {
-            section.setByteArray("Add", add.data);
-        }
-        if (add2neid != null) {
-            section.setByteArray("Add2", add2neid.data);
-        }
+        section.setByteArray("BlocksMeta", storage.getMetadataArray().data);
 
         section.setByteArray("BlockLight", ebs.getBlocklightArray().data);
 

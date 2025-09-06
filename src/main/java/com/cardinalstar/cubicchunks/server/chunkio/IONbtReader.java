@@ -185,31 +185,12 @@ public class IONbtReader {
                 Coords.cubeToMinBlock(cube.getY()),
                 !cube.getWorld().provider.hasNoSky);
 
-            byte[] abyte = nbt.getByteArray("Blocks");
-            NibbleArray data = new NibbleArray(nbt.getByteArray("Data"), 4);
-            byte[] dataMetaBytes = nbt.getByteArray("DataMeta");
-            if (dataMetaBytes.length == 0) {
-                dataMetaBytes = new byte[2048];
+            ebs.setBlockLSBArray(nbt.getByteArray("BlocksLSB"));
+            if (nbt.hasKey("BlocksMSB")) {
+                ebs.setBlockMSBArray(new NibbleArray(nbt.getByteArray("BlocksMSB"), 4));
             }
-            NibbleArray dataMeta = new NibbleArray(dataMetaBytes, 4);
-            NibbleArray add = nbt.hasKey("Add", Constants.NBT.TAG_BYTE_ARRAY)
-                ? new NibbleArray(nbt.getByteArray("Add"), 4)
-                : null;
-            NibbleArray add2neid = nbt.hasKey("Add2", Constants.NBT.TAG_BYTE_ARRAY)
-                ? new NibbleArray(nbt.getByteArray("Add2"), 4)
-                : null;
 
-            for (int i = 0; i < 4096; i++) {
-                int x = i & 15;
-                int y = i >> 8 & 15;
-                int z = i >> 4 & 15;
-
-                int toAdd = add == null ? 0 : add.get(x, y, z);
-                toAdd = (toAdd & 0xF) | (add2neid == null ? 0 : add2neid.get(x, y, z) << 4);
-                int id = (toAdd << 12) | ((abyte[i] & 0xFF) << 4) | data.get(x, y, z);
-                ebs.func_150818_a(x, y, z, Block.getBlockById(id));
-                ebs.setExtBlockMetadata(x, y, z, dataMeta.get(x, y, z));
-            }
+            ebs.setBlockMetadataArray(new NibbleArray(nbt.getByteArray("DataMeta"), 4));
 
             ebs.setBlocklightArray(new NibbleArray(nbt.getByteArray("BlockLight"), 4));
 
