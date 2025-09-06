@@ -173,10 +173,24 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             cubes.put(cubeInfo = new CubeInfo(x, y, z));
         }
 
-        boolean success = cubeInfo.initialize(effort);
+        CubeInitLevel before = cubeInfo.getInitLevel();
+
+        boolean success = false;
+
+        try {
+            success = cubeInfo.initialize(effort);
+        } catch (Throwable t) {
+            CubicChunks.LOGGER.error("Could not initialize cube {},{},{}", x, y, z, t);
+        }
+
+        CubeInitLevel after = cubeInfo.getInitLevel();
 
         if (cubeInfo.cube == null) {
             cubes.remove(cubeInfo);
+        } else {
+            if (success && before != after) {
+                callback.onCubeGenerated(cubeInfo.cube, after);
+            }
         }
 
         return success ? cubeInfo.cube : null;

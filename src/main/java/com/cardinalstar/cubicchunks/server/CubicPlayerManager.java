@@ -60,6 +60,7 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubes;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderCallback;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList2D;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList3D;
@@ -423,6 +424,15 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     @Override
     public void onCubeLoaded(Cube cube) {
         CubeWatcher watcher = this.cubeWatchers.get(cube.getX(), cube.getY(), cube.getZ());
+
+        if (watcher != null) {
+            watcher.onCubeLoaded(cube);
+        }
+    }
+
+    @Override
+    public void onCubeGenerated(Cube cube, CubeLoaderServer.CubeInitLevel newLevel) {
+        CubeWatcher watcher = this.cubeWatchers.get(cube);
 
         if (watcher != null) {
             watcher.onCubeLoaded(cube);
