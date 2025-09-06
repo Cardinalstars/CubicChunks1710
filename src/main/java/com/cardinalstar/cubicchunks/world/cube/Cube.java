@@ -66,7 +66,6 @@ import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubeWatcher;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
-import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.Coords;
@@ -576,15 +575,25 @@ public class Cube implements ICube {
             ((ICubicWorldInternal) world).getLightingManager()
                 .onCreateCubeStorage(this, ebs);
         }
+
+        putEBSInChunk();
+
         return ebs;
     }
 
     public void setStorageFromSave(@Nullable ExtendedBlockStorage ebs) {
         this.storage = ebs;
+
+        putEBSInChunk();
     }
 
-    private void newStorage() {
-        storage = new ExtendedBlockStorage(cubeToMinBlock(getY()), !world.provider.hasNoSky);
+    public void putEBSInChunk() {
+        ExtendedBlockStorage[] chunkEBS = column.getBlockStorageArray();
+
+        // Store the EBS in the chunk's EBS array for compat with mods that access it directly
+        if (getY() >= 0 && getY() < chunkEBS.length) {
+            chunkEBS[getY()] = this.storage;
+        }
     }
 
     @Override
@@ -774,9 +783,7 @@ public class Cube implements ICube {
 
     /**
      * Mark this cube as populated. This means that this cube was passed as argument to
-     * {@link com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator#populate(ICubeLoader, Cube)}. Check there for more
-     * information regarding
-     * population.
+     * {@link ICubeGenerator#populate(Cube)}. Check there for more information regarding population.
      *
      * @param populated whether this cube was populated
      */
@@ -792,7 +799,7 @@ public class Cube implements ICube {
 
     /**
      * Mark this cube as fully populated. This means that any cube potentially writing to this cube was passed as an
-     * argument to {@link ICubeGenerator#populate(ICubeLoader, Cube)}. Check there for more information regarding
+     * argument to {@link ICubeGenerator#populate(Cube)}. Check there for more information regarding
      * population.
      *
      * @param populated whether this cube was fully populated
