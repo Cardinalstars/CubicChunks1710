@@ -690,7 +690,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         CubeProviderServer cubeCache = ((ICubicWorldInternal.Server) getWorldServer()).getCubeCache();
 
-        // Force load the cube the player is in along with its 27 neighbours
+        // Force load the cube the player is in along with its 26 neighbours
         for (Vector3ic v : new Box(-1, -1, -1, 1, 1, 1)) {
             cubeCache.getCube(newPos.getX() + v.x(), newPos.getY() + v.y(), newPos.getZ() + v.z(), ICubeProviderServer.Requirement.LIGHT);
         }

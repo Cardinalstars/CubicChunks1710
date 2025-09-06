@@ -241,7 +241,7 @@ public interface ICube extends XYZAddressable {
      */
     boolean isInitialLightingDone();
 
-    default CubeLoaderServer.CubeInitLevel getInitState() {
+    default CubeLoaderServer.CubeInitLevel getInitLevel() {
         if (isPopulated() && isInitialLightingDone() && isSurfaceTracked()) {
             return CubeLoaderServer.CubeInitLevel.Lit;
         } else if (isPopulated()) {
@@ -252,7 +252,7 @@ public interface ICube extends XYZAddressable {
     }
 
     default boolean isInitializedToLevel(CubeLoaderServer.CubeInitLevel initLevel) {
-        return getInitState().ordinal() >= initLevel.ordinal();
+        return getInitLevel().ordinal() >= initLevel.ordinal();
     }
 
     boolean isCubeLoaded();

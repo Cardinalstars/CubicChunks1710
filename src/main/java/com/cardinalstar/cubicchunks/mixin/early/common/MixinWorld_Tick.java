@@ -30,12 +30,10 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Group;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.llamalad7.mixinextras.sugar.Local;
 
 /**
  * World class mixins related to block and entity ticking.
@@ -47,10 +45,6 @@ public abstract class MixinWorld_Tick implements ICubicWorld {
     @Shadow
     @Final
     public boolean isRemote;
-
-    private int updateEntity_entityPosY;
-    private int updateEntity_entityPosX;
-    private int updateEntity_entityPosZ;
 
     @Shadow
     public abstract boolean checkChunksExist(int x1, int y1, int z1, int x2, int y2, int z2);
@@ -68,53 +62,28 @@ public abstract class MixinWorld_Tick implements ICubicWorld {
      * Vanilla uses a constant Y because blocks below y=0 and above y=256 are never loaded, which means that entities
      * would be getting stuck there.
      */
-    @Group(name = "updateEntity", max = 2, min = 2)
     @Redirect(
         method = "updateEntityWithOptionalForce",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;checkChunksExist" + "(IIIIII)Z"),
         require = 1)
     private boolean canUpdateEntity(World _this, int startBlockX, int oldStartBlockY, int startBlockZ, int endBlockX,
-        int oldEndBlockY, int endBlockZ) {
+        int oldEndBlockY, int endBlockZ, @Local(argsOnly = true) Entity entity) {
         if (!this.isCubicWorld()) {
             return checkChunksExist(startBlockX, oldStartBlockY, startBlockZ, endBlockX, oldEndBlockY, endBlockZ);
         }
 
-        if ((updateEntity_entityPosX >= -30000000 && updateEntity_entityPosZ >= -30000000
-            && updateEntity_entityPosX < 30000000
-            && updateEntity_entityPosZ < 30000000
-            && updateEntity_entityPosY >= getMaxHeight() || updateEntity_entityPosY < getMinHeight())) {
+        int entityPosY = MathHelper.floor_double(entity.posY);
+        int entityPosX = MathHelper.floor_double(entity.posX);
+        int entityPosZ = MathHelper.floor_double(entity.posZ);
+
+        if ((entityPosX < 30000000 && entityPosX >= -30000000
+            && entityPosZ >= -30000000 && entityPosZ < 30000000
+            && entityPosY >= getMaxHeight() || entityPosY < getMinHeight())) {
             return true; // can tick everything outside of limits
         }
 
         int r = (endBlockX - startBlockX) >> 1;
 
-        return checkChunksExist(
-            updateEntity_entityPosX - r,
-            updateEntity_entityPosY - r,
-            updateEntity_entityPosZ - r,
-            updateEntity_entityPosX + r,
-            updateEntity_entityPosY + r,
-            updateEntity_entityPosZ + r);
-    }
-
-    /**
-     * Allows to get Y position of the updated entity.
-     *
-     * @param entity entity to update
-     * @param force  true if normal chunk area loaded checks should be ignored
-     * @param ci     callback info
-     */
-    @Group(name = "updateEntity")
-    @Inject(
-        method = "updateEntityWithOptionalForce",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/World;getPersistentChunks()Lcom/google/common/collect/ImmutableSetMultimap;",
-            remap = false),
-        require = 1)
-    private void onIsAreaLoadedForUpdateEntityWithOptionalForce(Entity entity, boolean force, CallbackInfo ci) {
-        updateEntity_entityPosY = MathHelper.floor_double(entity.posY);
-        updateEntity_entityPosX = MathHelper.floor_double(entity.posX);
-        updateEntity_entityPosZ = MathHelper.floor_double(entity.posZ);
+        return checkChunksExist(entityPosX - r, entityPosY - r, entityPosZ - r, entityPosX + r, entityPosY + r, entityPosZ + r);
     }
 }
