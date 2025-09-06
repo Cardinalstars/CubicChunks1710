@@ -20,17 +20,28 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
-import static com.cardinalstar.cubicchunks.util.ReflectionUtil.cast;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.ParametersAreNonnullByDefault;
-
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
+import com.cardinalstar.cubicchunks.api.XYZMap;
+import com.cardinalstar.cubicchunks.api.XZMap;
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.server.CubeProviderServer;
+import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
+import com.cardinalstar.cubicchunks.server.SpawnCubes;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.world.CubeSplitTickList;
+import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
+import com.cardinalstar.cubicchunks.world.CubeSpawnerAnimals;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
+import com.cardinalstar.cubicchunks.world.ISpawnerAnimals;
+import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
@@ -53,39 +64,28 @@ import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraftforge.common.ForgeChunkManager;
-
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
-import com.cardinalstar.cubicchunks.api.XYZMap;
-import com.cardinalstar.cubicchunks.api.XZMap;
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
-import com.cardinalstar.cubicchunks.lighting.LightingManager;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.server.CubeProviderServer;
-import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
-import com.cardinalstar.cubicchunks.server.SpawnCubes;
-import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.util.world.CubeSplitTickList;
-import com.cardinalstar.cubicchunks.util.world.CubeSplitTickSet;
-import com.cardinalstar.cubicchunks.world.CubeSpawnerAnimals;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
-import com.cardinalstar.cubicchunks.world.ISpawnerAnimals;
-import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
-import com.cardinalstar.cubicchunks.world.cube.Cube;
+import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
+import static com.cardinalstar.cubicchunks.util.ReflectionUtil.cast;
 
 /**
  * Implementation of {@link ICubicWorldServer} interface.
@@ -109,28 +109,30 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     private EntityTracker theEntityTracker;
     @Shadow
     public boolean levelSaving; // TODO DO WE NEED TO NEGATE THIS?
-    private Map<Chunk, Set<ICube>> forcedChunksCubes;
-    private XYZMap<ICube> forcedCubes;
-    private XZMap<IColumn> forcedColumns;
 
+    @Unique
+    private Map<Chunk, Set<ICube>> forcedChunksCubes;
+    @Unique
+    private XYZMap<ICube> forcedCubes;
+    @Unique
+    private XZMap<IColumn> forcedColumns;
+    @Unique
     private SpawnCubes spawnArea;
+    @Unique
     private boolean runningCompatibilityGenerator;
     // private VanillaNetworkHandler vanillaNetworkHandler;
 
     @Shadow
     public abstract boolean addWeatherEffect(Entity entityIn);
-
     @Shadow
     @Mutable
     private Set<NextTickListEntry> pendingTickListEntriesHashSet;
     @Shadow
     @Mutable
     private List<NextTickListEntry> pendingTickListEntriesThisTick;
-
     @Shadow
     public abstract PlayerManager getPlayerManager();
 
-    // @Shadow protected abstract boolean canAddEntity(Entity entityIn);
 
     @Inject(method = "<init>", at = @At(value = "TAIL"))
     public void initCubicWorldServer(MinecraftServer p_i45284_1_, ISaveHandler p_i45284_2_, String p_i45284_3_,
@@ -138,10 +140,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>(0.75f, 64 * 1024);
         this.forcedColumns = new XZMap<>(0.75f, 2048);
-
-        // It's not possible to Inject on these constructors because they return different types.
-        this.pendingTickListEntriesHashSet = new CubeSplitTickSet();
-        this.pendingTickListEntriesThisTick = new CubeSplitTickList();
     }
 
     @Redirect(
@@ -178,6 +176,34 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
     }
 
+    // The following two mixins are needed for different reasons.
+    //
+    // The first one, initTickContainers is needed for the chunkLoader to check if there are ticks to write. (No ticks are actually inserted into
+    // pendingTickListEntriesThisTick upon inspection, but it's needed to check if there are for saving the chunks).
+    @Definition(id = "createSpawnPosition", method = "Lnet/minecraft/world/WorldServer;createSpawnPosition(Lnet/minecraft/world/WorldSettings;)V")
+    @Expression("this.createSpawnPosition(?)")
+    @Inject(
+        method = "initialize",
+        at = @At(value = "MIXINEXTRAS:EXPRESSION")
+    )
+    public void initTickContainers(WorldSettings p_72963_1_, CallbackInfo ci)
+    {
+        this.pendingTickListEntriesHashSet = new CubeSplitTickSet();
+        this.pendingTickListEntriesThisTick = new CubeSplitTickList();
+    }
+
+    // We are then recreating the pendingTickListEntriesThisTick because it's empty always.
+    // This is valid because whenever it's called it's ALWAYS empty. It's also expected to be empty so it's all fine.
+    @Redirect(
+        method = "<init>",
+        at = @At(value = "NEW",
+            target = "()Ljava/util/ArrayList;",
+            ordinal = 0)
+    )
+    private ArrayList<NextTickListEntry> redirectPendingTickListArrayList() {
+        return new CubeSplitTickList();
+    }
+
     @Override
     public void setSpawnArea(SpawnCubes spawn) {
         this.spawnArea = spawn;
@@ -190,19 +216,11 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Override
     public CubeSplitTickSet getScheduledTicks() {
-        if (!(pendingTickListEntriesHashSet instanceof CubeSplitTickSet))
-        {
-            pendingTickListEntriesHashSet = new CubeSplitTickSet();
-        }
         return (CubeSplitTickSet) pendingTickListEntriesHashSet;
     }
 
     @Override
     public CubeSplitTickList getThisTickScheduledTicks() {
-        if (!(pendingTickListEntriesThisTick instanceof CubeSplitTickSet))
-        {
-            pendingTickListEntriesThisTick = new CubeSplitTickList();
-        }
         return (CubeSplitTickList) pendingTickListEntriesThisTick;
     }
 
