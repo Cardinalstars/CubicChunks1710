@@ -43,8 +43,8 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
 
     Long2ObjectOpenHashMap<T> items = new Long2ObjectOpenHashMap<>();
 
-    private long key(int x, int z) {
-        return ((long)x << 32) | z;
+    private long key(long x, long z) {
+        return (x << 32) | (z & 0xFFFFFFFFL);
     }
 
     public final void remove(int x, int z) {

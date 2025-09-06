@@ -45,8 +45,8 @@ import org.apache.logging.log4j.Logger;
 public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
     Long2ObjectOpenHashMap<T> items = new Long2ObjectOpenHashMap<>();
 
-    private long key(int x, int y, int z) {
-        return ((long)x << 42) | ((long)y << 21) | z;
+    private long key(long x, long y, long z) {
+        return ((x & 0x1FFFFF) << 42) | ((y & 0x1FFFFF) << 21) | (z & 0x1FFFFF);
     }
 
     public T remove(int x, int y, int z) {
