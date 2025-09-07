@@ -231,6 +231,9 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         at = @At("MIXINEXTRAS:EXPRESSION"))
     public void initWorld(ISaveHandler p_i45369_1_, String p_i45369_2_, WorldSettings p_i45369_3_,
         WorldProvider p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci) {
+        if ((Object)this instanceof WorldServer) {
+            ((ICubicWorldInternal.Server)this).initCubicWorldServer();
+        }
         WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) this.perWorldStorage
             .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
         boolean ccWorldType = this.worldInfo.getTerrainType() instanceof ICubicWorldType;

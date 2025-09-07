@@ -115,6 +115,8 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
         boolean isCompatGenerationScope();
 
+        void initCubicWorldServer();
+
         // VanillaNetworkHandler getVanillaNetworkHandler();
     }
 
