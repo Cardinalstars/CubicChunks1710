@@ -51,7 +51,7 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
     @Nonnull
     private Cube blankCube;
     @Nonnull
-    private XYZMap<Cube> cubeMap = new XYZMap<>(0.7f, 8000);
+    private XYZMap<Cube> cubeMap = new XYZMap<>();
 
     public CubeProviderClient(ICubicWorldInternal.Client world) {
         super((World) world);
