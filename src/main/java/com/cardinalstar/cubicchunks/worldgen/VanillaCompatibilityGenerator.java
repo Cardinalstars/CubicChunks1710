@@ -500,20 +500,6 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         }
     }
 
-    private Box getChunkBoxForCube(ICube cube) {
-        if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
-            return new Box(0, -cube.getY(), 0, 0, worldHeightCubes - cube.getY() - 1, 0);
-        }
-        return NO_REQUIREMENT;
-    }
-
-    public Box getFullPopulationRequirements(ICube cube) {
-        if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
-            return new Box(-1, -cube.getY(), -1, 0, worldHeightCubes - cube.getY() - 1, 0);
-        }
-        return NO_REQUIREMENT;
-    }
-
     public Box getPopulationPregenerationRequirements(ICube cube) {
         if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
             return new Box(-1, -cube.getY(), -1, 1, worldHeightCubes - cube.getY() - 1, 1);
