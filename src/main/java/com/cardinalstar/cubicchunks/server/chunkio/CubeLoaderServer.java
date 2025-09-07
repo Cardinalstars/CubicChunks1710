@@ -446,7 +446,11 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         private boolean loadNBT() throws IOException {
             if (tag != null) return true;
 
-            tag = CubeLoaderServer.this.storage.readColumn(pos);
+            tag = pendingColumns.get(pos);
+
+            if (tag == null) {
+                tag = CubeLoaderServer.this.storage.readColumn(pos);
+            }
 
             if (tag == null) return false;
 
@@ -572,7 +576,11 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         }
 
         private boolean loadNBT() throws IOException {
-            tag = CubeLoaderServer.this.storage.readCube(pos);
+
+            tag = pendingCubes.get(pos);
+            if (tag == null) {
+                tag = CubeLoaderServer.this.storage.readCube(pos);
+            }
 
             if (tag == null) return false;
 
