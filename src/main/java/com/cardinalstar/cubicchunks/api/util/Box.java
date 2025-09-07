@@ -73,29 +73,27 @@ public class Box implements Iterable<Vector3ic> {
         return new AbstractIterator<>() {
 
             private final Vector3i v = new Vector3i();
-            private int i = 0;
 
-            private final int width = x2 - x1;
-            private final int height = y2 - y1;
-            private final int length = z2 - z1;
-            private final int count = width * height * length;
+            private int x = x1;
+            private int y = y1;
+            private int z = z1;
 
             @Override
             protected Vector3ic computeNext() {
-                if (i >= count) {
+                if (x > x2) {
+                    x = x1;
+                    y++;
+                }
+                if (y > y2) {
+                    y = y1;
+                    z++;
+                }
+                if (z > z2) {
                     this.endOfData();
-
                     return null;
                 }
-
-                int x = i % width;
-                int y = i / width % height;
-                int z = i / (width * height);
-
-                i++;
-
-                v.set(x + x1,  + y + y1, z + z1);
-
+                v.set(x, y, z);
+                x++;
                 return v;
             }
         };
