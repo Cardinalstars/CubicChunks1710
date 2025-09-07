@@ -429,6 +429,17 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             }
         }
 
+        for (int x = -1;  x <=1; x++) {
+            for (int z = -1; z <=1; z++) {
+                try {
+                    Cube cube2 = loader.getCube(cube.getX() + x, cube.getY(), cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
+                    ((IColumnInternal) cube2.getColumn()).recalculateStagingHeightmap();
+                } catch (IOException e) {
+                    CubicChunks.LOGGER.error("Couldn't get cube?!", cube.getX() + x, cube.getY(), cube.getZ() + z, e);
+                }
+            }
+        }
+
         // Second, we mark the cubes in the current chunk as populated
         for (int y = 0; y < worldHeightCubes; y++) {
             try {
@@ -440,8 +451,6 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 CubicChunks.LOGGER.error("Could not mark cube {},{},{} as populated", cube.getX(), y, cube.getZ(), e);
             }
         }
-
-        ((IColumnInternal) cube.getColumn()).recalculateStagingHeightmap();
 
         try {
             CompatHandler.beforePopulate(world, vanilla);
@@ -489,20 +498,6 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 CompatHandler.afterGenerate(world);
             }
         }
-    }
-
-    private Box getChunkBoxForCube(ICube cube) {
-        if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
-            return new Box(0, -cube.getY(), 0, 0, worldHeightCubes - cube.getY() - 1, 0);
-        }
-        return NO_REQUIREMENT;
-    }
-
-    public Box getFullPopulationRequirements(ICube cube) {
-        if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
-            return new Box(-1, -cube.getY(), -1, 0, worldHeightCubes - cube.getY() - 1, 0);
-        }
-        return NO_REQUIREMENT;
     }
 
     public Box getPopulationPregenerationRequirements(ICube cube) {

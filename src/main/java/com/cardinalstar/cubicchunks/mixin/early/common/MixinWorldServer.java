@@ -126,20 +126,15 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Shadow
     public abstract boolean addWeatherEffect(Entity entityIn);
-    @Shadow
-    @Mutable
-    private Set<NextTickListEntry> pendingTickListEntriesHashSet;
-    @Shadow
-    @Mutable
-    private List<NextTickListEntry> pendingTickListEntriesThisTick;
+
     @Shadow
     public abstract PlayerManager getPlayerManager();
 
     @Unique
     private CubeSplitTicks cubeTicks;
 
-    @Inject(method = "initialize", at = @At("HEAD"))
-    private void initCubicWorldServer(WorldSettings p_72963_1_, CallbackInfo ci) {
+    @Override
+    public void initCubicWorldServer() {
         this.forcedChunksCubes = new HashMap<>();
         this.forcedCubes = new XYZMap<>();
         this.forcedColumns = new XZMap<>();
