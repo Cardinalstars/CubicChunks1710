@@ -94,7 +94,7 @@ public class Box implements Iterable<Vector3ic> {
 
                 i++;
 
-                v.set(x, y, z);
+                v.set(x + x1,  + y + y1, z + z1);
 
                 return v;
             }
