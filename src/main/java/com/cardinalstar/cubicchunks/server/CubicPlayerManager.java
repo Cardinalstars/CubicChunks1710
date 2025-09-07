@@ -99,7 +99,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
      * Mapping of Cube positions to CubeWatchers (Cube equivalent of PlayerManager.PlayerInstance).
      * Contains cube positions of all cubes loaded by players.
      */
-    final XYZMap<CubeWatcher> cubeWatchers = new XYZMap<>(0.7f, 25 * 25 * 25);
+    final XYZMap<CubeWatcher> cubeWatchers = new XYZMap<>();
 
     /**
      * Mapping of Column positions to ColumnWatchers.
@@ -107,7 +107,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
      * Exists for compatibility with vanilla and to send ColumnLoad/Unload packets to clients.
      * Columns cannot be managed by client because they have separate data, like heightmap and biome array.
      */
-    final XZMap<ColumnWatcher> columnWatchers = new XZMap<>(0.7f, 25 * 25);
+    final XZMap<ColumnWatcher> columnWatchers = new XZMap<>();
 
     /**
      * All cubeWatchers that have pending block updates to send.
@@ -422,7 +422,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
     @Override
     public void onCubeLoaded(Cube cube) {
-        CubeWatcher watcher = this.cubeWatchers.get(cube);
+        CubeWatcher watcher = this.cubeWatchers.get(cube.getX(), cube.getY(), cube.getZ());
 
         if (watcher != null) {
             watcher.onCubeLoaded(cube);
@@ -916,17 +916,6 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
                 || blockToCube(playerEntity.posY) != this.getManagedCubePosY()
                 || blockToCube(playerEntity.posZ) != this.getManagedCubePosZ();
         }
-    }
-
-    /**
-     * Return iterator over 'CubeWatchers' of all cubes loaded
-     * by players. Iterator first element defined by seed.
-     *
-     * @param seed seed for random iterator
-     * @return cube watcher iterator
-     */
-    public Iterator<CubeWatcher> getRandomWrappedCubeWatcherIterator(int seed) {
-        return this.cubeWatchers.randomWrappedIterator(seed);
     }
 
     public Iterable<Cube> getWatchedCubes() {
