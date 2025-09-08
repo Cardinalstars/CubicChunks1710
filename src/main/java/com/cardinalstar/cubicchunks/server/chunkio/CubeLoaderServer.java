@@ -173,10 +173,24 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             cubes.put(cubeInfo = new CubeInfo(x, y, z));
         }
 
-        boolean success = cubeInfo.initialize(effort);
+        CubeInitLevel before = cubeInfo.getInitLevel();
+
+        boolean success = false;
+
+        try {
+            success = cubeInfo.initialize(effort);
+        } catch (Throwable t) {
+            CubicChunks.LOGGER.error("Could not initialize cube {},{},{}", x, y, z, t);
+        }
+
+        CubeInitLevel after = cubeInfo.getInitLevel();
 
         if (cubeInfo.cube == null) {
             cubes.remove(cubeInfo);
+        } else {
+            if (success && before != after) {
+                callback.onCubeGenerated(cubeInfo.cube, after);
+            }
         }
 
         return success ? cubeInfo.cube : null;
@@ -621,7 +635,11 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         }
 
         public boolean isInitedTo(CubeInitLevel initLevel) {
-            return cube != null && cube.getInitState().ordinal() >= initLevel.ordinal();
+            return getInitLevel().ordinal() >= initLevel.ordinal();
+        }
+
+        public CubeInitLevel getInitLevel() {
+            return cube == null ? CubeInitLevel.None : cube.getInitLevel();
         }
 
         private boolean generate(CubeInitLevel requestedInitLevel) {
@@ -644,7 +662,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
                 saveCube(this);
             }
 
-            boolean generated = cube.getInitState() == CubeInitLevel.Generated;
+            boolean generated = cube.getInitLevel() == CubeInitLevel.Generated;
 
             // We were only asked to generate it and we did so successfully
             if (requestedInitLevel == CubeInitLevel.Generated) return generated;
@@ -654,7 +672,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
                 generator.populate(CubeLoaderServer.this, cube);
             }
 
-            boolean populated = cube.getInitState() == CubeInitLevel.Populated;
+            boolean populated = cube.getInitLevel() == CubeInitLevel.Populated;
 
             if (requestedInitLevel == CubeInitLevel.Populated) return populated;
 
@@ -669,7 +687,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
                 }
             }
 
-            return cube.getInitState() == CubeInitLevel.Lit;
+            return cube.getInitLevel() == CubeInitLevel.Lit;
         }
 
         public void onCubeLoaded() {

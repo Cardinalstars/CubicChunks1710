@@ -26,6 +26,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
@@ -86,6 +87,9 @@ public abstract class MixinChunk_Column {
     @Final
     private int[] heightMap;
 
+    @Shadow
+    public abstract ExtendedBlockStorage[] getBlockStorageArray();
+
     public ICube chunk$getLoadedCube(int cubeY) {
         if (cachedCube != null && cachedCube.getY() == cubeY) {
             return cachedCube;
@@ -104,13 +108,22 @@ public abstract class MixinChunk_Column {
 
     public void chunk$addCube(ICube cube) {
         this.cubeMap.put((Cube) cube);
+
+        ((Cube) cube).putEBSInChunk();
     }
 
     public ICube chunk$removeCube(int cubeY) {
         if (cachedCube != null && cachedCube.getY() == cubeY) {
             cubicChunks$invalidateCachedCube();
         }
-        return this.cubeMap.remove(cubeY);
+        ICube removed = this.cubeMap.remove(cubeY);
+
+        ExtendedBlockStorage[] storage = this.getBlockStorageArray();
+        if (cubeY >= 0 && cubeY < storage.length) {
+            storage[cubeY] = null;
+        }
+
+        return removed;
     }
 
     public void chunk_internal$removeFromStagingHeightmap(ICube cube) {
