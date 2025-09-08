@@ -425,17 +425,15 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
     private void populateChunk(ICubeLoader loader, Cube cube) {
         // First we have to generate all surrounding cubes
-        for (Vector3ic v : getPopulationPregenerationRequirements(cube)) {
-            if (v.equals(0, 0, 0)) continue;
-
-            int x = v.x() + cube.getX();
-            int y = v.y() + cube.getY();
-            int z = v.z() + cube.getZ();
-
-            try {
-                loader.getCube(x, y, z, ICubeProviderServer.Requirement.GENERATE);
-            } catch (IOException e) {
-                CubicChunks.LOGGER.error("Could not generate cube {},{},{}", x, y, z, e);
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                for (int y = 0; y < 16; y++) {
+                    try {
+                        loader.getCube(cube.getX() + x, y, cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
+                    } catch (IOException e) {
+                        CubicChunks.LOGGER.error("Could not generate cube {},{},{}", x, y, z, e);
+                    }
+                }
             }
         }
 
@@ -508,13 +506,6 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 CompatHandler.afterGenerate(world);
             }
         }
-    }
-
-    public Box getPopulationPregenerationRequirements(ICube cube) {
-        if (cube.getY() >= 0 && cube.getY() < worldHeightCubes) {
-            return new Box(-1, -cube.getY(), -1, 1, worldHeightCubes - cube.getY() - 1, 1);
-        }
-        return NO_REQUIREMENT;
     }
 
     @Override

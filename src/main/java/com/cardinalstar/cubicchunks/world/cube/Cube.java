@@ -326,12 +326,19 @@ public class Cube implements ICube {
         int z = blockToLocal(zPos);
         ExtendedBlockStorage storage = this.storage;
 
-        if (storage == null) {
-            return ((IColumnInternal) column).getTopYWithStaging(x, z) > yPos ? type.defaultLightValue : 0;
-        } else if (type == EnumSkyBlock.Sky) {
-            return this.world.provider.hasNoSky ? 0 : storage.getExtSkylightValue(x, y, z);
+        if (type == EnumSkyBlock.Sky) {
+            if (this.world.provider.hasNoSky) {
+                return 0;
+            }
+            if (storage == null) {
+                return yPos > ((IColumnInternal) column).getTopYWithStaging(x, z) ? type.defaultLightValue : 0;
+            }
+            return storage.getExtSkylightValue(x, y, z);
         } else {
-            return type == EnumSkyBlock.Block ? storage.getExtBlocklightValue(x, y, z) : type.defaultLightValue;
+            if (storage == null) {
+                return 0;
+            }
+            return storage.getExtBlocklightValue(x, y, z);
         }
     }
 
