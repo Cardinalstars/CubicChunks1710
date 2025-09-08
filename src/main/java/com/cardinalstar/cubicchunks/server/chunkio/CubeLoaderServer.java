@@ -669,7 +669,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
             // If this cube hasn't been populated at all, generate the required cubes and populate this cube.
             if (generated) {
-                generator.populate(CubeLoaderServer.this, cube);
+                generator.populate(cube);
             }
 
             boolean populated = cube.getInitLevel() == CubeInitLevel.Populated;

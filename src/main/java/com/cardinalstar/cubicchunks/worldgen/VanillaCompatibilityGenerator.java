@@ -21,7 +21,7 @@
 package com.cardinalstar.cubicchunks.worldgen;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -37,7 +37,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import org.joml.Vector3ic;
 
@@ -50,16 +49,28 @@ import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.early.common.IGameRegistry;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
-import com.cardinalstar.cubicchunks.util.ChunkStorageUtils;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
-import com.cardinalstar.cubicchunks.world.cube.ChunkArrayBlockView;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.blockview.ChunkArrayBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.ChunkBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.EBSBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.IMutableBlockView;
+import com.github.bsideup.jabel.Desugar;
+import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
+import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 import cpw.mods.fml.common.IWorldGenerator;
 import cpw.mods.fml.common.registry.GameRegistry;
+import it.unimi.dsi.fastutil.ints.Int2IntFunction;
+import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 /**
  * A cube generator that tries to mirror vanilla world generation. Cubes in the normal world range will be copied from a
@@ -69,9 +80,15 @@ import cpw.mods.fml.common.registry.GameRegistry;
 @ParametersAreNonnullByDefault
 public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
-    // TODO MAKE SURE THE BIOMES ARE SET CORRECTLY.
-    private boolean isInit = false;
-    private int worldHeightCubes;
+    private static final Box BOTTOM_BEDROCK_LAYER = Box.horizontalChunkSlice(0, 8);
+
+    @Desugar
+    record FillerInfo(ImmutableBlockMeta filler) {}
+
+    private final int worldHeightBlocks;
+    private final int worldHeightCubes;
+    private final Box topBedrockLayer;
+
     @Nonnull
     private final IChunkProvider vanilla;
     @Nonnull
@@ -80,23 +97,14 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
      * Last chunk that was generated from the vanilla world gen
      */
     private Chunk lastChunk;
+    private IMutableBlockView lastChunkView;
     /**
      * We generate all the chunks in the vanilla range at once. This variable prevents infinite recursion
      */
     private boolean optimizationHack;
     private BiomeGenBase[] biomes;
-    /**
-     * Detected block for filling cubes below the world
-     */
-    @Nonnull
-    private Block extensionBlockBottom = Blocks.stone;
-    /**
-     * Detected block for filling cubes above the world
-     */
-    @Nonnull
-    private Block extensionBlockTop = Blocks.air;
 
-    private boolean hasTopBedrock = false, hasBottomBedrock = true;
+    private FillerInfo bottom, top;
 
     /**
      * Create a new VanillaCompatibilityGenerator
@@ -107,78 +115,95 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     public VanillaCompatibilityGenerator(IChunkProvider vanilla, World world) {
         this.vanilla = vanilla;
         this.world = world;
+
+        worldHeightBlocks = ((ICubicWorld) this.world).getMaxGenerationHeight();
+        worldHeightCubes = Coords.blockCeilToCube(worldHeightBlocks);
+        topBedrockLayer = Box.horizontalChunkSlice(worldHeightBlocks - 8, 8);
     }
 
-    // lazy initialization to avoid circular dependencies
-    private void tryInit(IChunkProvider vanilla, World world) {
-        if (isInit) {
-            return;
+    private ICubeLoader getCubeLoader() {
+        return ((ICubicWorldInternal.Server) world).getCubeCache()
+            .getCubeLoader();
+    }
+
+    private FillerInfo getBottomFillerInfo() {
+        if (bottom != null) return bottom;
+
+        Cube bottomCube;
+
+        try {
+            bottomCube = getCubeLoader().getCube(0, 0, 0, ICubeProviderServer.Requirement.POPULATE);
+
+            bottom = analyzeBottomFiller(new EBSBlockView(bottomCube.getBlockStorageArray()));
+        } catch (IOException e) {
+            CubicChunks.LOGGER.error("Could not generate the cube at 0,0,0 to detect the chunk's filler block: stone will be used", e);
+
+            bottom = new FillerInfo(new BlockMeta(Blocks.stone, 0));
         }
-        isInit = true;
-        // heuristics TODO: add a config that overrides this
-        lastChunk = vanilla.provideChunk(0, 0); // lets scan the chunk at 0, 0
 
-        int worldHeightBlocks = ((ICubicWorld) world).getMaxGenerationHeight();
-        worldHeightCubes = worldHeightBlocks / Cube.SIZE;
-        Map<Block, Integer> blockHistogramBottom = new HashMap<>();
-        Map<Block, Integer> blockHistogramTop = new HashMap<>();
+        return bottom;
+    }
 
-        ExtendedBlockStorage bottomEBS = lastChunk.getBlockStorageArray()[0];
-        for (int x = 0; x < Cube.SIZE; x++) {
-            for (int z = 0; z < Cube.SIZE; z++) {
-                // Scan three layers top / bottom each to guard against bedrock walls
-                for (int y = 0; y < 3; y++) {
-                    Block blockState = bottomEBS == null ? Blocks.air : bottomEBS.getBlockByExtId(x, y, z);
+    private FillerInfo analyzeBottomFiller(IBlockView blockView) {
+        Object2IntOpenHashMap<ImmutableBlockMeta> histogram = new Object2IntOpenHashMap<>();
 
-                    int count = blockHistogramBottom.getOrDefault(blockState, 0);
-                    blockHistogramBottom.put(blockState, count + 1);
-                }
-
-                for (int y = worldHeightBlocks - 1; y > worldHeightBlocks - 4; y--) {
-                    int localY = Coords.blockToLocal(y);
-                    ExtendedBlockStorage ebs = lastChunk.getBlockStorageArray()[Coords.blockToCube(y)];
-
-                    Block blockState = ebs == null ? Blocks.air : ebs.getBlockByExtId(x, localY, z);
-
-                    int count = blockHistogramTop.getOrDefault(blockState, 0);
-                    blockHistogramTop.put(blockState, count + 1);
+        // Scan three layers for top and bottom cubes to guard against bedrock walls
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < Cube.SIZE; x++) {
+                for (int z = 0; z < Cube.SIZE; z++) {
+                    histogram.addTo(new BlockMeta(blockView.getBlock(x, y, z), blockView.getBlockMetadata(x, y, z)), 1);
                 }
             }
         }
 
-        CubicChunks.LOGGER.debug("Block histograms: \nTop: " + blockHistogramTop + "\nBottom: " + blockHistogramBottom);
+        var bottomBlock = histogram.object2IntEntrySet().stream()
+            .filter(e -> e.getKey().getBlock() != Blocks.bedrock)
+            .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
 
-        int topcount = 0;
-        for (Map.Entry<Block, Integer> entry : blockHistogramBottom.entrySet()) {
-            if (entry.getValue() > topcount && entry.getKey() != Blocks.bedrock) {
-                extensionBlockBottom = entry.getKey();
-                topcount = entry.getValue();
+        ImmutableBlockMeta filler = bottomBlock.map(Map.Entry::getKey).orElse(new BlockMeta(Blocks.air, 0));
+
+        return new FillerInfo(filler);
+    }
+
+    private FillerInfo getTopFillerInfo() {
+        if (top != null) return top;
+
+        Cube topCube;
+
+        try {
+            topCube = getCubeLoader().getCube(0, worldHeightCubes - 1, 0, ICubeProviderServer.Requirement.POPULATE);
+
+            top = analyzeTopFiller(new EBSBlockView(topCube.getBlockStorageArray()));
+        } catch (IOException e) {
+            CubicChunks.LOGGER.error("Could not generate the cube at 0,{},0 to detect the chunk's filler block: air will be used", worldHeightCubes - 1, e);
+
+            top = new FillerInfo(new BlockMeta(Blocks.air, 0));
+        }
+
+        return top;
+    }
+
+    private FillerInfo analyzeTopFiller(IBlockView blockView) {
+        Object2IntOpenHashMap<ImmutableBlockMeta> histogram = new Object2IntOpenHashMap<>();
+
+        int top = blockView.getBounds().getY2();
+
+        // Scan three layers for top and bottom cubes to guard against bedrock walls
+        for (int y = top - 1; y > top - 4; y--) {
+            for (int x = 0; x < Cube.SIZE; x++) {
+                for (int z = 0; z < Cube.SIZE; z++) {
+                    histogram.addTo(new BlockMeta(blockView.getBlock(x, y, z), blockView.getBlockMetadata(x, y, z)), 1);
+                }
             }
         }
-        hasBottomBedrock = blockHistogramBottom.getOrDefault(Blocks.bedrock, 0) > 0;
-        CubicChunks.LOGGER.info(
-            "Detected filler block " + extensionBlockBottom.getLocalizedName()
-                + " "
-                + "from layers [0, 2], bedrock="
-                + hasBottomBedrock);
 
-        topcount = 0;
-        for (Map.Entry<Block, Integer> entry : blockHistogramTop.entrySet()) {
-            if (entry.getValue() > topcount && entry.getKey() != Blocks.bedrock) {
-                extensionBlockTop = entry.getKey();
-                topcount = entry.getValue();
-            }
-        }
-        hasTopBedrock = blockHistogramTop.getOrDefault(Blocks.bedrock, 0) > 0;
-        CubicChunks.LOGGER.info(
-            "Detected filler block " + extensionBlockTop.getLocalizedName()
-                + " from"
-                + " layers ["
-                + (worldHeightBlocks - 3)
-                + ", "
-                + (worldHeightBlocks - 1)
-                + "], bedrock="
-                + hasTopBedrock);
+        var topBlock = histogram.object2IntEntrySet().stream()
+            .filter(e -> e.getKey().getBlock() != Blocks.bedrock)
+            .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
+
+        ImmutableBlockMeta filler = topBlock.map(Map.Entry::getKey).orElse(new BlockMeta(Blocks.air, 0));
+
+        return new FillerInfo(filler);
     }
 
     @Override
@@ -188,9 +213,9 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             this.biomes,
             column.xPosition * 16, column.zPosition * 16, 16, 16);
 
-        byte[] abyte = column.getBiomeArray();
-        for (int i = 0; i < abyte.length; ++i) {
-            abyte[i] = (byte) this.biomes[i].biomeID;
+        byte[] biomeArray = column.getBiomeArray();
+        for (int i = 0; i < biomeArray.length; ++i) {
+            biomeArray[i] = (byte) this.biomes[i].biomeID;
         }
     }
 
@@ -211,189 +236,177 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     public Cube provideCube(Chunk chunk, int cubeX, int cubeY, int cubeZ) {
         try {
             WorldgenHangWatchdog.startWorldGen();
-            tryInit(vanilla, world);
 
             Random rand = new Random(world.getSeed());
             rand.setSeed(rand.nextInt() ^ cubeX);
             rand.setSeed(rand.nextInt() ^ cubeZ);
 
-            Block[] blocks = new Block[4096];
-            byte[] blockMeta = new byte[4096];
+            IBlockView cubeData;
 
-            if (cubeY < 0 || cubeY >= worldHeightCubes) {
+            if (cubeY < 0) {
+                FillerInfo fillerInfo = getBottomFillerInfo();
+
+                Block[] blocks = new Block[4096];
+                int[] blockMeta = new int[4096];
+
+                cubeData = new ChunkArrayBlockView(
+                    16, 16, 16,
+                    ObjectArrayList.wrap(blocks),
+                    IntArrayList.wrap(blockMeta));
+
                 // Fill with bottom block
-                for (int y = 0; y < Cube.SIZE; y++) {
-                    for (int z = 0; z < Cube.SIZE; z++) {
-                        for (int x = 0; x < Cube.SIZE; x++) {
-                            Block block = cubeY < 0 ? extensionBlockBottom : extensionBlockTop;
-                            int blockY = Coords.localToBlock(cubeY, y);
-                            block = WorldGenUtils.getRandomBedrockReplacement(
-                                world,
-                                rand,
-                                block,
-                                blockY,
-                                5,
-                                hasTopBedrock,
-                                hasBottomBedrock);
-                            int storageIndex = ChunkStorageUtils.getBlockIndex(x, y, z);
-                            blocks[storageIndex] = block;
-                            blockMeta[storageIndex] = 0;
-                        }
-                    }
-                }
+                ((IMutableBlockView) cubeData).fill(fillerInfo.filler);
+            } else if (cubeY >= worldHeightCubes) {
+                FillerInfo fillerInfo = getTopFillerInfo();
+
+                Block[] blocks = new Block[4096];
+                int[] blockMeta = new int[4096];
+
+                cubeData = new ChunkArrayBlockView(
+                    16, 16, 16,
+                    ObjectArrayList.wrap(blocks),
+                    IntArrayList.wrap(blockMeta));
+
+                // Fill with top block
+                ((IMutableBlockView) cubeData).fill(fillerInfo.filler);
             } else {
-                // Make vanilla generate a chunk for us to copy
-                if (lastChunk.xPosition != cubeX || lastChunk.zPosition != cubeZ) {
-                    if (CubicChunksConfig.optimizedCompatibilityGenerator) {
-                        try (ICubicWorldInternal.CompatGenerationScope ignored = ((ICubicWorldInternal.Server) world)
-                            .doCompatibilityGeneration()) { // TODO MAKE THIS STORE THE BLOCK + META ARRAY FOR
-                                                            // GENERATION
-                            lastChunk = vanilla.provideChunk(cubeX, cubeZ);
-                            Block[] compatBlocks = ((IColumnInternal) lastChunk).getCompatGenerationBlockArray();
-                            byte[] compatBlockMeta = ((IColumnInternal) lastChunk).getCompatGenerationByteArray();
-                            if (compatBlocks == null || compatBlockMeta == null) {
-                                CubicChunks.LOGGER.error("Optimized compatibility generation failed, disabling...");
-                                CubicChunksConfig.optimizedCompatibilityGenerator = false;
-                            } else {
-                                replaceBedrock(compatBlocks, compatBlockMeta, rand);
-                            }
-                        }
-                    } else {
-                        lastChunk = vanilla.provideChunk(cubeX, cubeZ);
-                    }
-                }
-
-                if (!optimizationHack) {
-                    optimizationHack = true;
-                    // Recusrive generation
-                    for (int y = worldHeightCubes - 1; y >= 0; y--) {
-                        if (y == cubeY) {
-                            continue;
-                        }
-                        ((ICubicWorld) world).getCubeFromCubeCoords(cubeX, y, cubeZ);
-                    }
-                    optimizationHack = false;
-                }
-
-                // Copy from vanilla, replacing bedrock as appropriate
-                Block[] compatBlocks = ((IColumnInternal) lastChunk).getCompatGenerationBlockArray();
-                byte[] compatBlockMeta = ((IColumnInternal) lastChunk).getCompatGenerationByteArray();
-                if (compatBlocks != null && compatBlockMeta != null) {
-                    return new Cube(
-                        chunk, cubeY,
-                        new ChunkArrayBlockView(
-                            16, worldHeightCubes * 16, 16,
-                            cubeY, 16,
-                            i -> compatBlocks[i],
-                            i -> compatBlockMeta[i]));
-                }
-                ExtendedBlockStorage storage = lastChunk.getBlockStorageArray()[cubeY];
-                if (((ICubicWorld) world).getMaxHeight() == 16) {
-                    if (cubeY != 0) {
-                        storage = null;
-                    } else {
-                        storage = lastChunk.getBlockStorageArray()[4];
-                    }
-                }
-                if (storage != null && !storage.isEmpty()) {
-                    for (int y = 0; y < Cube.SIZE; y++) {
-                        int blockY = Coords.localToBlock(cubeY, y);
-                        for (int z = 0; z < Cube.SIZE; z++) {
-                            for (int x = 0; x < Cube.SIZE; x++) {
-                                Block block = storage.getBlockByExtId(x, y, z);
-                                if (block == Blocks.bedrock) {
-                                    if (y < Cube.SIZE / 2) {
-                                        block = extensionBlockBottom;
-                                    } else {
-                                        block = extensionBlockTop;
-                                    }
-                                    block = WorldGenUtils.getRandomBedrockReplacement(
-                                        world,
-                                        rand,
-                                        block,
-                                        blockY,
-                                        5,
-                                        hasTopBedrock,
-                                        hasBottomBedrock);
-                                    blocks[ChunkStorageUtils.getBlockIndex(x, y, z)] = block;
-                                    blockMeta[ChunkStorageUtils.getBlockIndex(x, y, z)] = 0;
-                                } else {
-                                    block = WorldGenUtils.getRandomBedrockReplacement(
-                                        world,
-                                        rand,
-                                        block,
-                                        blockY,
-                                        5,
-                                        hasTopBedrock,
-                                        hasBottomBedrock);
-                                    blocks[ChunkStorageUtils.getBlockIndex(x, y, z)] = block;
-                                    blockMeta[ChunkStorageUtils.getBlockIndex(x, y, z)] = 0;
-                                }
-                            }
-                        }
-                    }
-                }
+                cubeData = getVanillaChunkSlice(cubeX, cubeY, cubeZ, rand);
             }
 
-            return new Cube(
-                chunk, cubeY,
-                new ChunkArrayBlockView(
-                    16, 16, 16,
-                    i -> blocks[i],
-                    i -> blockMeta[i]));
+            Cube cube = new Cube(chunk, cubeY,cubeData);
+
+            CubeGeneratorsRegistry.generateVanillaCube(this, cube);
+
+            return cube;
         } finally {
             WorldgenHangWatchdog.endWorldGen();
         }
     }
 
-    private void replaceBedrock(Block[] blocks, byte[] blockMetadata, Random rand) {
-        for (int y = 0; y < 8; y++) {
-            replaceBedrockAtLayer(blocks, blockMetadata, rand, y);
+    private IBlockView getVanillaChunkSlice(int cubeX, int cubeY, int cubeZ, Random rand) {
+        // Make vanilla generate a chunk for us to copy
+        if (lastChunk == null || lastChunk.xPosition != cubeX || lastChunk.zPosition != cubeZ) {
+            generateVanillaChunk(cubeX, cubeZ, rand);
         }
-        int startY = Coords.localToBlock(worldHeightCubes - 1, 8);
-        int endY = Coords.cubeToMinBlock(worldHeightCubes);
-        for (int y = startY; y < endY; y++) {
-            replaceBedrockAtLayer(blocks, blockMetadata, rand, y);
+
+        // Generate all cubes in the current vanilla chunk, since we've already done the work to generate their terrain
+        // (vanilla generators can only generate a whole chunk at a time)
+        if (!optimizationHack) {
+            optimizationHack = true;
+            for (int y = worldHeightCubes - 1; y >= 0; y--) {
+                if (y == cubeY) {
+                    continue;
+                }
+                try {
+                    getCubeLoader().getCube(cubeX, y, cubeZ, ICubeProviderServer.Requirement.GENERATE);
+                } catch (IOException e) {
+                    CubicChunks.LOGGER.error("Could not generate cube at {},{},{}", cubeX, y, cubeZ, e);
+                }
+            }
+            optimizationHack = false;
         }
+
+        return lastChunkView.subView(Box.horizontalChunkSlice(cubeY * 16, 16));
     }
 
-    private void replaceBedrockAtLayer(Block[] blocks, byte[] blockMetadata, Random rand, int y) {
-        for (int z = 0; z < Cube.SIZE; z++) {
-            for (int x = 0; x < Cube.SIZE; x++) {
-                Block block = blocks[ChunkStorageUtils.getBlockIndex(x, y, z)];
-                if (block == Blocks.bedrock) {
-                    if (y < 64) {
-                        blocks[ChunkStorageUtils.getBlockIndex(x, y, z)] = WorldGenUtils.getRandomBedrockReplacement(
-                            world,
-                            rand,
-                            extensionBlockBottom,
-                            y,
-                            5,
-                            hasTopBedrock,
-                            hasBottomBedrock);
-                    } else {
-                        blocks[ChunkStorageUtils.getBlockIndex(x, y, z)] = WorldGenUtils.getRandomBedrockReplacement(
-                            world,
-                            rand,
-                            extensionBlockTop,
-                            y,
-                            5,
-                            hasTopBedrock,
-                            hasBottomBedrock);
-                    }
+    private void generateVanillaChunk(int cubeX, int cubeZ, Random rand) {
+        if (CubicChunksConfig.optimizedCompatibilityGenerator) {
+            try (ICubicWorldInternal.CompatGenerationScope ignored = ((ICubicWorldInternal.Server) world).doCompatibilityGeneration()) {
+                lastChunk = vanilla.provideChunk(cubeX, cubeZ);
+
+                Block[] compatBlocks = ((IColumnInternal) lastChunk).getCompatGenerationBlockArray();
+                byte[] compatBlockMeta = ((IColumnInternal) lastChunk).getCompatGenerationByteArray();
+
+                if (compatBlocks == null || compatBlockMeta == null) {
+                    CubicChunks.LOGGER.error("Optimized compatibility generation failed, disabling...");
+                    CubicChunksConfig.optimizedCompatibilityGenerator = false;
+                } else {
+                    lastChunkView = new ChunkArrayBlockView(
+                        16, worldHeightBlocks, 16,
+                        new Int2ObjectFunction<>() {
+                            @Override
+                            public Block get(int key) {
+                                return compatBlocks[key];
+                            }
+
+                            @Override
+                            public Block put(int key, Block value) {
+                                compatBlocks[key] = value;
+                                return null;
+                            }
+
+                            @Override
+                            public int size() {
+                                return compatBlocks.length;
+                            }
+                        },
+                        new Int2IntFunction() {
+                            @Override
+                            public int get(int key) {
+                                return compatBlockMeta[key];
+                            }
+
+                            @Override
+                            public int put(int key, int value) {
+                                compatBlockMeta[key] = (byte) value;
+                                return 0;
+                            }
+
+                            @Override
+                            public int size() {
+                                return compatBlockMeta.length;
+                            }
+                        });
+
+                    removeBedrock(lastChunkView, rand);
+
+                    return;
+                }
+            }
+        }
+
+        lastChunk = vanilla.provideChunk(cubeX, cubeZ);
+
+        lastChunkView = new ChunkBlockView(lastChunk);
+
+        removeBedrock(lastChunkView, rand);
+    }
+
+    private void removeBedrock(IMutableBlockView chunk, Random rand) {
+        FillerInfo bottom = analyzeBottomFiller(chunk);
+        FillerInfo top = analyzeTopFiller(chunk);
+
+        for (Vector3ic v : BOTTOM_BEDROCK_LAYER) {
+            if (chunk.getBlock(v.x(), v.y(), v.z()) == Blocks.bedrock) {
+                boolean isBottomLayer = v.y() == 0;
+
+                // Remove 1 in 3 blocks of bedrock to create holes
+                // Increase to 1 in 2 for the bottom layer because it's too dense
+                if (rand.nextInt(isBottomLayer ? 2 : 3) == 0) {
+                    chunk.setBlock(v.x(), v.y(), v.z(), bottom.filler);
+                }
+            }
+        }
+
+        for (Vector3ic v : topBedrockLayer) {
+            if (chunk.getBlock(v.x(), v.y(), v.z()) == Blocks.bedrock) {
+                boolean isTopLayer = v.y() == worldHeightBlocks - 1;
+
+                // Remove 1 in 3 blocks of bedrock to create holes
+                // Increase to 1 in 2 for the top layer because it's too dense
+                if (rand.nextInt(isTopLayer ? 2 : 3) == 0) {
+                    chunk.setBlock(v.x(), v.y(), v.z(), top.filler);
                 }
             }
         }
     }
 
     @Override
-    public void populate(ICubeLoader loader, Cube cube) {
+    public void populate(Cube cube) {
         try {
-            loader.pauseLoadCalls();
+            getCubeLoader().pauseLoadCalls();
 
             WorldgenHangWatchdog.startWorldGen();
-
-            tryInit(vanilla, world);
 
             Random rand = getCubeSpecificRandom(cube.getX(), cube.getY(), cube.getZ());
 
@@ -403,24 +416,31 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
             // Cubes outside this range are only filled with their respective block
             // No population takes place
-            if (cube.getY() < 0 || cube.getY() >= worldHeightCubes) {
+            if (!isWithinVanillaWorld(cube)) {
                 try {
-                    withinVanillaChunk = loader.getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
+                    withinVanillaChunk = getCubeLoader().getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
                 } catch (IOException e) {
                     CubicChunks.LOGGER.error("Could not load cube at y=0 within vanilla chunk {},{} for vanilla chunk population", cube.getX(), cube.getZ(), e);
                     withinVanillaChunk = null;
                 }
             }
 
-            if (withinVanillaChunk != null && !withinVanillaChunk.isFullyPopulated()) populateChunk(loader, cube);
+            // Populate the vanilla chunk if it isn't already
+            if (withinVanillaChunk != null && !withinVanillaChunk.isFullyPopulated()) populateChunk(getCubeLoader(), cube);
 
+            // Always set the requested cube to populated, even if it's outside of the vanilla chunk (and therefore had
+            // no work done on it).
             cube.setPopulated(true);
             cube.setFullyPopulated(true);
         } finally {
             WorldgenHangWatchdog.endWorldGen();
 
-            loader.unpauseLoadCalls();
+            getCubeLoader().unpauseLoadCalls();
         }
+    }
+
+    private boolean isWithinVanillaWorld(Cube cube) {
+        return cube.getY() >= 0 && cube.getY() < worldHeightCubes;
     }
 
     private void populateChunk(ICubeLoader loader, Cube cube) {
@@ -476,7 +496,6 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             applyModGenerators(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
         } catch (Throwable t) {
             CubicChunks.LOGGER.error("Could not populate cube {},{},{}", cube.getX(), cube.getY(), cube.getZ(), t);
-            ((IColumnInternal) cube.getColumn()).recalculateStagingHeightmap();
         } finally {
             CompatHandler.afterPopulate(world);
         }

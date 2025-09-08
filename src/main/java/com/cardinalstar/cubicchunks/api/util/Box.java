@@ -45,6 +45,34 @@ public class Box implements Iterable<Vector3ic> {
         this.z2 = Math.max(z1, z2);
     }
 
+    public int getX1() {
+        return x1;
+    }
+
+    public int getY1() {
+        return y1;
+    }
+
+    public int getZ1() {
+        return z1;
+    }
+
+    public int getX2() {
+        return x2;
+    }
+
+    public int getY2() {
+        return y2;
+    }
+
+    public int getZ2() {
+        return z2;
+    }
+
+    public boolean contains(Box other) {
+        return x1 <= other.x1 && x2 >= other.x2 && y1 <= other.y1 && y2 >= other.y2 && z1 <= other.z1 && z2 >= other.z2;
+    }
+
     public void forEachPoint(XYZFunction function) {
         for (int x = x1; x <= x2; x++) {
             for (int y = y1; y <= y2; y++) {
@@ -192,6 +220,9 @@ public class Box implements Iterable<Vector3ic> {
             this.z2 += dz;
             return this;
         }
+    }
 
+    public static Box horizontalChunkSlice(int startY, int heightY) {
+        return new Box(0, startY, 0, 16, startY + heightY, 16);
     }
 }

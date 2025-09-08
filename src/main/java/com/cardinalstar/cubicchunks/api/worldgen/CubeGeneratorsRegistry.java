@@ -30,12 +30,15 @@ import java.util.function.BiConsumer;
 
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.BiomeGenBase;
 
 import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubeTerrainGenerator;
 import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubicPopulator;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
+import com.github.bsideup.jabel.Desugar;
 import com.google.common.base.Preconditions;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
@@ -53,18 +56,60 @@ public class CubeGeneratorsRegistry {
     private static final Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> columnLoadingCallbacksView = Collections
         .unmodifiableCollection(columnLoadingCallbacks);
 
-    private static final TreeSet<GeneratorWrapper> sortedGeneratorList = new TreeSet<>();
+    private static final TreeSet<GeneratorWrapper<VanillaCompatibilityGenerator>> sortedVanillaGeneratorList = new TreeSet<>();
+
+    private static final TreeSet<PopulatorWrapper> sortedPopulatorList = new TreeSet<>();
+
+    @Desugar
+    private record GeneratorWrapper<T extends ICubeGenerator>(ICubeTerrainGenerator<T> generator, int weight) implements Comparable<GeneratorWrapper<T>> {
+
+        @Override
+        public int compareTo(GeneratorWrapper<T> o) {
+            return Integer.compare(weight, o.weight);
+        }
+    }
+
+    @Desugar
+    private record PopulatorWrapper(ICubicPopulator populator, int weight) implements Comparable<PopulatorWrapper> {
+
+        @Override
+        public int compareTo(PopulatorWrapper o) {
+            return Integer.compare(weight, o.weight);
+        }
+    }
 
     /**
-     * Register a world generator - something that inserts new block types into the world on population stage
-     *
-     * @param populator the generator
-     * @param weight    a weight to assign to this generator. Heavy weights tend to sink to the bottom of
-     *                  list of world generators (i.e. they run later)
+     * Register a world generator that runs exclusively in the vanilla compatibility generator. This will not run for
+     * other world types.
      */
-    public static void register(ICubicPopulator populator, int weight) {
+    public static void registerVanillaGenerator(ICubeTerrainGenerator<VanillaCompatibilityGenerator> generator, int weight) {
+        Preconditions.checkNotNull(generator);
+        sortedVanillaGeneratorList.add(new GeneratorWrapper<>(generator, weight));
+    }
+
+    /**
+     * Callback hook for cube gen - if your mod wishes to add extra mod related
+     * generation to the world call this
+     *
+     * @param generator The generator that invoked this event
+     * @param cube The cube to generate
+     */
+    public static void generateVanillaCube(VanillaCompatibilityGenerator generator, Cube cube) {
+        for (GeneratorWrapper<VanillaCompatibilityGenerator> wrapper : sortedVanillaGeneratorList) {
+            wrapper.generator.generate(generator, cube);
+        }
+    }
+
+    /**
+     * Register a world populator - something that inserts new block types into the world on population stage
+     *
+     * @param populator the populator
+     * @param weight    a weight to assign to this populator. Heavy weights tend to sink to the bottom of
+     *                  list of world populator (i.e. they run later)
+     */
+    public static void registerPopulator(ICubicPopulator populator, int weight) {
         Preconditions.checkNotNull(populator);
-        sortedGeneratorList.add(new GeneratorWrapper(populator, weight));
+        sortedPopulatorList.add(new PopulatorWrapper(populator, weight));
     }
 
     /**
@@ -74,11 +119,10 @@ public class CubeGeneratorsRegistry {
      * @param random the cube specific {@link Random}.
      * @param pos    is position of the populated cube
      * @param world  The {@link ICubicWorld} we're generating for
-     * @param biome  The biome we are generating in
      */
-    public static void generateWorld(World world, Random random, CubePos pos, BiomeGenBase biome) {
-        for (GeneratorWrapper wrapper : sortedGeneratorList) {
-            wrapper.populator.generate(world, random, pos, biome);
+    public static void populateWorld(World world, Random random, CubePos pos) {
+        for (PopulatorWrapper wrapper : sortedPopulatorList) {
+            wrapper.populator.generate(world, random, pos);
         }
     }
 
@@ -97,7 +141,7 @@ public class CubeGeneratorsRegistry {
         for (ICubicPopulator populator : customPopulatorsForFlatCubicGenerator) {
             BlockPos pos = cube.getCoords()
                 .getCenterBlockPos();
-            populator.generate(world, rand, cube.getCoords(), cube.getBiome(pos.getX(), pos.getY(), pos.getZ()));
+            populator.generate(world, rand, cube.getCoords());
         }
     }
 
@@ -131,49 +175,5 @@ public class CubeGeneratorsRegistry {
 
     public static Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> getColumnAsyncLoadingCallbacks() {
         return columnLoadingCallbacksView;
-    }
-
-    private static class GeneratorWrapper implements Comparable<GeneratorWrapper> {
-
-        private final ICubicPopulator populator;
-        private final int weight;
-
-        public GeneratorWrapper(ICubicPopulator populator, int weight) {
-            this.populator = populator;
-            this.weight = weight;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof GeneratorWrapper)) {
-                return false;
-            }
-
-            GeneratorWrapper that = (GeneratorWrapper) o;
-
-            if (weight != that.weight) {
-                return false;
-            }
-            if (!populator.equals(that.populator)) {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = populator.hashCode();
-            result = 31 * result + weight;
-            return result;
-        }
-
-        @Override
-        public int compareTo(GeneratorWrapper o) {
-            return Integer.compare(weight, o.weight);
-        }
     }
 }
