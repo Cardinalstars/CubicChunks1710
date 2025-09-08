@@ -51,6 +51,10 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 
 /**
@@ -182,17 +186,15 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     }
 
     // ================= getBlockLightValue_do ======================
-    @ModifyConstant(
+    @Definition(id = "y", local = @Local(argsOnly = true, ordinal = 1, type = int.class))
+    @Expression("y < ?")
+    @WrapOperation(
         method = "getBlockLightValue_do",
-        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, intValue = 0, ordinal = 0))
-    private int getBlockLightValue_do_heightLimits_min(int original) {
-        return getMinHeight();
+        at = @At("MIXINEXTRAS:EXPRESSION"))
+    private boolean getBlockLightValue_do_heightLimits_min(int left, int right, Operation<Boolean> original) {
+        return left < getMinHeight();
     }
 
-    @ModifyConstant(method = "getBlockLightValue_do", constant = @Constant(intValue = 0, ordinal = 1))
-    private int getBlockLightValue_do_heightLimits_minDefault(int original) {
-        return getMinHeight();
-    }
 
     @ModifyConstant(method = "getBlockLightValue_do", constant = @Constant(intValue = 256, ordinal = 0))
     private int getBlockLightValue_do_heightLimits_max(int original) {
@@ -399,10 +401,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
             return;
         }
 
-        boolean ret = (this.isRemote) || // on the client all cubes count as loaded if allowEmpty
-            this.testForCubes(xStart, yStart, zStart, xEnd, yEnd, zEnd, Objects::nonNull);
-
-        cbi.setReturnValue(ret);
+        cbi.setReturnValue(this.testForCubes(xStart, yStart, zStart, xEnd, yEnd, zEnd, Objects::nonNull));
     }
 
     // NOTE: This may break some things

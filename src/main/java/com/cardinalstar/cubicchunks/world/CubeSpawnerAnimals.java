@@ -38,6 +38,7 @@ import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.SpawnerAnimals;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.BiomeGenBase;
@@ -177,6 +178,8 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                     posZ = entityBlockZ;
                     float entityX = (float) entityBlockX + 0.5F;
                     float entityZ = (float) entityBlockZ + 0.5F;
+
+                    if (!SpawnerAnimals.canCreatureTypeSpawnAtLocation(mobType, world, posX, posY, posZ)) continue;
 
                     if (world.getClosestPlayer(entityX, entityY, entityZ, 24.0D) != null
                         || MathUtil.distanceSq(entityX, entityY, entityZ, spawnPoint) < 576.0D) {

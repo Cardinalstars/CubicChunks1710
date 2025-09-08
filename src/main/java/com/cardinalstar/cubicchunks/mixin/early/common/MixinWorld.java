@@ -110,7 +110,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Shadow
     public abstract boolean doChunksNearChunkExist(int x, int y, int z, int radius);
 
-    @Shadow
+    @Shadow(remap = false)
     @Final
     public MapStorage perWorldStorage;
 

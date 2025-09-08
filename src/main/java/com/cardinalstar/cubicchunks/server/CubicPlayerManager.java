@@ -60,6 +60,7 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketCubes;
 import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderCallback;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList2D;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList3D;
@@ -429,6 +430,15 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         }
     }
 
+    @Override
+    public void onCubeGenerated(Cube cube, CubeLoaderServer.CubeInitLevel newLevel) {
+        CubeWatcher watcher = this.cubeWatchers.get(cube);
+
+        if (watcher != null) {
+            watcher.onCubeLoaded(cube);
+        }
+    }
+
     // CHECKED: 1.10.2-12.18.1.2092
     // contains(int cubeX, int cubeZ)
     @Override
@@ -690,7 +700,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         CubeProviderServer cubeCache = ((ICubicWorldInternal.Server) getWorldServer()).getCubeCache();
 
-        // Force load the cube the player is in along with its 27 neighbours
+        // Force load the cube the player is in along with its 26 neighbours
         for (Vector3ic v : new Box(-1, -1, -1, 1, 1, 1)) {
             cubeCache.getCube(newPos.getX() + v.x(), newPos.getY() + v.y(), newPos.getZ() + v.z(), ICubeProviderServer.Requirement.LIGHT);
         }

@@ -20,18 +20,12 @@
  */
 package com.cardinalstar.cubicchunks.api;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Hash table implementation for objects in a 3-dimensional cartesian coordinate
@@ -55,6 +49,10 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
 
     public final T get(int x, int y, int z) {
         return items.get(key(x, y, z));
+    }
+
+    public final T get(XYZAddressable xyz) {
+        return get(xyz.getX(), xyz.getY(), xyz.getZ());
     }
 
     public final void put(T item) {
