@@ -195,10 +195,6 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         return left < getMinHeight();
     }
 
-    @ModifyConstant(method = "getBlockLightValue_do", constant = @Constant(intValue = 0, ordinal = 5))
-    private int getBlockLightValue_do_heightLimits_minDefault(int original) {
-        return getMinHeight();
-    }
 
     @ModifyConstant(method = "getBlockLightValue_do", constant = @Constant(intValue = 256, ordinal = 0))
     private int getBlockLightValue_do_heightLimits_max(int original) {
