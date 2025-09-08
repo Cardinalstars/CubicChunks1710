@@ -91,7 +91,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
     public void onCubeLoaded(Cube c) {
         if (this.invalid) return;
-        if (c.getInitState() != CubeLoaderServer.CubeInitLevel.Lit) {
+        if (c.getInitLevel() != CubeLoaderServer.CubeInitLevel.Lit) {
             if (request != null && request.isCompleted()) {
                 request = cubeCache.loadCubeEagerly(
                     cubePos.getX(), cubePos.getY(), cubePos.getZ(),

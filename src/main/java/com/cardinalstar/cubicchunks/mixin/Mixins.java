@@ -75,8 +75,9 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Redirecting some things to use Y values.").addCommonMixins("common.MixinWorld_Tick")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
-    MIXIN_NEXT_TICK_LIST_ENTRY(
-        new MixinBuilder("Remove block check from tick list entry").addCommonMixins("common.MixinNextTickListEntry")
+    MIXIN_MAP_GEN(
+        new MixinBuilder("Misc patches to pass Worlds around to various map gen objects")
+            .addCommonMixins("common.MixinChunkProviderHell", "common.MixinMapGenBase")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
 

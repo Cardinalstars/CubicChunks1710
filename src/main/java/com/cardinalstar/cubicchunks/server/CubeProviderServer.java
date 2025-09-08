@@ -197,6 +197,13 @@ public class CubeProviderServer extends ChunkProviderServer
         }
 
         @Override
+        public void onCubeGenerated(Cube cube, CubeLoaderServer.CubeInitLevel newLevel) {
+            cubesLoadedThisTick++;
+
+            callbacks.forEach(c -> c.onCubeGenerated(cube, newLevel));
+        }
+
+        @Override
         public void onCubeUnloaded(Cube cube) {
             callbacks.forEach(c -> c.onCubeUnloaded(cube));
         }
@@ -359,10 +366,10 @@ public class CubeProviderServer extends ChunkProviderServer
 
             Cube cube = cubeLoader.getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
 
-            CubeLoaderServer.CubeInitLevel actual = cube == null ? null : cube.getInitState();
+            CubeLoaderServer.CubeInitLevel actual = cube == null ? CubeLoaderServer.CubeInitLevel.None : cube.getInitLevel();
             CubeLoaderServer.CubeInitLevel wanted = CubeLoaderServer.CubeInitLevel.fromRequirement(request.effort);
 
-            if (actual != wanted) {
+            if (actual.ordinal() < wanted.ordinal()) {
                 CubicChunks.LOGGER.error("Could not init cube {},{},{} for eager request (wanted {}, returned {})",
                     request.pos.getX(), request.pos.getY(), request.pos.getZ(),
                     wanted, actual);
