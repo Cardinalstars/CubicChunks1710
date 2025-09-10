@@ -30,12 +30,17 @@ import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
 
 import com.cardinalstar.cubicchunks.api.IntRange;
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
 import com.cardinalstar.cubicchunks.lighting.LightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.early.common.MixinWorld;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
 @ParametersAreNonnullByDefault
 @Mixin(WorldClient.class)
@@ -69,5 +74,13 @@ public abstract class MixinWorldClient extends MixinWorld implements ICubicWorld
     public void setHeightBounds(int minHeight1, int maxHeight1) {
         this.minHeight = minHeight1;
         this.maxHeight = maxHeight1;
+    }
+
+    @Definition(id = "rand", field = "Lnet/minecraft/client/multiplayer/WorldClient;rand:Ljava/util/Random;")
+    @Definition(id = "nextInt", method = "Ljava/util/Random;nextInt(I)I")
+    @Expression("this.rand.nextInt(8) > ?")
+    @WrapOperation(method = "doVoidFogParticles", at = @At("MIXINEXTRAS:EXPRESSION"))
+    public boolean decreaseVoidParticleAmount(int ignored, int blockY, Operation<Boolean> original) {
+        return this.rand.nextInt(8) > Math.max(blockY, 4);
     }
 }

@@ -2,6 +2,7 @@ package com.cardinalstar.cubicchunks.mixin;
 
 import javax.annotation.Nonnull;
 
+import com.cardinalstar.cubicchunks.util.Mods;
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 
@@ -78,6 +79,11 @@ public enum Mixins implements IMixins {
     MIXIN_MAP_GEN(
         new MixinBuilder("Misc patches to pass Worlds around to various map gen objects")
             .addCommonMixins("common.MixinChunkProviderHell", "common.MixinMapGenBase")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
+    MIXIN_WORLDGEN_HEIGHT_LIMITS(
+        new MixinBuilder("Remove various 0-256 height limits for worldgen.")
+            .addCommonMixins("common.worldgen.MixinWorldGen_HeightChecks")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
 
@@ -167,6 +173,10 @@ public enum Mixins implements IMixins {
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
     MIXIN_RENDERGLOBAL(new MixinBuilder("Fix rendering.").addClientMixins("client.MixinRenderGlobal")
+        .setPhase(Phase.EARLY)
+        .addExcludedMod(Mods.Angelica)
+        .setApplyIf(() -> true)),
+    MIXIN_ENTITY_RENDERER(new MixinBuilder("Misc EntityRenderer fixes").addClientMixins("client.MixinEntityRenderer")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
     // =============================================================
