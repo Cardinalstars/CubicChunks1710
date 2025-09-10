@@ -163,16 +163,13 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     }
 
     // getFullBlockLightValue
-    @ModifyConstant(
+    @Definition(id = "y", local = @Local(argsOnly = true, ordinal = 1, type = int.class))
+    @Expression("y < 0")
+    @WrapOperation(
         method = "getFullBlockLightValue",
-        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, intValue = 0, ordinal = 0))
-    private int getFullBlockLightValue_heightLimits_min(int original) {
-        return getMinHeight();
-    }
-
-    @ModifyConstant(method = "getFullBlockLightValue", constant = @Constant(intValue = 0, ordinal = 1))
-    private int getFullBlockLightValue_heightLimits_minDefault(int original) {
-        return getMinHeight();
+        at = @At("MIXINEXTRAS:EXPRESSION"))
+    private boolean getFullBlockLightValue_heightLimits_min(int left, int right, Operation<Boolean> original) {
+        return left < getMinHeight();
     }
 
     @ModifyConstant(method = "getFullBlockLightValue", constant = @Constant(intValue = 256, ordinal = 0))
@@ -187,7 +184,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
 
     // ================= getBlockLightValue_do ======================
     @Definition(id = "y", local = @Local(argsOnly = true, ordinal = 1, type = int.class))
-    @Expression("y < ?")
+    @Expression("y < 0")
     @WrapOperation(
         method = "getBlockLightValue_do",
         at = @At("MIXINEXTRAS:EXPRESSION"))

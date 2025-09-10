@@ -22,6 +22,7 @@ package com.cardinalstar.cubicchunks.mixin.early.common;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.storage.WorldInfo;
@@ -50,7 +51,7 @@ public class MixinWorldSettings implements ICubicWorldSettings {
         at = @At("RETURN"))
     private void onConstruct(long seedIn, WorldSettings.GameType gameType, boolean enableMapFeatures,
         boolean hardcoreMode, WorldType worldTypeIn, CallbackInfo ci) {
-        this.isCubic = CubicChunksConfig.forceLoadCubicChunks != CubicChunksConfig.ForceCCMode.NONE;
+        this.isCubic = CubicChunksConfig.forceLoadCubicChunks != CubicChunksConfig.ForceCCMode.NONE || worldTypeIn instanceof ICubicWorldType;
     }
 
     @Override
