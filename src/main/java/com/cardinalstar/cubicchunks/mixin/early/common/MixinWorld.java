@@ -48,6 +48,7 @@ import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
@@ -65,6 +66,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -72,11 +74,9 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IntRange;
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import com.cardinalstar.cubicchunks.lighting.LightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
@@ -149,7 +149,6 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     protected LightingManager lightingManager;
     protected int minHeight = 0, maxHeight = 256, fakedMaxHeight = 0;
     private int minGenerationHeight = 0, maxGenerationHeight = 256;
-
     // @Shadow public abstract boolean isValid(BlockPos pos);
 
     @Shadow

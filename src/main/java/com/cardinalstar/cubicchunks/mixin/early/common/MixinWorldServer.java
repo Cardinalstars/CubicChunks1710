@@ -33,6 +33,7 @@ import com.cardinalstar.cubicchunks.server.SpawnCubes;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.world.CubeSplitTicks;
 import com.cardinalstar.cubicchunks.world.CubeSpawnerAnimals;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.ISpawnerAnimals;
 import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
@@ -120,6 +121,8 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     @Shadow
     public abstract PlayerManager getPlayerManager();
 
+    @Shadow
+    public ChunkProviderServer theChunkProviderServer;
     @Unique
     private CubeSplitTicks cubeTicks;
 
@@ -156,6 +159,12 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         at = @At(value = "NEW", target = "net/minecraft/world/gen/ChunkProviderServer"))
     private ChunkProviderServer redirectChunkProviderServer(WorldServer world, IChunkLoader chunkLoader,
         IChunkProvider chunkGenerator) {
+        // The first time we call this it will just be used to give the AnvilSave handler to
+        // the WorldSpecificSaveHandler. After that, it will be repalced by the CubeProviderServer
+        if (theChunkProviderServer == null)
+        {
+            return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
+        }
         return new CubeProviderServer(
             world,
             chunkLoader,
