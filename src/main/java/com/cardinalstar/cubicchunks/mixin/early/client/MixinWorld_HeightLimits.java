@@ -25,29 +25,28 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import net.minecraft.world.World;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 
 @ParametersAreNonnullByDefault
 @Mixin(World.class)
 public abstract class MixinWorld_HeightLimits implements ICubicWorld {
 
-    @ModifyConstant(method = "getSkyBlockTypeBrightness", constant = @Constant(intValue = 0, ordinal = 1), require = 1)
-    private int getLightFromNeighborsForGetMinHeight(int origY) {
-        return this.getMinHeight();
-    }
-
-    @ModifyConstant(
+    @Definition(id = "y", local = @Local(argsOnly = true, ordinal = 1, type = int.class))
+    @Expression("y < 0")
+    @Expression("y >= 256")
+    @WrapOperation(
         method = "getSkyBlockTypeBrightness",
-        constant = @Constant(expandZeroConditions = Constant.Condition.LESS_THAN_ZERO, ordinal = 0))
-    private int getSkyBlockTypeBrightness_heightLimits_min(int original) {
-        return getMinHeight();
-    }
-
-    @ModifyConstant(method = "getSkyBlockTypeBrightness", constant = @Constant(intValue = 256, ordinal = 0))
-    private int getSkyBlockTypeBrightness_heightLimits_max(int original) {
-        return getMaxHeight();
+        at = @At("MIXINEXTRAS:EXPRESSION"))
+    private boolean noopHeightChecks(int left, int right, Operation<Boolean> original) {
+        return false;
     }
 }

@@ -80,6 +80,11 @@ public enum Mixins implements IMixins {
             .addCommonMixins("common.MixinChunkProviderHell", "common.MixinMapGenBase")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+    MIXIN_WORLDGEN_HEIGHT_LIMITS(
+        new MixinBuilder("Remove various 0-256 height limits for worldgen.")
+            .addCommonMixins("common.worldgen.MixinWorldGen_HeightChecks")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
 
     // ENTITY
     MIXIN_ENTITY_DEATH_FIX(new MixinBuilder("Replace -64 constant, to avoid killing entities below y=-64")
