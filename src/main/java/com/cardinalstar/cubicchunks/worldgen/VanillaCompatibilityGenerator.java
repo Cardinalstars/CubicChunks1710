@@ -20,7 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.worldgen;
 
-import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -51,16 +50,17 @@ import com.cardinalstar.cubicchunks.mixin.early.common.IGameRegistry;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.XSTR;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.blockview.ChunkArrayBlockView;
 import com.cardinalstar.cubicchunks.world.cube.blockview.ChunkBlockView;
-import com.cardinalstar.cubicchunks.world.cube.blockview.EBSBlockView;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IMutableBlockView;
 import com.github.bsideup.jabel.Desugar;
+import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
 import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 import cpw.mods.fml.common.IWorldGenerator;
@@ -129,17 +129,9 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     private FillerInfo getBottomFillerInfo() {
         if (bottom != null) return bottom;
 
-        Cube bottomCube;
+        Chunk chunk = vanilla.provideChunk(0, 0);
 
-        try {
-            bottomCube = getCubeLoader().getCube(0, 0, 0, ICubeProviderServer.Requirement.POPULATE);
-
-            bottom = analyzeBottomFiller(new EBSBlockView(bottomCube.getBlockStorageArray()));
-        } catch (IOException e) {
-            CubicChunks.LOGGER.error("Could not generate the cube at 0,0,0 to detect the chunk's filler block: stone will be used", e);
-
-            bottom = new FillerInfo(new BlockMeta(Blocks.stone, 0));
-        }
+        bottom = analyzeBottomFiller(new ChunkBlockView(chunk));
 
         return bottom;
     }
@@ -168,17 +160,9 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     private FillerInfo getTopFillerInfo() {
         if (top != null) return top;
 
-        Cube topCube;
+        Chunk chunk = vanilla.provideChunk(0, 0);
 
-        try {
-            topCube = getCubeLoader().getCube(0, worldHeightCubes - 1, 0, ICubeProviderServer.Requirement.POPULATE);
-
-            top = analyzeTopFiller(new EBSBlockView(topCube.getBlockStorageArray()));
-        } catch (IOException e) {
-            CubicChunks.LOGGER.error("Could not generate the cube at 0,{},0 to detect the chunk's filler block: air will be used", worldHeightCubes - 1, e);
-
-            top = new FillerInfo(new BlockMeta(Blocks.air, 0));
-        }
+        top = analyzeTopFiller(new ChunkBlockView(chunk));
 
         return top;
     }
@@ -224,22 +208,10 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         vanilla.recreateStructures(column.xPosition, column.zPosition); // TODO WATCH
     }
 
-    private Random getCubeSpecificRandom(int cubeX, int cubeY, int cubeZ) {
-        Random rand = new Random(world.getSeed());
-        rand.setSeed(rand.nextInt() ^ cubeX);
-        rand.setSeed(rand.nextInt() ^ cubeZ);
-        rand.setSeed(rand.nextInt() ^ cubeY);
-        return rand;
-    }
-
     @Override
     public Cube provideCube(Chunk chunk, int cubeX, int cubeY, int cubeZ) {
         try {
             WorldgenHangWatchdog.startWorldGen();
-
-            Random rand = new Random(world.getSeed());
-            rand.setSeed(rand.nextInt() ^ cubeX);
-            rand.setSeed(rand.nextInt() ^ cubeZ);
 
             IBlockView cubeData;
 
@@ -270,12 +242,12 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 // Fill with top block
                 ((IMutableBlockView) cubeData).fill(fillerInfo.filler);
             } else {
-                cubeData = getVanillaChunkSlice(cubeX, cubeY, cubeZ, rand);
+                cubeData = getVanillaChunkSlice(cubeX, cubeY, cubeZ);
             }
 
             Cube cube = new Cube(chunk, cubeY,cubeData);
 
-            CubeGeneratorsRegistry.generateVanillaCube(this, cube);
+            CubeGeneratorsRegistry.generateVanillaCube(this, world, cube);
 
             return cube;
         } finally {
@@ -283,9 +255,16 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         }
     }
 
-    private IBlockView getVanillaChunkSlice(int cubeX, int cubeY, int cubeZ, Random rand) {
+    private IBlockView getVanillaChunkSlice(int cubeX, int cubeY, int cubeZ) {
         // Make vanilla generate a chunk for us to copy
         if (lastChunk == null || lastChunk.xPosition != cubeX || lastChunk.zPosition != cubeZ) {
+            long hash = Fnv1a64.initialState();
+            hash = Fnv1a64.hashStep(hash, world.getSeed());
+            hash = Fnv1a64.hashStep(hash, cubeX);
+            hash = Fnv1a64.hashStep(hash, cubeZ);
+
+            XSTR rand = new XSTR(hash);
+
             generateVanillaChunk(cubeX, cubeZ, rand);
         }
 
@@ -297,11 +276,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 if (y == cubeY) {
                     continue;
                 }
-                try {
-                    getCubeLoader().getCube(cubeX, y, cubeZ, ICubeProviderServer.Requirement.GENERATE);
-                } catch (IOException e) {
-                    CubicChunks.LOGGER.error("Could not generate cube at {},{},{}", cubeX, y, cubeZ, e);
-                }
+
+                getCubeLoader().getCube(cubeX, y, cubeZ, ICubeProviderServer.Requirement.GENERATE);
             }
             optimizationHack = false;
         }
@@ -323,40 +299,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 } else {
                     lastChunkView = new ChunkArrayBlockView(
                         16, worldHeightBlocks, 16,
-                        new Int2ObjectFunction<>() {
-                            @Override
-                            public Block get(int key) {
-                                return compatBlocks[key];
-                            }
-
-                            @Override
-                            public Block put(int key, Block value) {
-                                compatBlocks[key] = value;
-                                return null;
-                            }
-
-                            @Override
-                            public int size() {
-                                return compatBlocks.length;
-                            }
-                        },
-                        new Int2IntFunction() {
-                            @Override
-                            public int get(int key) {
-                                return compatBlockMeta[key];
-                            }
-
-                            @Override
-                            public int put(int key, int value) {
-                                compatBlockMeta[key] = (byte) value;
-                                return 0;
-                            }
-
-                            @Override
-                            public int size() {
-                                return compatBlockMeta.length;
-                            }
-                        });
+                        wrapBlockArray(compatBlocks),
+                        wrapByteArray(compatBlockMeta));
 
                     removeBedrock(lastChunkView, rand);
 
@@ -370,6 +314,48 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         lastChunkView = new ChunkBlockView(lastChunk);
 
         removeBedrock(lastChunkView, rand);
+    }
+
+    private static Int2ObjectFunction<Block> wrapBlockArray(Block[] compatBlocks) {
+        return new Int2ObjectFunction<>() {
+
+            @Override
+            public Block get(int key) {
+                return compatBlocks[key];
+            }
+
+            @Override
+            public Block put(int key, Block value) {
+                compatBlocks[key] = value;
+                return null;
+            }
+
+            @Override
+            public int size() {
+                return compatBlocks.length;
+            }
+        };
+    }
+
+    private static Int2IntFunction wrapByteArray(byte[] compatBlockMeta) {
+        return new Int2IntFunction() {
+
+            @Override
+            public int get(int key) {
+                return compatBlockMeta[key];
+            }
+
+            @Override
+            public int put(int key, int value) {
+                compatBlockMeta[key] = (byte) value;
+                return 0;
+            }
+
+            @Override
+            public int size() {
+                return compatBlockMeta.length;
+            }
+        };
     }
 
     private void removeBedrock(IMutableBlockView chunk, Random rand) {
@@ -408,21 +394,14 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
             WorldgenHangWatchdog.startWorldGen();
 
-            Random rand = getCubeSpecificRandom(cube.getX(), cube.getY(), cube.getZ());
-
-            CubeGeneratorsRegistry.populateVanillaCubic(world, rand, cube);
+            CubeGeneratorsRegistry.populateVanillaCubic(world, cube);
 
             Cube withinVanillaChunk = cube;
 
             // Cubes outside this range are only filled with their respective block
             // No population takes place
             if (!isWithinVanillaWorld(cube)) {
-                try {
-                    withinVanillaChunk = getCubeLoader().getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
-                } catch (IOException e) {
-                    CubicChunks.LOGGER.error("Could not load cube at y=0 within vanilla chunk {},{} for vanilla chunk population", cube.getX(), cube.getZ(), e);
-                    withinVanillaChunk = null;
-                }
+                withinVanillaChunk = getCubeLoader().getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
             }
 
             // Populate the vanilla chunk if it isn't already
@@ -448,36 +427,25 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         for (int x = -1; x <= 1; x++) {
             for (int z = -1; z <= 1; z++) {
                 for (int y = 0; y < 16; y++) {
-                    try {
-                        loader.getCube(cube.getX() + x, y, cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
-                    } catch (IOException e) {
-                        CubicChunks.LOGGER.error("Could not generate cube {},{},{}", x, y, z, e);
-                    }
+                    loader.getCube(cube.getX() + x, y, cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
                 }
             }
         }
 
+        // Second, we regenerate the heightmap of all horizontally adjacent cubes
         for (int x = -1;  x <=1; x++) {
             for (int z = -1; z <=1; z++) {
-                try {
-                    Cube cube2 = loader.getCube(cube.getX() + x, cube.getY(), cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
-                    ((IColumnInternal) cube2.getColumn()).recalculateStagingHeightmap();
-                } catch (IOException e) {
-                    CubicChunks.LOGGER.error("Couldn't get cube?!", cube.getX() + x, cube.getY(), cube.getZ() + z, e);
-                }
+                Cube cube2 = loader.getCube(cube.getX() + x, cube.getY(), cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
+                ((IColumnInternal) cube2.getColumn()).recalculateStagingHeightmap();
             }
         }
 
-        // Second, we mark the cubes in the current chunk as populated
+        // Third, we mark the cubes in the current vanilla chunk as populated
         for (int y = 0; y < worldHeightCubes; y++) {
-            try {
-                Cube inColumn = loader.getCube(cube.getX(), y, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
+            Cube inColumn = loader.getCube(cube.getX(), y, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
 
-                inColumn.setPopulated(true);
-                inColumn.setFullyPopulated(true);
-            } catch (IOException e) {
-                CubicChunks.LOGGER.error("Could not mark cube {},{},{} as populated", cube.getX(), y, cube.getZ(), e);
-            }
+            inColumn.setPopulated(true);
+            inColumn.setFullyPopulated(true);
         }
 
         try {
@@ -499,7 +467,6 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         } finally {
             CompatHandler.afterPopulate(world);
         }
-
     }
 
     // First proider is the ChunkProviderGenerate/Hell/End/Flat second is the serverChunkProvider

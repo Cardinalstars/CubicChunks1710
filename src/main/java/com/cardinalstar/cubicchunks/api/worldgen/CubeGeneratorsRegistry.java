@@ -37,10 +37,10 @@ import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubicPopulator;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.worldgen.MapGenCavesCubic;
 import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
 import com.github.bsideup.jabel.Desugar;
 import com.google.common.base.Preconditions;
-import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 public class CubeGeneratorsRegistry {
 
@@ -59,6 +59,8 @@ public class CubeGeneratorsRegistry {
     private static final TreeSet<GeneratorWrapper<VanillaCompatibilityGenerator>> sortedVanillaGeneratorList = new TreeSet<>();
 
     private static final TreeSet<PopulatorWrapper> sortedPopulatorList = new TreeSet<>();
+
+    private static final TreeSet<PopulatorWrapper> sortedVanillaPopulatorList = new TreeSet<>();
 
     @Desugar
     private record GeneratorWrapper<T extends ICubeGenerator>(ICubeTerrainGenerator<T> generator, int weight) implements Comparable<GeneratorWrapper<T>> {
@@ -82,9 +84,9 @@ public class CubeGeneratorsRegistry {
      * Register a world generator that runs exclusively in the vanilla compatibility generator. This will not run for
      * other world types.
      */
-    public static void registerVanillaGenerator(ICubeTerrainGenerator<VanillaCompatibilityGenerator> generator, int weight) {
+    public static void registerVanillaGenerator(ICubeTerrainGenerator<VanillaCompatibilityGenerator> generator, int priority) {
         Preconditions.checkNotNull(generator);
-        sortedVanillaGeneratorList.add(new GeneratorWrapper<>(generator, weight));
+        sortedVanillaGeneratorList.add(new GeneratorWrapper<>(generator, priority));
     }
 
     /**
@@ -94,9 +96,34 @@ public class CubeGeneratorsRegistry {
      * @param generator The generator that invoked this event
      * @param cube The cube to generate
      */
-    public static void generateVanillaCube(VanillaCompatibilityGenerator generator, Cube cube) {
+    public static void generateVanillaCube(VanillaCompatibilityGenerator generator, World world, Cube cube) {
         for (GeneratorWrapper<VanillaCompatibilityGenerator> wrapper : sortedVanillaGeneratorList) {
-            wrapper.generator.generate(generator, cube);
+            wrapper.generator.generate(generator, world, cube);
+        }
+    }
+
+    /**
+     * Register a world populator - something that inserts new block types into the world on population stage
+     *
+     * @param populator the populator
+     * @param weight    a weight to assign to this populator. Heavy weights tend to sink to the bottom of
+     *                  list of world populator (i.e. they run later)
+     */
+    public static void registerVanillaPopulator(ICubicPopulator populator, int weight) {
+        Preconditions.checkNotNull(populator);
+        sortedVanillaPopulatorList.add(new PopulatorWrapper(populator, weight));
+    }
+
+    /**
+     * Callback hook for cube gen - if your mod wishes to add extra mod related
+     * generation to the world call this
+     *
+     * @param world  The {@link ICubicWorld} we're generating for
+     * @param pos    is position of the populated cube
+     */
+    public static void populateVanillaWorld(World world, CubePos pos) {
+        for (PopulatorWrapper wrapper : sortedVanillaPopulatorList) {
+            wrapper.populator.generate(world, pos);
         }
     }
 
@@ -122,7 +149,7 @@ public class CubeGeneratorsRegistry {
      */
     public static void populateWorld(World world, Random random, CubePos pos) {
         for (PopulatorWrapper wrapper : sortedPopulatorList) {
-            wrapper.populator.generate(world, random, pos);
+            wrapper.populator.generate(world, pos);
         }
     }
 
@@ -137,11 +164,13 @@ public class CubeGeneratorsRegistry {
             customPopulatorsForFlatCubicGenerator.add(populator);
     }
 
-    public static void populateVanillaCubic(World world, Random rand, ICube cube) {
+    static {
+        registerVanillaGenerator(new MapGenCavesCubic(), 1);
+    }
+
+    public static void populateVanillaCubic(World world, ICube cube) {
         for (ICubicPopulator populator : customPopulatorsForFlatCubicGenerator) {
-            BlockPos pos = cube.getCoords()
-                .getCenterBlockPos();
-            populator.generate(world, rand, cube.getCoords());
+            populator.generate(world, cube.getCoords());
         }
     }
 

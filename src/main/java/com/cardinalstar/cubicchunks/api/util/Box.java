@@ -73,6 +73,14 @@ public class Box implements Iterable<Vector3ic> {
         return x1 <= other.x1 && x2 >= other.x2 && y1 <= other.y1 && y2 >= other.y2 && z1 <= other.z1 && z2 >= other.z2;
     }
 
+    public boolean contains(int xmin, int ymin, int zmin, int xmax, int ymax, int zmax) {
+        return x1 <= xmin && x2 >= xmax && y1 <= ymin && y2 >= ymax && z1 <= zmin && z2 >= zmax;
+    }
+
+    public boolean containsCube(int cubeX, int cubeY, int cubeZ) {
+        return contains(cubeX * 16, cubeY * 16, cubeZ * 16, cubeX * 16 + 15, cubeY * 16 + 15, cubeZ * 16 + 15);
+    }
+
     public void forEachPoint(XYZFunction function) {
         for (int x = x1; x <= x2; x++) {
             for (int y = y1; y <= y2; y++) {
@@ -208,6 +216,16 @@ public class Box implements Iterable<Vector3ic> {
             this.x2 = Math.max(box.x2, x2);
             this.y2 = Math.max(box.y2, y2);
             this.z2 = Math.max(box.z2, z2);
+            return this;
+        }
+
+        public Box.Mutable expand(int x, int y, int z) {
+            this.x1 = Math.min(x, x1);
+            this.y1 = Math.min(y, y1);
+            this.z1 = Math.min(z, z1);
+            this.x2 = Math.max(x, x2);
+            this.y2 = Math.max(y, y2);
+            this.z2 = Math.max(z, z2);
             return this;
         }
 

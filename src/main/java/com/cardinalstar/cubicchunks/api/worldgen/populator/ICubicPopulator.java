@@ -20,8 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.api.worldgen.populator;
 
-import java.util.Random;
-
 import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
@@ -51,10 +49,9 @@ public interface ICubicPopulator {
      *
      * All block access should be done through the provided {@link ICubicWorld} instance.
      *
-     * @param world  The {@link ICubicWorld} we're generating for. Casting it to {@link World} is always safe.
-     * @param random the cube specific {@link Random}.
-     * @param pos    is the position of the cube being populated {@link CubePos}.
+     * @param world The {@link World} we're generating for.
+     * @param pos   The position of the cube being populated.
      *
      */
-    void generate(World world, Random random, CubePos pos);
+    void generate(World world, CubePos pos);
 }
