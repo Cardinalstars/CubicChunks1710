@@ -34,7 +34,8 @@ public class MixinEntityRenderer {
     @Shadow
     private float fogColorBlue;
 
-    // Disables the dot product that changes the fog hue when you look at the sun
+    // Redirects the dot product that changes the fog hue when you look at the sun to only look at the skylight at the
+    // player's feet instead of the direction the player is facing.
     @Redirect(method = "updateFogColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Vec3;dotProduct(Lnet/minecraft/util/Vec3;)D"))
     public double disableDotProduct(Vec3 instance, Vec3 vec, @Local(argsOnly = true) float partialTicks) {
         EntityLivingBase player = this.mc.renderViewEntity;
