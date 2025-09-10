@@ -23,7 +23,6 @@ public abstract class MixinEntityLivingBase extends Entity {
 
     @Redirect(method = "moveEntityWithHeading", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;blockExists(III)Z"))
     public boolean fixBlockExists(World instance, int x, int y, int z) {
-
         return instance.blockExists(x, MathHelper.floor_double(this.posY), z);
     }
 
