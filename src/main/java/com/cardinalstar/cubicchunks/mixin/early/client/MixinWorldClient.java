@@ -48,7 +48,6 @@ public abstract class MixinWorldClient extends MixinWorld implements ICubicWorld
     @Override
     public void initCubicWorldClient(IntRange heightRange, IntRange generationRange) {
         super.initCubicWorld(heightRange, generationRange);
-        this.isCubicWorld = true;
         CubeProviderClient cubeProviderClient = new CubeProviderClient(this);
         this.chunkProvider = cubeProviderClient;
         this.clientChunkProvider = cubeProviderClient;

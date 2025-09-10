@@ -147,7 +147,6 @@ public abstract class MixinWorld implements ICubicWorldInternal {
 
     @Nullable
     protected LightingManager lightingManager;
-    protected boolean isCubicWorld;
     protected int minHeight = 0, maxHeight = 256, fakedMaxHeight = 0;
     private int minGenerationHeight = 0, maxGenerationHeight = 256;
 
@@ -240,8 +239,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         boolean ccGenerator = ccWorldType
             && ((ICubicWorldType) this.worldInfo.getTerrainType()).hasCubicGeneratorForWorld((World) (Object) this);
         boolean savedCC = savedData != null && savedData.isCubicChunks;
-        boolean ccWorldInfo = ((ICubicWorldSettings) this.worldInfo).isCubic()
-            && (savedData == null || savedData.isCubicChunks);
+        boolean ccWorldInfo = (savedData == null || savedData.isCubicChunks);
         boolean excludeCC = CubicChunksConfig.isDimensionExcluded(this.provider.dimensionId);
         boolean forceExclusions = CubicChunksConfig.forceDimensionExcludes;
         // TODO: simplify this mess of booleans and document where each of them comes from
@@ -308,9 +306,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     }
 
     protected void initCubicWorld(IntRange heightRange, IntRange generationRange) {
-        this.isCubicWorld = true;
         this.chunkProvider = this.createChunkProvider();
-        ((ICubicWorldSettings) worldInfo).setCubic(true);
 
         // Set the world height boundaries to their highest and lowest values respectively
         this.minHeight = heightRange.getMin();
@@ -321,11 +317,6 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         this.maxGenerationHeight = generationRange.getMax();
 
         this.lightingManager = new LightingManager((World) (Object) this);
-    }
-
-    @Override
-    public boolean isCubicWorld() {
-        return this.isCubicWorld;
     }
 
     @Override
@@ -350,17 +341,11 @@ public abstract class MixinWorld implements ICubicWorldInternal {
 
     @Override
     public ICubeProviderInternal getCubeCache() {
-        if (!this.isCubicWorld()) {
-            throw new NotCubicChunksWorldException();
-        }
         return (ICubeProviderInternal) this.chunkProvider;
     }
 
     @Override
     public LightingManager getLightingManager() {
-        if (!this.isCubicWorld()) {
-            throw new NotCubicChunksWorldException();
-        }
         assert this.lightingManager != null;
         return this.lightingManager;
     }
@@ -442,9 +427,6 @@ public abstract class MixinWorld implements ICubicWorldInternal {
 
     @Inject(method = "updateLightByType", at = @At("HEAD"), cancellable = true)
     private void updateLightByType(EnumSkyBlock lightType, int x, int y, int z, CallbackInfoReturnable<Boolean> ci) {
-        if (!isCubicWorld()) {
-            return;
-        }
         ci.setReturnValue(getLightingManager().checkLightFor(lightType, x, y, z));
     }
 
@@ -464,14 +446,12 @@ public abstract class MixinWorld implements ICubicWorldInternal {
      */
     @Inject(method = "markTileEntityChunkModified", at = @At("HEAD"), cancellable = true)
     private void onMarkChunkDirty(int x, int y, int z, TileEntity unusedTileEntity, CallbackInfo ci) {
-        if (this.isCubicWorld()) {
-            Cube cube = this.getCubeCache()
-                .getLoadedCube(CubePos.fromBlockCoords(x, y, z));
-            if (cube != null) {
-                cube.markDirty();
-            }
-            ci.cancel();
+        Cube cube = this.getCubeCache()
+            .getLoadedCube(CubePos.fromBlockCoords(x, y, z));
+        if (cube != null) {
+            cube.markDirty();
         }
+        ci.cancel();
     }
 
     @Shadow
@@ -491,31 +471,18 @@ public abstract class MixinWorld implements ICubicWorldInternal {
             cir.setReturnValue(Blocks.air);
             return;
         }
-        if (this.isCubicWorld) {
-            ICube cube = ((ICubeProviderInternal) this.chunkProvider)
-                .getCube(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z));
-            if (cube == null) {
-                CubicChunks.LOGGER.info("NULL cube found at {}, {}, {}, returning Blocks.air", x, y, z);
-                cir.setReturnValue(Blocks.air);
-                return;
-            }
-            cir.setReturnValue(cube.getBlock(x, y, z));
-        } else {
-            Chunk chunk = this.getChunkFromBlockCoords(x, z);
-            if (chunk == null) {
-                CubicChunks.LOGGER.info("NULL chunk found at {}, {}, {}, returning Blocks.air", x, y, z);
-                cir.setReturnValue(Blocks.air);
-                return;
-            }
-            cir.setReturnValue(chunk.getBlock(x & 15, y, z & 15));
+        ICube cube = ((ICubeProviderInternal) this.chunkProvider)
+            .getCube(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z));
+        if (cube == null) {
+            CubicChunks.LOGGER.info("NULL cube found at {}, {}, {}, returning Blocks.air", x, y, z);
+            cir.setReturnValue(Blocks.air);
+            return;
         }
+        cir.setReturnValue(cube.getBlock(x, y, z));
     }
 
     @Inject(method = "getTopSolidOrLiquidBlock", at = @At("HEAD"), cancellable = true)
     private void getTopSolidOrLiquidBlockCubicChunks(int x, int z, CallbackInfoReturnable<Integer> cir) {
-        if (!isCubicWorld()) {
-            return;
-        }
         Chunk chunk = this.getChunkFromBlockCoords(x, z);
         int currentY = getPrecipitationHeight(x, z);
         int minY = currentY - 64;

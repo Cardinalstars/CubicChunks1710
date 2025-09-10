@@ -39,11 +39,9 @@ public class MixinMinecraftServer {
     @Inject(method = "initialWorldChunkLoad", at = @At("HEAD"), cancellable = true)
     private void onInitialSpawnLoad(CallbackInfo ci) {
         World world = DimensionManager.getWorld(0);
-        if (((ICubicWorld) world).isCubicWorld()) {
-            ((ICubicWorldInternal.Server) world).setSpawnArea(new SpawnCubes());
-            ((ICubicWorldInternal.Server) world).getSpawnArea()
-                .update(world);
-            ci.cancel();
-        }
+        ((ICubicWorldInternal.Server) world).setSpawnArea(new SpawnCubes());
+        ((ICubicWorldInternal.Server) world).getSpawnArea()
+            .update(world);
+        ci.cancel();
     }
 }

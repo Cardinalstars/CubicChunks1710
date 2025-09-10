@@ -228,35 +228,29 @@ public abstract class MixinChunk_Cubes {
 
     // modify vanilla:
 
-    @ModifyConstant(
-        method = "<init>(Lnet/minecraft/world/World;II)V",
-        constant = @Constant(intValue = 16),
-        slice = @Slice(
-            to = @At(
-                value = "FIELD",
-                target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-                opcode = Opcodes.PUTFIELD)),
-        allow = 1,
-        require = 1)
-    private int modifySectionArrayLength(int sixteen, World worldIn, int x, int z) {
-        if (worldIn == null) {
-            // Some mods construct chunks with null world, ignore them
-            return sixteen;
-        }
-        if (!((ICubicWorld) worldIn).isCubicWorld()) {
-            IMinMaxHeight y = (IMinMaxHeight) worldIn;
-            return Coords.blockToCube(y.getMaxHeight()) - Coords.blockToCube(y.getMinHeight());
-        }
-        return sixteen;
-    }
+//    @ModifyConstant(
+//        method = "<init>(Lnet/minecraft/world/World;II)V",
+//        constant = @Constant(intValue = 16),
+//        slice = @Slice(
+//            to = @At(
+//                value = "FIELD",
+//                target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+//                opcode = Opcodes.PUTFIELD)),
+//        allow = 1,
+//        require = 1)
+//    private int modifySectionArrayLength(int sixteen, World worldIn, int x, int z) {
+//        if (worldIn == null) {
+//            // Some mods construct chunks with null world, ignore them
+//            return sixteen;
+//        }
+//        IMinMaxHeight y = (IMinMaxHeight) worldIn;
+//        return Coords.blockToCube(y.getMaxHeight()) - Coords.blockToCube(y.getMinHeight());
+//    }
 
     @Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At(value = "RETURN"))
     private void cubicChunkColumn_construct(World world, int x, int z, CallbackInfo cbi) {
         if (world == null) {
             // Some mods construct chunks with null world, ignore them
-            return;
-        }
-        if (!((ICubicWorld) world).isCubicWorld()) {
             return;
         }
         this.isColumn = true;

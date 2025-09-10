@@ -51,9 +51,7 @@ public abstract class MixinWorldProvider {
      */
     @Inject(method = "getVoidFogYFactor", at = @At(value = "HEAD"), cancellable = true)
     private void getVoidFogYFactor_injectReplace(CallbackInfoReturnable<Double> cir) {
-        if (cubicWorld().isCubicWorld()) {
-            cir.setReturnValue(Double.NaN);
-        }
+        cir.setReturnValue(Double.NaN);
     }
 
     private ICubicWorld cubicWorld() {

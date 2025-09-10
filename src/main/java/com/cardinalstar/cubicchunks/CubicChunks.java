@@ -185,10 +185,7 @@ public class CubicChunks {
         SideUtils.runForSide(() -> () -> {
             IIntegratedServer integratedServer = cast(event.getServer());
             ICubicWorldSettings settings = cast(integratedServer.getWorldSettings());
-            if (settings.isCubic()) {
-                event.getServer()
-                    .setBuildLimit(CubicChunks.MAX_SUPPORTED_BLOCK_Y);
-            }
+            event.getServer().setBuildLimit(CubicChunks.MAX_SUPPORTED_BLOCK_Y);
         }, () -> () -> {
             // no-op, done by mixin
         });

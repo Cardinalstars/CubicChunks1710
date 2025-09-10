@@ -55,9 +55,8 @@ public abstract class MixinEmptyChunk extends MixinChunk_Column {
 
     @Inject(method = "<init>", at = @At(value = "RETURN"))
     private void cubicChunkColumn_construct(World worldIn, int x, int z, CallbackInfo cbi) {
-        if (((ICubicWorld) worldIn).isCubicWorld()) {
-            blankCube = new BlankCube((Chunk) (Object) this);
-        }
+        blankCube = new BlankCube((Chunk) (Object) this);
+
     }
 
     public ICube chunk$getCube(int cubeY) {

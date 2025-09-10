@@ -37,30 +37,28 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 
 @ParametersAreNonnullByDefault
 @Mixin(WorldSettings.class)
-public class MixinWorldSettings implements ICubicWorldSettings {
-
-    private boolean isCubic;
-
-    @Inject(method = "<init>(Lnet/minecraft/world/storage/WorldInfo;)V", at = @At("RETURN"))
-    private void onConstruct(WorldInfo info, CallbackInfo cbi) {
-        this.isCubic = ((ICubicWorldSettings) info).isCubic();
-    }
-
-    @Inject(
-        method = "<init>(JLnet/minecraft/world/WorldSettings$GameType;ZZLnet/minecraft/world/WorldType;)V",
-        at = @At("RETURN"))
-    private void onConstruct(long seedIn, WorldSettings.GameType gameType, boolean enableMapFeatures,
-        boolean hardcoreMode, WorldType worldTypeIn, CallbackInfo ci) {
-        this.isCubic = CubicChunksConfig.forceLoadCubicChunks != CubicChunksConfig.ForceCCMode.NONE || worldTypeIn instanceof ICubicWorldType;
-    }
-
-    @Override
-    public boolean isCubic() {
-        return isCubic;
-    }
-
-    @Override
-    public void setCubic(boolean cubic) {
-        this.isCubic = cubic;
-    }
+public class MixinWorldSettings implements ICubicWorldSettings
+{
+//    @Inject(method = "<init>(Lnet/minecraft/world/storage/WorldInfo;)V", at = @At("RETURN"))
+//    private void onConstruct(WorldInfo info, CallbackInfo cbi) {
+//        this.isCubic = ((ICubicWorldSettings) info).isCubic();
+//    }
+//
+//    @Inject(
+//        method = "<init>(JLnet/minecraft/world/WorldSettings$GameType;ZZLnet/minecraft/world/WorldType;)V",
+//        at = @At("RETURN"))
+//    private void onConstruct(long seedIn, WorldSettings.GameType gameType, boolean enableMapFeatures,
+//        boolean hardcoreMode, WorldType worldTypeIn, CallbackInfo ci) {
+//        this.isCubic = CubicChunksConfig.forceLoadCubicChunks != CubicChunksConfig.ForceCCMode.NONE || worldTypeIn instanceof ICubicWorldType;
+//    }
+//
+//    @Override
+//    public boolean isCubic() {
+//        return isCubic;
+//    }
+//
+//    @Override
+//    public void setCubic(boolean cubic) {
+//        this.isCubic = cubic;
+//    }
 }
