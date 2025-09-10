@@ -46,7 +46,7 @@ public class MixinEntityRenderer {
     }
 
     // Makes underground fog darker
-    @Inject(method = "updateFogColor", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glClearColor(FFFF)V", shift = At.Shift.BEFORE))
+    @Inject(method = "updateFogColor", at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL11;glClearColor(FFFF)V", shift = At.Shift.BEFORE, remap = false))
     public void makeFogDarkerUnderground(float partialTicks, CallbackInfo ci) {
 
         EntityLivingBase player = this.mc.renderViewEntity;
