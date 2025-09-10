@@ -107,6 +107,22 @@ public class MathUtil {
         return max;
     }
 
+    public static float clamp(float val, float lo, float hi) {
+        return val < lo ? lo : val > hi ? hi : val;
+    }
+
+    public static double clamp(double val, double lo, double hi) {
+        return val < lo ? lo : val > hi ? hi : val;
+    }
+
+    public static int clamp(int val, int lo, int hi) {
+        return MathHelper.clamp_int(val, lo, hi);
+    }
+
+    public static long clamp(long val, long lo, long hi) {
+        return val < lo ? lo : val > hi ? hi : val;
+    }
+
     public static float maxIgnoreNan(float... a) {
         float max = a[0];
         for (int i = 1; i < a.length; i++) {
@@ -132,7 +148,7 @@ public class MathUtil {
      * This is done by substracting "halfspace" from the factor.
      * To have the ore still generated in the area it's supposed to, the location inside the modulo gets shifted
      * by both the mean location of the first curve and back the "halfspace".
-     * 
+     *
      * @param x       Value to be evaluated
      * @param mean    Center of the first curve
      * @param stdDev  Standard deviation
