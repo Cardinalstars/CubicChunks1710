@@ -45,6 +45,7 @@ public abstract class MixinAnvilSaveHandler {
     private AnvilChunkLoader getChunkLoader(File file, WorldProvider provider) {
         ICubicWorld world = ((ICubicWorld) ((ICubicWorldProvider) provider).getWorld());
 
+        // Use a supplier because we're in the process of overwriting the vanilla chunk provider.
         return new CubicAnvilChunkLoader(
             file,
             () -> ((ICubeProviderInternal.Server) world.getCubeCache()));
