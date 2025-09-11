@@ -63,6 +63,21 @@ public class MathUtil {
         return min + a * (max - min);
     }
 
+    public static float map(float x, float in_min, float in_max, float out_min, float out_max) {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    public static double map(double x, double in_min, double in_max, double out_min, double out_max) {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    public static double linearCurve(double x, double x1, double y1, double x2, double y2) {
+        if (x < x1) return y1;
+        if (x > x2) return y1;
+
+        return map(x, x1, x2, y1, y2);
+    }
+
     public static int min(int a, int b) {
         return Math.min(a, b);
     }
@@ -132,7 +147,7 @@ public class MathUtil {
      * This is done by substracting "halfspace" from the factor.
      * To have the ore still generated in the area it's supposed to, the location inside the modulo gets shifted
      * by both the mean location of the first curve and back the "halfspace".
-     * 
+     *
      * @param x       Value to be evaluated
      * @param mean    Center of the first curve
      * @param stdDev  Standard deviation

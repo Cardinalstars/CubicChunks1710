@@ -20,10 +20,7 @@
  */
 package com.cardinalstar.cubicchunks.api.worldgen.populator;
 
-import java.util.Random;
-
 import net.minecraft.world.World;
-import net.minecraft.world.biome.BiomeGenBase;
 
 import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
 import com.cardinalstar.cubicchunks.util.CubePos;
@@ -40,10 +37,9 @@ public interface ICubicPopulator {
     /**
      * Generate a specific populator feature for a given cube given a biome.
      *
-     * To avoid requiring unnecessary amount of Cubes to do population,
-     * the population space is offset by 8 blocks in each direction.
-     * Instead of generating blocks only in this cube you should generate then in 16x16x16
-     * block space starting from the center of current cube.
+     * To avoid requiring unnecessary amount of Cubes to do population, the population space is offset by 8 blocks in
+     * each direction. Instead of generating blocks only in this cube you should generate then in 16x16x16 block space
+     * starting from the center of current cube.
      *
      * Example of generating random position coordinate:
      *
@@ -53,11 +49,9 @@ public interface ICubicPopulator {
      *
      * All block access should be done through the provided {@link ICubicWorld} instance.
      *
-     * @param random the cube specific {@link Random}.
-     * @param pos    is the position of the cube being populated {@link CubePos}.
-     * @param world  The {@link ICubicWorld} we're generating for. Casting it to {@link World} is always safe.
-     * @param biome  The biome the populator is working in.
+     * @param world The {@link World} we're generating for.
+     * @param pos   The position of the cube being populated.
      *
      */
-    void generate(World world, Random random, CubePos pos, BiomeGenBase biome);
+    void generate(World world, CubePos pos);
 }

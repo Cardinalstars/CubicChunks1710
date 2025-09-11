@@ -74,6 +74,7 @@ import com.cardinalstar.cubicchunks.util.TicketList;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
+import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 /**
@@ -586,6 +587,14 @@ public class Cube implements ICube {
         putEBSInChunk();
 
         return ebs;
+    }
+
+    public ExtendedBlockStorage getOrCreateStorage() {
+        if (this.storage == null) {
+            setStorage(new ExtendedBlockStorage(getY(), !column.worldObj.provider.hasNoSky));
+        }
+
+        return storage;
     }
 
     public void setStorageFromSave(@Nullable ExtendedBlockStorage ebs) {

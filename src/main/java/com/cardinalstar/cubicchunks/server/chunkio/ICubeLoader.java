@@ -24,7 +24,7 @@ public interface ICubeLoader extends Flushable, Closeable {
 
     boolean cubeExists(int x, int y, int z);
 
-    Cube getCube(int x, int y, int z, ICubeProviderServer.Requirement effort) throws IOException;
+    Cube getCube(int x, int y, int z, ICubeProviderServer.Requirement effort);
 
     void unloadCube(int x, int y, int z);
 
