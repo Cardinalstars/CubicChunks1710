@@ -41,8 +41,6 @@ import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 @ParametersAreNonnullByDefault
 public interface ICubicWorld extends IMinMaxHeight {
 
-    boolean isCubicWorld();
-
     /**
      * Returns the {@link ICubeProvider} for this world, or throws {@link NotCubicChunksWorldException}
      * if this is not a CubicChunks world.

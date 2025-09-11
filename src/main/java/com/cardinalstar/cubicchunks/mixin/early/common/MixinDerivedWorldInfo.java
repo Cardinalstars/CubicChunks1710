@@ -32,12 +32,12 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 @Mixin(DerivedWorldInfo.class)
 public class MixinDerivedWorldInfo extends MixinWorldInfo {
 
-    @Shadow
-    @Final
-    private WorldInfo theWorldInfo;
-
-    @Override
-    public boolean isCubic() {
-        return ((ICubicWorldSettings) theWorldInfo).isCubic();
-    }
+//    @Shadow
+//    @Final
+//    private WorldInfo theWorldInfo;
+//
+//    @Override
+//    public boolean isCubic() {
+//        return ((ICubicWorldSettings) theWorldInfo).isCubic();
+//    }
 }

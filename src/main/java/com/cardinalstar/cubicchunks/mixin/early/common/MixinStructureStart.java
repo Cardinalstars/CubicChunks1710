@@ -45,20 +45,10 @@ public abstract class MixinStructureStart implements ICubicFeatureStart {
     public abstract int func_143018_f();
 
     private int cubeY;
-    private boolean isCubic = false;
 
     @Override
     public int getChunkPosY() {
         return this.cubeY;
-    }
-
-    @Override
-    public void initCubic(World world, int cubeY) {
-        if (this.isCubic) {
-            throw new IllegalStateException("Already initialized!");
-        }
-        this.cubeY = cubeY;
-        this.isCubic = true;
     }
 
     @Override
@@ -80,7 +70,6 @@ public abstract class MixinStructureStart implements ICubicFeatureStart {
     @Inject(method = "func_143020_a", at = @At("HEAD"))
     private void readYFromNBT(World world, NBTTagCompound tag, CallbackInfo cbi) {
         if (tag.hasKey("ChunkY")) {
-            this.isCubic = true;
             this.cubeY = tag.getInteger("ChunkY");
         }
     }
@@ -98,10 +87,5 @@ public abstract class MixinStructureStart implements ICubicFeatureStart {
     @Override
     public int getZ() {
         return func_143018_f();
-    }
-
-    @Override
-    public boolean isCubic() {
-        return this.isCubic;
     }
 }

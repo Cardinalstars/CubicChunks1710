@@ -55,14 +55,14 @@ public class CommonEventHandler {
     public void onWorldServerTick(TickEvent.WorldTickEvent evt) {
         WorldServer world = (WorldServer) evt.world;
         // Forge (at least version 11.14.3.1521) doesn't call this event for client world.
-        if (evt.phase == TickEvent.Phase.END && ((ICubicWorld) world).isCubicWorld() && evt.side == Side.SERVER) {
+        if (evt.phase == TickEvent.Phase.END && evt.side == Side.SERVER) {
             ((ICubicWorldInternal) world).tickCubicWorld();
         }
     }
 
     @SubscribeEvent
     public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
-        if (evt.entity instanceof EntityPlayerMP && ((ICubicWorld) evt.world).isCubicWorld()) {
+        if (evt.entity instanceof EntityPlayerMP) {
             PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
         }
     }
@@ -99,14 +99,11 @@ public class CommonEventHandler {
 
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
-        if (event.world.isRemote || !((ICubicWorld) event.world).isCubicWorld()) {
+        if (event.world.isRemote) {
             return;
         }
 
         ICubicWorld world = (ICubicWorld) event.world;
-        if (!world.isCubicWorld()) {
-            return;
-        }
 
         ICubeLoader loader = ((ICubeProviderInternal.Server) world.getCubeCache()).getCubeLoader();
         try {
