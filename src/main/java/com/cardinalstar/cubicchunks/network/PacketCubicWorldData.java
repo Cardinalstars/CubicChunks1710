@@ -41,7 +41,6 @@ import io.netty.buffer.ByteBuf;
 @ParametersAreNonnullByDefault
 public class PacketCubicWorldData implements IMessage {
 
-    private boolean isCubicWorld;
     private int minHeight;
     private int maxHeight;
     private int minGenerationHeight;
@@ -49,28 +48,23 @@ public class PacketCubicWorldData implements IMessage {
 
     public PacketCubicWorldData() {}
 
-    public PacketCubicWorldData(WorldServer world) {
-        this.minHeight = 0;
-        this.maxHeight = 256;
-        if (((ICubicWorld) world).isCubicWorld()) {
-            this.isCubicWorld = true;
-            this.minHeight = ((ICubicWorld) world).getMinHeight();
-            this.maxHeight = ((ICubicWorld) world).getMaxHeight();
-            if (world.getWorldInfo()
-                .getTerrainType() instanceof ICubicWorldType type) {
-                IntRange range = type.calculateGenerationHeightRange(world);
-                this.minGenerationHeight = range.getMin();
-                this.maxGenerationHeight = range.getMax();
-            } else {
-                this.minGenerationHeight = 0;
-                this.maxGenerationHeight = 256;
-            }
+    public PacketCubicWorldData(WorldServer world)
+    {
+        this.minHeight = ((ICubicWorld) world).getMinHeight();
+        this.maxHeight = ((ICubicWorld) world).getMaxHeight();
+        if (world.getWorldInfo()
+            .getTerrainType() instanceof ICubicWorldType type) {
+            IntRange range = type.calculateGenerationHeightRange(world);
+            this.minGenerationHeight = range.getMin();
+            this.maxGenerationHeight = range.getMax();
+        } else {
+            this.minGenerationHeight = 0;
+            this.maxGenerationHeight = 256;
         }
     }
 
     @Override
     public void fromBytes(ByteBuf buf) {
-        this.isCubicWorld = buf.readBoolean();
         this.minHeight = buf.readInt();
         this.maxHeight = buf.readInt();
         this.minGenerationHeight = buf.readInt();
@@ -79,15 +73,10 @@ public class PacketCubicWorldData implements IMessage {
 
     @Override
     public void toBytes(ByteBuf buf) {
-        buf.writeBoolean(this.isCubicWorld);
         buf.writeInt(this.minHeight);
         buf.writeInt(this.maxHeight);
         buf.writeInt(this.minGenerationHeight);
         buf.writeInt(this.maxGenerationHeight);
-    }
-
-    public boolean isCubicWorld() {
-        return this.isCubicWorld;
     }
 
     public int getMinHeight() {
@@ -112,15 +101,11 @@ public class PacketCubicWorldData implements IMessage {
         @Override
         public void handleClientMessage(World world, EntityPlayer player, PacketCubicWorldData message,
             MessageContext ctx) {
-            // initialize only if sending packet about cubic world, but not when already initialized
-            if (message.isCubicWorld() && !((ICubicWorld) world).isCubicWorld()) {
-                ((ICubicWorldInternal.Client) world).initCubicWorldClient(
-                    new IntRange(message.getMinHeight(), message.getMaxHeight()),
-                    new IntRange(message.getMinGenerationHeight(), message.getMaxGenerationHeight()));
-                // Update stale ViewFrustum/RenderChunk-related state, as it was previously set for non-CC world
-                Minecraft.getMinecraft().renderGlobal.setWorldAndLoadRenderers((WorldClient) world);
-            }
-
+            ((ICubicWorldInternal.Client) world).initCubicWorldClient(
+                new IntRange(message.getMinHeight(), message.getMaxHeight()),
+                new IntRange(message.getMinGenerationHeight(), message.getMaxGenerationHeight()));
+            // Update stale ViewFrustum/RenderChunk-related state, as it was previously set for non-CC world
+            Minecraft.getMinecraft().renderGlobal.setWorldAndLoadRenderers((WorldClient) world);
         }
     }
 }

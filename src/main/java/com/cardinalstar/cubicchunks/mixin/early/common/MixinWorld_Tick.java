@@ -68,9 +68,6 @@ public abstract class MixinWorld_Tick implements ICubicWorld {
         require = 1)
     private boolean canUpdateEntity(World _this, int startBlockX, int oldStartBlockY, int startBlockZ, int endBlockX,
         int oldEndBlockY, int endBlockZ, @Local(argsOnly = true) Entity entity) {
-        if (!this.isCubicWorld()) {
-            return checkChunksExist(startBlockX, oldStartBlockY, startBlockZ, endBlockX, oldEndBlockY, endBlockZ);
-        }
 
         int entityPosY = MathHelper.floor_double(entity.posY);
         int entityPosX = MathHelper.floor_double(entity.posX);
