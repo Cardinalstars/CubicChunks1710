@@ -68,7 +68,7 @@ public class ClientEventHandler {
             .isGamePaused()) {
             return;
         }
-        if (evt.phase == TickEvent.Phase.END && world.isCubicWorld()) {
+        if (evt.phase == TickEvent.Phase.END) {
             world.tickCubicWorld();
         }
     }

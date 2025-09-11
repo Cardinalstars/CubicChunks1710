@@ -33,22 +33,5 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 public interface ICubicFeatureStart extends XYZAddressable {
 
     int getChunkPosY();
-
-    /**
-     * Called to mark this StructureStart as a part of cubic chunks structure,
-     * and provide necessary cubic chunks specific data.
-     * Must be called immediately after constructing the StructureStart.
-     *
-     * @param world world instance for initialization
-     * @param cubeY cube Y coordinate of this structure start
-     */
-    void initCubic(World world, int cubeY);
-
     CubePos getCubePos();
-
-    /**
-     * @return {@code true} when instance has been initialized by initCubic(..) method called
-     *         by one of cubic chunks structure generators.
-     */
-    boolean isCubic();
 }

@@ -222,19 +222,18 @@ public class CubicChunkManager {
         ticket.setTag("cubicchunks", cubicNBT);
     }
 
-    public static void onLoadEntityTicketChunk(World world, ForgeChunkManager.Ticket tick) {
-        if (((ICubicWorld) world).isCubicWorld()) {
-            ICubicTicketInternal ticket = (ICubicTicketInternal) tick;
-            ((ICubicWorld) world)
-                .getCubeFromCubeCoords(ticket.getEntityChunkX(), ticket.getEntityChunkY(), ticket.getEntityChunkZ());
-        }
+    public static void onLoadEntityTicketChunk(World world, ForgeChunkManager.Ticket tick)
+    {
+        ICubicTicketInternal ticket = (ICubicTicketInternal) tick;
+        ((ICubicWorld) world)
+            .getCubeFromCubeCoords(ticket.getEntityChunkX(), ticket.getEntityChunkY(), ticket.getEntityChunkZ());
     }
 
     @SubscribeEvent
     public static void onForgeChunkManagerForceChunk(ForgeChunkManager.ForceChunkEvent event) {
         ForgeChunkManager.Ticket ticket = event.ticket;
         World worldInstance = ticket.world;
-        if (!((ICubicWorld) worldInstance).isCubicWorld() || !(worldInstance instanceof WorldServer)) {
+        if (!(worldInstance instanceof WorldServer)) {
             return;
         }
         addForcedCubesHeuristic(event, ticket, (WorldServer) worldInstance);
@@ -283,9 +282,6 @@ public class CubicChunkManager {
     public static void onForgeChunkManagerUnforceChunk(ForgeChunkManager.UnforceChunkEvent event) {
         ForgeChunkManager.Ticket ticket = event.ticket;
         World world = ticket.world;
-        if (!((ICubicWorld) world).isCubicWorld()) {
-            return;
-        }
         IntSet forcedCubes = ((ICubicTicketInternal) ticket).getAllForcedChunkCubes()
             .get(event.location);
         if (forcedCubes == null) {
