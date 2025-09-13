@@ -59,7 +59,7 @@ public class MixinEntityTrackerEntry implements ICubicEntityTracker.Entry {
             ordinal = 0))
     private int modifyThreshold(int original, @Local(argsOnly = true) EntityPlayerMP player,
         @Local(ordinal = 0) double d0, @Local(ordinal = 1) double d1) {
-        if (d0 >= (double) (-original) && ((ICubicWorld) player.worldObj).isCubicWorld()) {
+        if (d0 >= (double) (-original)) {
             int rangeY = Math.min(this.blocksDistanceThreshold, this.cubic_chunks$maxVertRange);
             double dy = player.posY - this.lastScaledYPosition / 32.0D;
             if (dy < -rangeY || dy > rangeY) {
@@ -76,14 +76,12 @@ public class MixinEntityTrackerEntry implements ICubicEntityTracker.Entry {
         int original = entry.blocksDistanceThreshold;
 
         // do your cubic-world-aware check
-        if (((ICubicWorld) player.worldObj).isCubicWorld()) {
-            int rangeY = Math.min(original, this.cubic_chunks$maxVertRange);
-            double dy = player.posY - this.lastScaledYPosition / 32.0D;
+        int rangeY = Math.min(original, this.cubic_chunks$maxVertRange);
+        double dy = player.posY - this.lastScaledYPosition / 32.0D;
 
-            if (dy < -rangeY || dy > rangeY) {
-                // hack: return an exaggerated threshold so the vanilla checks fail early
-                return -(original + 1);
-            }
+        if (dy < -rangeY || dy > rangeY) {
+            // hack: return an exaggerated threshold so the vanilla checks fail early
+            return -(original + 1);
         }
 
         return original;
@@ -92,15 +90,13 @@ public class MixinEntityTrackerEntry implements ICubicEntityTracker.Entry {
     @Inject(method = "isPlayerWatchingThisChunk", cancellable = true, at = @At("HEAD"))
     private void isPlayerWatchingThisChunkCubic(EntityPlayerMP player, CallbackInfoReturnable<Boolean> cir) {
         // workaround for transfer between cubicchunks and non-cubic-chunks dimension
-        if (((ICubicWorld) player.worldObj).isCubicWorld()) {
-            boolean ret = ((CubicPlayerManager) player.getServerForPlayer()
-                .getPlayerManager()).isPlayerWatchingCube(
-                    player,
-                    this.myEntity.chunkCoordX,
-                    this.myEntity.chunkCoordY,
-                    this.myEntity.chunkCoordZ);
-            cir.setReturnValue(ret);
-        }
+        boolean ret = ((CubicPlayerManager) player.getServerForPlayer()
+            .getPlayerManager()).isPlayerWatchingCube(
+                player,
+                this.myEntity.chunkCoordX,
+                this.myEntity.chunkCoordY,
+                this.myEntity.chunkCoordZ);
+        cir.setReturnValue(ret);
     }
 
     @Override

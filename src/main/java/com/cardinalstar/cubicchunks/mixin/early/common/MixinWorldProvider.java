@@ -76,8 +76,7 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
 
     @Inject(method = "getActualHeight", at = @At("HEAD"), cancellable = true, remap = false)
     private void getActualHeight(CallbackInfoReturnable<Integer> cir) {
-        if (worldObj == null || !((ICubicWorld) worldObj).isCubicWorld()
-            || !(worldObj.getWorldInfo()
+        if (worldObj == null || !(worldObj.getWorldInfo()
                 .getTerrainType() instanceof ICubicWorldType)) {
             return;
         }
@@ -97,9 +96,6 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
     @Nullable
     @Override
     public ICubeGenerator createCubeGenerator() {
-        if (!((ICubicWorld) worldObj).isCubicWorld()) {
-            throw new NotCubicChunksWorldException();
-        }
         if (worldObj.getWorldInfo()
             .getTerrainType() instanceof ICubicWorldType
             && ((ICubicWorldType) worldObj.getWorldInfo()
@@ -115,17 +111,11 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
 
     @Inject(method = "getRandomizedSpawnPoint", at = @At(value = "HEAD"), cancellable = true, remap = false)
     private void findRandomizedSpawnPoint(CallbackInfoReturnable<ChunkCoordinates> cir) {
-        if (((ICubicWorld) worldObj).isCubicWorld()) {
-            cir.setReturnValue(SpawnPlaceFinder.getRandomizedSpawnPoint(worldObj));
-
-        }
+        cir.setReturnValue(SpawnPlaceFinder.getRandomizedSpawnPoint(worldObj));
     }
 
     @Inject(method = "canCoordinateBeSpawn", at = @At("HEAD"), cancellable = true)
     private void canCoordinateBeSpawnCC(int x, int z, CallbackInfoReturnable<Boolean> cir) {
-        if (!((ICubicWorld) worldObj).isCubicWorld()) {
-            return;
-        }
         BlockPos blockpos = new BlockPos(x, 64, z);
 
         BlockPos top = SpawnPlaceFinder.getTopBlockBisect(worldObj, blockpos);

@@ -26,7 +26,6 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.XZMap;
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubeProviderServer;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
@@ -39,8 +38,6 @@ import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.ISpawnerAnimals;
 import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.block.Block;
@@ -48,22 +45,18 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityTracker;
 import net.minecraft.entity.effect.EntityLightningBolt;
 import net.minecraft.init.Blocks;
-import net.minecraft.profiler.Profiler;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.PlayerManager;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.SpawnerAnimals;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.WorldSettings;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraft.world.storage.ISaveHandler;
 import net.minecraftforge.common.ForgeChunkManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
@@ -78,10 +71,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -130,6 +121,8 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     @Shadow
     public abstract PlayerManager getPlayerManager();
 
+    @Shadow
+    public ChunkProviderServer theChunkProviderServer;
     @Unique
     private CubeSplitTicks cubeTicks;
 
@@ -166,13 +159,16 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         at = @At(value = "NEW", target = "net/minecraft/world/gen/ChunkProviderServer"))
     private ChunkProviderServer redirectChunkProviderServer(WorldServer world, IChunkLoader chunkLoader,
         IChunkProvider chunkGenerator) {
-        if (((ICubicWorld) world).isCubicWorld()) {
-            return new CubeProviderServer(
-                world,
-                chunkLoader,
-                ((ICubicWorldProvider) world.provider).createCubeGenerator());
+        // The first time we call this it will just be used to give the AnvilSave handler to
+        // the WorldSpecificSaveHandler. After that, it will be repalced by the CubeProviderServer
+        if (theChunkProviderServer == null)
+        {
+            return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
         }
-        return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
+        return new CubeProviderServer(
+            world,
+            chunkLoader,
+            ((ICubicWorldProvider) world.provider).createCubeGenerator());
     }
 
     @WrapOperation(method = {"scheduleBlockUpdateWithPriority", "func_147446_b"}, at = @At(value = "INVOKE", target = "Ljava/util/TreeSet;add(Ljava/lang/Object;)Z", remap = false))
@@ -205,9 +201,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Override
     public void tickCubicWorld() {
-        if (!this.isCubicWorld()) {
-            throw new NotCubicChunksWorldException();
-        }
         getLightingManager().onTick();
         if (this.spawnArea != null) {
             this.spawnArea.update((World) (Object) this);
@@ -216,9 +209,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     @Override
     public CubeProviderServer getCubeCache() {
-        if (!this.isCubicWorld()) {
-            throw new NotCubicChunksWorldException();
-        }
         return (CubeProviderServer) this.chunkProvider;
     }
 
@@ -310,9 +300,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
      */
     @Inject(method = "func_147456_g", at = @At("HEAD"), cancellable = true)
     private void updateBlocksCubicChunks(CallbackInfo cbi) {
-        if (!isCubicWorld()) {
-            return;
-        }
         cbi.cancel();
         this.setActivePlayerChunksAndCheckLight();
 

@@ -70,7 +70,7 @@ public abstract class MixinServerConfigurationManager implements ICubicPlayerLis
 
         if (this.mcServer.worldServers != null) {
             for (WorldServer worldserver : this.mcServer.worldServers) {
-                if (worldserver != null && ((ICubicWorld) worldserver).isCubicWorld()) {
+                if (worldserver != null) {
                     ((CubicPlayerManager) worldserver.getPlayerManager()).setPlayerViewDistance(viewDistance, dist);
                     ((ICubicEntityTracker) worldserver.getEntityTracker()).setVertViewDistance(dist);
                 }
@@ -97,9 +97,6 @@ public abstract class MixinServerConfigurationManager implements ICubicPlayerLis
             target = "Lnet/minecraft/world/gen/ChunkProviderServer;loadChunk(II)Lnet/minecraft/world/chunk/Chunk;"))
     private void createPlayerChunk(EntityPlayerMP playerIn, int dimension, boolean conqueredEnd,
         CallbackInfoReturnable<EntityPlayerMP> cir) {
-        if (!((ICubicWorld) playerIn.worldObj).isCubicWorld()) {
-            return;
-        }
         for (int dCubeY = -8; dCubeY <= 8; dCubeY++) {
             ((ICubicWorld) playerIn.worldObj).getCubeFromBlockCoords(
                 playerIn.chunkCoordX,

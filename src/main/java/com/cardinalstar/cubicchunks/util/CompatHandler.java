@@ -193,9 +193,6 @@ public class CompatHandler {
     }
 
     private static boolean postEventPerModFakeHeight(World world, Event event, EventBus eventBus, Set<String> modIds) {
-        if (!((ICubicWorld) world).isCubicWorld()) {
-            return eventBus.post(event);
-        }
         return postEvent(
             (ICubicWorldInternal.Server) world,
             event,

@@ -68,14 +68,6 @@ public class PacketUnloadColumn implements IMessage {
         public void handleClientMessage(World world, EntityPlayer player, PacketUnloadColumn message,
             MessageContext ctx) {
             ICubicWorld worldClient = (ICubicWorld) world;
-            if (!worldClient.isCubicWorld()) {
-                // Workaround for vanilla: when going between dimensions, chunk unload packets are received for the old
-                // dimension
-                // are received when client already has the new dimension. In vanilla it just happens to cause no issues
-                // but it breaks cubic chunks
-                // if we don't check for it
-                return;
-            }
             CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
 
             ChunkCoordIntPair chunkPos = message.getColumnPos();
