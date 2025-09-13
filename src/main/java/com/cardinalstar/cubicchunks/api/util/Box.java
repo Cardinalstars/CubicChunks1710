@@ -45,6 +45,42 @@ public class Box implements Iterable<Vector3ic> {
         this.z2 = Math.max(z1, z2);
     }
 
+    public int getX1() {
+        return x1;
+    }
+
+    public int getY1() {
+        return y1;
+    }
+
+    public int getZ1() {
+        return z1;
+    }
+
+    public int getX2() {
+        return x2;
+    }
+
+    public int getY2() {
+        return y2;
+    }
+
+    public int getZ2() {
+        return z2;
+    }
+
+    public boolean contains(Box other) {
+        return x1 <= other.x1 && x2 >= other.x2 && y1 <= other.y1 && y2 >= other.y2 && z1 <= other.z1 && z2 >= other.z2;
+    }
+
+    public boolean contains(int xmin, int ymin, int zmin, int xmax, int ymax, int zmax) {
+        return x1 <= xmin && x2 >= xmax && y1 <= ymin && y2 >= ymax && z1 <= zmin && z2 >= zmax;
+    }
+
+    public boolean containsCube(int cubeX, int cubeY, int cubeZ) {
+        return contains(cubeX * 16, cubeY * 16, cubeZ * 16, cubeX * 16 + 15, cubeY * 16 + 15, cubeZ * 16 + 15);
+    }
+
     public void forEachPoint(XYZFunction function) {
         for (int x = x1; x <= x2; x++) {
             for (int y = y1; y <= y2; y++) {
@@ -183,6 +219,16 @@ public class Box implements Iterable<Vector3ic> {
             return this;
         }
 
+        public Box.Mutable expand(int x, int y, int z) {
+            this.x1 = Math.min(x, x1);
+            this.y1 = Math.min(y, y1);
+            this.z1 = Math.min(z, z1);
+            this.x2 = Math.max(x, x2);
+            this.y2 = Math.max(y, y2);
+            this.z2 = Math.max(z, z2);
+            return this;
+        }
+
         public Box.Mutable add(int dx, int dy, int dz) {
             this.x1 += dx;
             this.x2 += dx;
@@ -192,6 +238,9 @@ public class Box implements Iterable<Vector3ic> {
             this.z2 += dz;
             return this;
         }
+    }
 
+    public static Box horizontalChunkSlice(int startY, int heightY) {
+        return new Box(0, startY, 0, 16, startY + heightY, 16);
     }
 }
