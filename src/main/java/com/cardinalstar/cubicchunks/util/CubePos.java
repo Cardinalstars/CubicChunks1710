@@ -50,17 +50,17 @@ import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
  * This class also contains some helper methods to switch from/to block coordinates.
  */
 @ParametersAreNonnullByDefault
-public class CubePos {
+public class CubePos implements Cloneable {
 
     public static final CubePos ZERO = new CubePos(0, 0, 0);
 
-    private static final int Y_BITS = 20;
-    private static final int X_BITS = 22;
-    private static final int Z_BITS = 22;
+    protected static final int Y_BITS = 20;
+    protected static final int X_BITS = 22;
+    protected static final int Z_BITS = 22;
 
-    private static final int Z_BIT_OFFSET = 0;
-    private static final int X_BIT_OFFSET = Z_BIT_OFFSET + Z_BITS;
-    private static final int Y_BIT_OFFSET = X_BIT_OFFSET + X_BITS;
+    protected static final int Z_BIT_OFFSET = 0;
+    protected static final int X_BIT_OFFSET = Z_BIT_OFFSET + Z_BITS;
+    protected static final int Y_BIT_OFFSET = X_BIT_OFFSET + X_BITS;
 
     private final int cubeX;
     private final int cubeY;
@@ -286,5 +286,14 @@ public class CubePos {
 
     public static long cubeXYZToLong(int x, int y, int z) {
         return (long) x & 4294967295L | ((long) y & 4294967295L) | ((long) x & 4294967295L) << 32;
+    }
+
+    @Override
+    public CubePos clone() {
+        try {
+            return (CubePos) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }

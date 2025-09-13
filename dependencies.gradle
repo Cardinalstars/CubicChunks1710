@@ -39,4 +39,6 @@ dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.4-GTNH:dev")
 
     runtimeOnlyNonPublishable(rfg.deobf("curse.maven:spark-361579:4271867"))
+
+    devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.2.21-GTNH-daily:dev")
 }
