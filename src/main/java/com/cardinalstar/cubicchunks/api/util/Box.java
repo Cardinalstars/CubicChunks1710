@@ -77,8 +77,8 @@ public class Box implements Iterable<Vector3ic> {
         return x1 <= xmin && x2 >= xmax && y1 <= ymin && y2 >= ymax && z1 <= zmin && z2 >= zmax;
     }
 
-    public boolean containsCube(int cubeX, int cubeY, int cubeZ) {
-        return contains(cubeX * 16, cubeY * 16, cubeZ * 16, cubeX * 16 + 15, cubeY * 16 + 15, cubeZ * 16 + 15);
+    public boolean contains(int x, int y, int z) {
+        return x1 <= x && x <= x2 && y1 <= y && y <= y2 && z1 <= z && z <= z2;
     }
 
     public void forEachPoint(XYZFunction function) {

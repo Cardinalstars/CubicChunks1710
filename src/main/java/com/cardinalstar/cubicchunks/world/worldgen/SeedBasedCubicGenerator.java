@@ -18,7 +18,7 @@ import com.cardinalstar.cubicchunks.util.XSTR;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
 
-public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator> implements ICubeTerrainGenerator<TGen> {
+public abstract class SeedBasedCubicGenerator<TSeed, TGen extends ICubeGenerator> implements ICubeTerrainGenerator<TGen> {
 
     private final XSTR rng = new XSTR(0);
 
@@ -46,7 +46,7 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
     /**
      * @param range The range (in cubes) to scan for feature seeds.
      */
-    protected SeedBasedCubicPopulator(int range) {
+    protected SeedBasedCubicGenerator(int range) {
         this.range = range;
     }
 

@@ -131,6 +131,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
         Chunk chunk = vanilla.provideChunk(0, 0);
 
+        ((IColumnInternal) chunk).setColumn(false);
+
         bottom = analyzeBottomFiller(new ChunkBlockView(chunk));
 
         return bottom;
@@ -161,6 +163,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         if (top != null) return top;
 
         Chunk chunk = vanilla.provideChunk(0, 0);
+
+        ((IColumnInternal) chunk).setColumn(false);
 
         top = analyzeTopFiller(new ChunkBlockView(chunk));
 
@@ -311,6 +315,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
         lastChunk = vanilla.provideChunk(cubeX, cubeZ);
 
+        ((IColumnInternal) lastChunk).setColumn(false);
+
         lastChunkView = new ChunkBlockView(lastChunk);
 
         removeBedrock(lastChunkView, rand);
@@ -394,7 +400,7 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
             WorldgenHangWatchdog.startWorldGen();
 
-            CubeGeneratorsRegistry.populateVanillaCubic(world, cube);
+            CubeGeneratorsRegistry.populateVanillaCube(world, cube.getCoords());
 
             Cube withinVanillaChunk = cube;
 

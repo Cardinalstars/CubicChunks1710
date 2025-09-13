@@ -50,17 +50,21 @@ import com.cardinalstar.cubicchunks.server.chunkio.RegionCubeStorage;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.SideUtils;
 import com.cardinalstar.cubicchunks.world.type.VanillaCubicWorldType;
+import com.cardinalstar.cubicchunks.world.worldgen.WorldGenerators;
 import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
 import com.cardinalstar.cubicchunks.worldgen.WorldgenHangWatchdog;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
-
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.ICrashCallable;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.event.*;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.network.NetworkCheckHandler;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -151,6 +155,7 @@ public class CubicChunks {
                 Loader.instance()
                     .activeModContainer());
         holder.testVanillaAcceptance();
+        WorldGenerators.init();
     }
 
     @Mod.EventHandler

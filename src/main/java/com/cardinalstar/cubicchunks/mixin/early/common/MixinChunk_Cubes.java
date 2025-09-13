@@ -176,8 +176,7 @@ public abstract class MixinChunk_Cubes {
     @Nullable
     private ExtendedBlockStorage getEBS_CubicChunks(int index) {
         if (!isColumn) {
-            // vanilla case, subtract minHeight for extended height support
-            return storageArrays[index - blockToCube(getWorldObj().getMinHeight())];
+            return storageArrays[blockToCube(index)];
         }
         if (cachedCube != null && cachedCube.getY() == index) {
             return cachedCube.getStorage();
@@ -304,6 +303,10 @@ public abstract class MixinChunk_Cubes {
             return -1;
         }
         return _16;
+    }
+
+    public void chunk_internal$setColumn(boolean isColumn) {
+        this.isColumn = isColumn;
     }
 
     public Block[] chunk_internal$getCompatGenerationBlockArray() {
@@ -522,7 +525,7 @@ public abstract class MixinChunk_Cubes {
             args = "array=get",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private ExtendedBlockStorage getBlock_getStorage(ExtendedBlockStorage[] ebs, int y) {
-        return getEBS_CubicChunks(y);
+        return isColumn ? getEBS_CubicChunks(y) : ebs[y];
     }
 
     // ==============================================

@@ -24,22 +24,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import java.util.TreeSet;
 import java.util.function.BiConsumer;
 
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 
-import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubeTerrainGenerator;
 import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubicPopulator;
 import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.util.DependencyGraph;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.cardinalstar.cubicchunks.world.worldgen.MapGenCavesCubic;
 import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
-import com.github.bsideup.jabel.Desugar;
 import com.google.common.base.Preconditions;
 
 public class CubeGeneratorsRegistry {
@@ -56,121 +51,77 @@ public class CubeGeneratorsRegistry {
     private static final Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> columnLoadingCallbacksView = Collections
         .unmodifiableCollection(columnLoadingCallbacks);
 
-    private static final TreeSet<GeneratorWrapper<VanillaCompatibilityGenerator>> sortedVanillaGeneratorList = new TreeSet<>();
+    private static final DependencyGraph<ICubeTerrainGenerator<VanillaCompatibilityGenerator>> vanillaGenerators = new DependencyGraph<>();
 
-    private static final TreeSet<PopulatorWrapper> sortedPopulatorList = new TreeSet<>();
-
-    private static final TreeSet<PopulatorWrapper> sortedVanillaPopulatorList = new TreeSet<>();
-
-    @Desugar
-    private record GeneratorWrapper<T extends ICubeGenerator>(ICubeTerrainGenerator<T> generator, int weight) implements Comparable<GeneratorWrapper<T>> {
-
-        @Override
-        public int compareTo(GeneratorWrapper<T> o) {
-            return Integer.compare(weight, o.weight);
-        }
-    }
-
-    @Desugar
-    private record PopulatorWrapper(ICubicPopulator populator, int weight) implements Comparable<PopulatorWrapper> {
-
-        @Override
-        public int compareTo(PopulatorWrapper o) {
-            return Integer.compare(weight, o.weight);
-        }
-    }
+    private static final DependencyGraph<ICubicPopulator> vanillaPopulators = new DependencyGraph<>();
 
     /**
      * Register a world generator that runs exclusively in the vanilla compatibility generator. This will not run for
      * other world types.
      */
-    public static void registerVanillaGenerator(ICubeTerrainGenerator<VanillaCompatibilityGenerator> generator, int priority) {
+    public static void registerVanillaGenerator(String name, ICubeTerrainGenerator<VanillaCompatibilityGenerator> generator, String... dependencies) {
+        Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(generator);
-        sortedVanillaGeneratorList.add(new GeneratorWrapper<>(generator, priority));
+
+        vanillaGenerators.addObject(name, generator);
+
+        for (String dep : dependencies) {
+            vanillaGenerators.addDependency(name, dep);
+        }
     }
 
     /**
-     * Callback hook for cube gen - if your mod wishes to add extra mod related
-     * generation to the world call this
-     *
-     * @param generator The generator that invoked this event
-     * @param cube The cube to generate
+     * Adds a dependency between vanilla terrain generators. The dependency will be ran before the given generator.
      */
+    public static void addVanillaGeneratorDependency(String generator, String dependency) {
+        Preconditions.checkNotNull(generator);
+        Preconditions.checkNotNull(dependency);
+
+        vanillaGenerators.addDependency(generator, dependency);
+    }
+
     public static void generateVanillaCube(VanillaCompatibilityGenerator generator, World world, Cube cube) {
-        for (GeneratorWrapper<VanillaCompatibilityGenerator> wrapper : sortedVanillaGeneratorList) {
-            wrapper.generator.generate(generator, world, cube);
+        List<ICubeTerrainGenerator<VanillaCompatibilityGenerator>> generators = vanillaGenerators.sorted();
+
+        for (int i = 0, generatorsSize = generators.size(); i < generatorsSize; i++) {
+            ICubeTerrainGenerator<VanillaCompatibilityGenerator> cubeGen = generators.get(i);
+
+            cubeGen.generate(generator, world, cube);
         }
     }
 
     /**
-     * Register a world populator - something that inserts new block types into the world on population stage
-     *
-     * @param populator the populator
-     * @param weight    a weight to assign to this populator. Heavy weights tend to sink to the bottom of
-     *                  list of world populator (i.e. they run later)
+     * Register a world populator that runs exclusively in the vanilla compatibility populator. This will not run for
+     * other world types.
      */
-    public static void registerVanillaPopulator(ICubicPopulator populator, int weight) {
+    public static void registerVanillaPopulator(String name, ICubicPopulator populator, String... dependencies) {
+        Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(populator);
-        sortedVanillaPopulatorList.add(new PopulatorWrapper(populator, weight));
-    }
 
-    /**
-     * Callback hook for cube gen - if your mod wishes to add extra mod related
-     * generation to the world call this
-     *
-     * @param world  The {@link ICubicWorld} we're generating for
-     * @param pos    is position of the populated cube
-     */
-    public static void populateVanillaWorld(World world, CubePos pos) {
-        for (PopulatorWrapper wrapper : sortedVanillaPopulatorList) {
-            wrapper.populator.generate(world, pos);
+        vanillaPopulators.addObject(name, populator);
+
+        for (String dep : dependencies) {
+            vanillaPopulators.addDependency(name, dep);
         }
     }
 
     /**
-     * Register a world populator - something that inserts new block types into the world on population stage
-     *
-     * @param populator the populator
-     * @param weight    a weight to assign to this populator. Heavy weights tend to sink to the bottom of
-     *                  list of world populator (i.e. they run later)
+     * Adds a dependency between vanilla terrain populators. The dependency will be ran before the given populator.
      */
-    public static void registerPopulator(ICubicPopulator populator, int weight) {
+    public static void addVanillaPopulatorDependency(String populator, String dependency) {
         Preconditions.checkNotNull(populator);
-        sortedPopulatorList.add(new PopulatorWrapper(populator, weight));
+        Preconditions.checkNotNull(dependency);
+
+        vanillaPopulators.addDependency(populator, dependency);
     }
 
-    /**
-     * Callback hook for cube gen - if your mod wishes to add extra mod related
-     * generation to the world call this
-     *
-     * @param random the cube specific {@link Random}.
-     * @param pos    is position of the populated cube
-     * @param world  The {@link ICubicWorld} we're generating for
-     */
-    public static void populateWorld(World world, Random random, CubePos pos) {
-        for (PopulatorWrapper wrapper : sortedPopulatorList) {
-            wrapper.populator.generate(world, pos);
-        }
-    }
+    public static void populateVanillaCube(World world, CubePos pos) {
+        List<ICubicPopulator> populators = vanillaPopulators.sorted();
 
-    /**
-     * Populators added here will be launched prior to any other. It is
-     * recommended to use this function in init or pre init event of a mod.
-     *
-     * @param populator populator instance to register
-     */
-    public static void registerForCompatibilityGenerator(ICubicPopulator populator) {
-        if (!customPopulatorsForFlatCubicGenerator.contains(populator))
-            customPopulatorsForFlatCubicGenerator.add(populator);
-    }
+        for (int i = 0, populatorsSize = populators.size(); i < populatorsSize; i++) {
+            ICubicPopulator cubeGen = populators.get(i);
 
-    static {
-        registerVanillaGenerator(new MapGenCavesCubic(), 1);
-    }
-
-    public static void populateVanillaCubic(World world, ICube cube) {
-        for (ICubicPopulator populator : customPopulatorsForFlatCubicGenerator) {
-            populator.generate(world, cube.getCoords());
+            cubeGen.generate(world, pos);
         }
     }
 
@@ -181,8 +132,7 @@ public class CubeGeneratorsRegistry {
      *
      * @param cubeCallback the callback to be registered
      */
-    public static void registerCubeAsyncLoadingCallback(
-        BiConsumer<? super World, ? super LoadingData<CubePos>> cubeCallback) {
+    public static void registerCubeAsyncLoadingCallback(BiConsumer<? super World, ? super LoadingData<CubePos>> cubeCallback) {
         cubeLoadingCallbacks.add(cubeCallback);
     }
 
@@ -193,8 +143,7 @@ public class CubeGeneratorsRegistry {
      *
      * @param columnCallback the callback to be registered
      */
-    public static void registerColumnAsyncLoadingCallback(
-        BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>> columnCallback) {
+    public static void registerColumnAsyncLoadingCallback(BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>> columnCallback) {
         columnLoadingCallbacks.add(columnCallback);
     }
 

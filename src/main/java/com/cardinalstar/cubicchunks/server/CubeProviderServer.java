@@ -380,6 +380,12 @@ public class CubeProviderServer extends ChunkProviderServer
             cubes++;
         }
 
+        long delta = System.nanoTime() - start;
+
+        if (delta > MAX_NS_SPENT_LOADING * 2) {
+            CubicChunks.LOGGER.warn("Spent {} ms loading the world this tick", delta / 1e6);
+        }
+
         if (columns > 0) {
             CubicChunks.LOGGER.info("Processed {} eager column loads this tick", columns);
         }

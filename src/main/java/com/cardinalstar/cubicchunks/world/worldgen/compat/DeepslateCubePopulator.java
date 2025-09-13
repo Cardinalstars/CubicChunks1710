@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.modcompat.efr;
+package com.cardinalstar.cubicchunks.world.worldgen.compat;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
