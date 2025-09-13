@@ -741,9 +741,7 @@ public class Cube implements ICube {
          this.cubeLightData.markSaved(this);
      }
 
-    /**
-     * Mark this cube as one, who need to be saved to disk
-     */
+    @Override
     public void markDirty() {
         this.isModified = true;
     }
