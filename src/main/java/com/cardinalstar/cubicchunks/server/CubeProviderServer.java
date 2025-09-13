@@ -115,7 +115,7 @@ public class CubeProviderServer extends ChunkProviderServer
     private int columnsLoadedThisTick = 0;
     private int cubesLoadedThisTick = 0;
 
-    private static final int MAX_LOADS_PER_TICK = 8192;
+    private static final int MAX_NS_SPENT_LOADING = 10_000_000;
 
     private final ListMultimap<ChunkCoordIntPair, Runnable> pendingAsyncChunkLoads = MultimapBuilder.hashKeys().arrayListValues().build();
 
@@ -347,7 +347,9 @@ public class CubeProviderServer extends ChunkProviderServer
 
         Iterator<EagerColumnLoadRequest> colIter = eagerColumnLoads.iterator();
 
-        while (columnsLoadedThisTick < MAX_LOADS_PER_TICK && colIter.hasNext()) {
+        long start = System.nanoTime();
+
+        while ((System.nanoTime() - start) < MAX_NS_SPENT_LOADING && colIter.hasNext()) {
             EagerColumnLoadRequest request = colIter.next();
             colIter.remove();
             request.completed = true;
@@ -359,7 +361,7 @@ public class CubeProviderServer extends ChunkProviderServer
 
         Iterator<EagerCubeLoadRequest> cubeIter = eagerCubeLoads.iterator();
 
-        while (cubesLoadedThisTick < MAX_LOADS_PER_TICK && cubeIter.hasNext()) {
+        while ((System.nanoTime() - start) < MAX_NS_SPENT_LOADING && cubeIter.hasNext()) {
             EagerCubeLoadRequest request = cubeIter.next();
             cubeIter.remove();
             request.completed = true;
