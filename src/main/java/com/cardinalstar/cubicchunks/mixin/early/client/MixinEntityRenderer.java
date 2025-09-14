@@ -73,10 +73,6 @@ public class MixinEntityRenderer {
         method = "setupFog",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/WorldProvider;getWorldHasVoidParticles()Z"))
     public boolean disableVoidFog(WorldProvider instance) {
-        if (!((ICubicWorld) this.mc.theWorld).isCubicWorld()) {
-            return instance.getWorldHasVoidParticles();
-        }
-
         return false;
     }
 
@@ -91,7 +87,7 @@ public class MixinEntityRenderer {
         @Local(argsOnly = true) float partialTicks) {
         float farPlaneDistance = original.call(instance);
 
-        if (!this.mc.theWorld.provider.getWorldHasVoidParticles() || !((ICubicWorld) this.mc.theWorld).isCubicWorld()) {
+        if (!this.mc.theWorld.provider.getWorldHasVoidParticles()) {
             return farPlaneDistance;
         }
 
