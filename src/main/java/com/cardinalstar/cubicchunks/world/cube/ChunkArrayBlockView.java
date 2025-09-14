@@ -28,7 +28,8 @@ public class ChunkArrayBlockView implements IBlockView {
     private final Int2ObjectFunction<Block> blocks;
     private final Int2IntFunction meta;
 
-    public ChunkArrayBlockView(int spanX, int spanY, int spanZ, Int2ObjectFunction<Block> blocks, Int2IntFunction meta) {
+    public ChunkArrayBlockView(int spanX, int spanY, int spanZ, Int2ObjectFunction<Block> blocks,
+        Int2IntFunction meta) {
         this.spanX = spanX;
         this.spanY = spanY;
         this.spanZ = spanZ;
@@ -37,7 +38,8 @@ public class ChunkArrayBlockView implements IBlockView {
         this.meta = meta;
     }
 
-    public ChunkArrayBlockView(int spanX, int spanY, int spanZ, int sectionIndex, int sectionHeight, Int2ObjectFunction<Block> blocks, Int2IntFunction meta) {
+    public ChunkArrayBlockView(int spanX, int spanY, int spanZ, int sectionIndex, int sectionHeight,
+        Int2ObjectFunction<Block> blocks, Int2IntFunction meta) {
         this.spanX = spanX;
         this.spanY = spanY;
         this.spanZ = spanZ;

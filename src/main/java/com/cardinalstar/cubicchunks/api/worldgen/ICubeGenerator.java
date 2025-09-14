@@ -97,8 +97,8 @@ public interface ICubeGenerator {
         return Optional.of(this.provideCube(chunk, cubeX, cubeY, cubeZ));
     }
 
-    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, @Nullable Block[] blocks, @Nullable byte[] blockMeta,
-        boolean forceGenerate) {
+    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, @Nullable Block[] blocks,
+        @Nullable byte[] blockMeta, boolean forceGenerate) {
         Chunk column = new Chunk(world, columnX, columnZ);
         this.generateColumn(column);
         return Optional.of(column);

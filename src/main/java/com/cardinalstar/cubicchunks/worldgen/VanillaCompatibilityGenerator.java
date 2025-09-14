@@ -39,12 +39,9 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
-import org.joml.Vector3ic;
-
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
 import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
@@ -58,6 +55,7 @@ import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.ChunkArrayBlockView;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 import cpw.mods.fml.common.IWorldGenerator;
 import cpw.mods.fml.common.registry.GameRegistry;
 
@@ -184,9 +182,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     @Override
     public void generateColumn(Chunk column) {
 
-        this.biomes = this.world.getWorldChunkManager().loadBlockGeneratorData(
-            this.biomes,
-            column.xPosition * 16, column.zPosition * 16, 16, 16);
+        this.biomes = this.world.getWorldChunkManager()
+            .loadBlockGeneratorData(this.biomes, column.xPosition * 16, column.zPosition * 16, 16, 16);
 
         byte[] abyte = column.getBiomeArray();
         for (int i = 0; i < abyte.length; ++i) {
@@ -280,10 +277,14 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 byte[] compatBlockMeta = ((IColumnInternal) lastChunk).getCompatGenerationByteArray();
                 if (compatBlocks != null && compatBlockMeta != null) {
                     return new Cube(
-                        chunk, cubeY,
+                        chunk,
+                        cubeY,
                         new ChunkArrayBlockView(
-                            16, worldHeightCubes * 16, 16,
-                            cubeY, 16,
+                            16,
+                            worldHeightCubes * 16,
+                            16,
+                            cubeY,
+                            16,
                             i -> compatBlocks[i],
                             i -> compatBlockMeta[i]));
                 }
@@ -335,12 +336,7 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 }
             }
 
-            return new Cube(
-                chunk, cubeY,
-                new ChunkArrayBlockView(
-                    16, 16, 16,
-                    i -> blocks[i],
-                    i -> blockMeta[i]));
+            return new Cube(chunk, cubeY, new ChunkArrayBlockView(16, 16, 16, i -> blocks[i], i -> blockMeta[i]));
         } finally {
             WorldgenHangWatchdog.endWorldGen();
         }
@@ -405,9 +401,14 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             // No population takes place
             if (cube.getY() < 0 || cube.getY() >= worldHeightCubes) {
                 try {
-                    withinVanillaChunk = loader.getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
+                    withinVanillaChunk = loader
+                        .getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
                 } catch (IOException e) {
-                    CubicChunks.LOGGER.error("Could not load cube at y=0 within vanilla chunk {},{} for vanilla chunk population", cube.getX(), cube.getZ(), e);
+                    CubicChunks.LOGGER.error(
+                        "Could not load cube at y=0 within vanilla chunk {},{} for vanilla chunk population",
+                        cube.getX(),
+                        cube.getZ(),
+                        e);
                     withinVanillaChunk = null;
                 }
             }
@@ -437,10 +438,14 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             }
         }
 
-        for (int x = -1;  x <=1; x++) {
-            for (int z = -1; z <=1; z++) {
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
                 try {
-                    Cube cube2 = loader.getCube(cube.getX() + x, cube.getY(), cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
+                    Cube cube2 = loader.getCube(
+                        cube.getX() + x,
+                        cube.getY(),
+                        cube.getZ() + z,
+                        ICubeProviderServer.Requirement.GENERATE);
                     ((IColumnInternal) cube2.getColumn()).recalculateStagingHeightmap();
                 } catch (IOException e) {
                     CubicChunks.LOGGER.error("Couldn't get cube?!", cube.getX() + x, cube.getY(), cube.getZ() + z, e);
@@ -466,12 +471,7 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             // Then we can populate this cube
             vanilla.populate(vanilla, cube.getX(), cube.getZ());
 
-            GameRegistry.generateWorld(
-                cube.getX(),
-                cube.getZ(),
-                world,
-                vanilla,
-                world.getChunkProvider());
+            GameRegistry.generateWorld(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
 
             applyModGenerators(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
         } catch (Throwable t) {

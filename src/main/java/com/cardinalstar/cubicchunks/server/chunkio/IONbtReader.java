@@ -108,7 +108,8 @@ public class IONbtReader {
         ((ServerHeightMap) hmap).readData(nbt.getByteArray("OpacityIndex"));
     }
 
-    static Cube readCube(Chunk column, final int cubeX, final int cubeY, final int cubeZ, NBTTagCompound nbt) throws IOException {
+    static Cube readCube(Chunk column, final int cubeX, final int cubeY, final int cubeZ, NBTTagCompound nbt)
+        throws IOException {
         if (column.xPosition != cubeX || column.zPosition != cubeZ) {
             throw new IllegalArgumentException(
                 String.format(
@@ -136,14 +137,15 @@ public class IONbtReader {
         int zCheck = level.getInteger("z");
 
         if (xCheck != cubeX || yCheck != cubeY || zCheck != cubeZ) {
-            throw new IOException(String.format(
-                "Cube is corrupted! Expected (%d,%d,%d) but got (%d,%d,%d). Cube will be regenerated.",
-                cubeX,
-                cubeY,
-                cubeZ,
-                xCheck,
-                yCheck,
-                zCheck));
+            throw new IOException(
+                String.format(
+                    "Cube is corrupted! Expected (%d,%d,%d) but got (%d,%d,%d). Cube will be regenerated.",
+                    cubeX,
+                    cubeY,
+                    cubeZ,
+                    xCheck,
+                    yCheck,
+                    zCheck));
         }
 
         // build the cube
@@ -170,7 +172,8 @@ public class IONbtReader {
         readScheduledBlockTicks(level, world);
         readLightingInfo(cube, level, world);
 
-        cube.getColumn().preCacheCube(cube);
+        cube.getColumn()
+            .preCacheCube(cube);
 
         return cube;
     }

@@ -36,7 +36,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
@@ -77,7 +76,7 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
     @Inject(method = "getActualHeight", at = @At("HEAD"), cancellable = true, remap = false)
     private void getActualHeight(CallbackInfoReturnable<Integer> cir) {
         if (worldObj == null || !(worldObj.getWorldInfo()
-                .getTerrainType() instanceof ICubicWorldType)) {
+            .getTerrainType() instanceof ICubicWorldType)) {
             return;
         }
         cir.setReturnValue(((ICubicWorld) worldObj).getMaxGenerationHeight());

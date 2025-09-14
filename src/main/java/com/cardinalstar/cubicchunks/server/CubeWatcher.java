@@ -49,6 +49,7 @@ import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.base.Predicate;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import gnu.trove.list.TShortList;
 import gnu.trove.list.array.TShortArrayList;
@@ -83,9 +84,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         if (loaded != null && loaded.isInitializedToLevel(CubeLoaderServer.CubeInitLevel.Lit)) {
             onCubeLoaded(loaded);
         } else {
-            request = cubeCache.loadCubeEagerly(
-                cubePos.getX(), cubePos.getY(), cubePos.getZ(),
-                ICubeProviderServer.Requirement.LIGHT);
+            request = cubeCache
+                .loadCubeEagerly(cubePos.getX(), cubePos.getY(), cubePos.getZ(), ICubeProviderServer.Requirement.LIGHT);
         }
     }
 
@@ -94,14 +94,17 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         if (c.getInitLevel() != CubeLoaderServer.CubeInitLevel.Lit) {
             if (request != null && request.isCompleted()) {
                 request = cubeCache.loadCubeEagerly(
-                    cubePos.getX(), cubePos.getY(), cubePos.getZ(),
+                    cubePos.getX(),
+                    cubePos.getY(),
+                    cubePos.getZ(),
                     ICubeProviderServer.Requirement.LIGHT);
             }
 
             return;
         }
         this.cube = c;
-        this.cube.getTickets().add(this);
+        this.cube.getTickets()
+            .add(this);
         this.request = null;
     }
 
