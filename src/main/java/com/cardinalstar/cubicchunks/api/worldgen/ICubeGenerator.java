@@ -35,7 +35,6 @@ import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.util.Box;
-import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 @ParametersAreNonnullByDefault
@@ -88,10 +87,9 @@ public interface ICubeGenerator {
      * This method should generate all cubes that may be affected by the population of {@code cube} before population.
      * It is also responsible for calling {@link Cube#setPopulated(boolean)} as necessary.
      *
-     * @param loader The cube loader from which cubes should be retreived when adjacent cubes have to be generated
      * @param cube   The cube to populate
      */
-    void populate(ICubeLoader loader, Cube cube);
+    void populate(Cube cube);
 
     default Optional<Cube> tryGenerateCube(Chunk chunk, int cubeX, int cubeY, int cubeZ, boolean forceGenerate) {
         return Optional.of(this.provideCube(chunk, cubeX, cubeY, cubeZ));
