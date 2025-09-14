@@ -35,6 +35,7 @@ import com.cardinalstar.cubicchunks.util.XZAddressable;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
@@ -58,7 +59,8 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
     private final List<Cube> pendingCubeLoads = new ArrayList<>();
     private final List<Chunk> pendingColumnLoads = new ArrayList<>();
 
-    public CubeLoaderServer(WorldServer world, ICubicStorage storage, ICubeGenerator generator, CubeLoaderCallback callback) {
+    public CubeLoaderServer(WorldServer world, ICubicStorage storage, ICubeGenerator generator,
+        CubeLoaderCallback callback) {
         this.world = world;
         this.storage = storage;
         this.generator = generator;
@@ -226,7 +228,10 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         if (columnInfo == null) return;
 
         if (columnInfo.column != column) {
-            CubicChunks.LOGGER.error("Tried to save Chunk in the wrong CubeLoaderServer (tried to save {}, but had {}).", column, columnInfo.column);
+            CubicChunks.LOGGER.error(
+                "Tried to save Chunk in the wrong CubeLoaderServer (tried to save {}, but had {}).",
+                column,
+                columnInfo.column);
             return;
         }
 
@@ -259,7 +264,10 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         if (cubeInfo == null) return;
 
         if (cubeInfo.cube != cube) {
-            CubicChunks.LOGGER.error("Tried to save Cube in the wrong CubeLoaderServer (tried to save {}, but had {}).", cube, cubeInfo.cube);
+            CubicChunks.LOGGER.error(
+                "Tried to save Cube in the wrong CubeLoaderServer (tried to save {}, but had {}).",
+                cube,
+                cubeInfo.cube);
             return;
         }
 
@@ -289,9 +297,13 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
             if (cube == null) continue;
 
-            if (persistentChunks.containsKey(cube.getColumn().getChunkCoordIntPair())) continue;
+            if (persistentChunks.containsKey(
+                cube.getColumn()
+                    .getChunkCoordIntPair()))
+                continue;
 
-            if (cube.getTickets().canUnload()) {
+            if (cube.getTickets()
+                .canUnload()) {
                 pendingCubeUnloads.add(cubeInfo.pos);
             }
         }
@@ -313,7 +325,8 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             if (!columnInfo.containedCubes.isEmpty()) continue;;
 
             // PlayerChunkMap may contain reference to a column that for a while doesn't yet have any cubes generated
-            if (world.getPlayerManager().func_152621_a(column.xPosition, column.zPosition)) continue;
+            if (world.getPlayerManager()
+                .func_152621_a(column.xPosition, column.zPosition)) continue;
 
             pendingColumnUnloads.add(columnInfo);
         }
@@ -395,6 +408,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
     }
 
     private class ColumnInfo implements XZAddressable {
+
         public final ChunkCoordIntPair pos;
 
         public NBTTagCompound tag;
@@ -427,7 +441,8 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             if (column != null) return true;
             if (effort == Requirement.LOAD) return false;
 
-            Optional<Chunk> generated = generator.tryGenerateColumn(world, pos.chunkXPos, pos.chunkZPos, null, null, true);
+            Optional<Chunk> generated = generator
+                .tryGenerateColumn(world, pos.chunkXPos, pos.chunkZPos, null, null, true);
 
             if (!generated.isPresent()) return false;
 
@@ -451,7 +466,8 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
             if (tag == null) return false;
 
-            Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> asyncCallbacks = CubeGeneratorsRegistry.getColumnAsyncLoadingCallbacks();
+            Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> asyncCallbacks = CubeGeneratorsRegistry
+                .getColumnAsyncLoadingCallbacks();
 
             if (!asyncCallbacks.isEmpty()) {
                 LoadingData<ChunkCoordIntPair> chunkLoadingData = new LoadingData<>(pos, tag);
@@ -499,6 +515,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
     }
 
     private class CubeInfo implements XYZAddressable {
+
         public final CubePos pos;
 
         public NBTTagCompound tag;
@@ -576,7 +593,8 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
             if (tag == null) return false;
 
-            Collection<BiConsumer<? super World, ? super LoadingData<CubePos>>> asyncCallbacks = CubeGeneratorsRegistry.getCubeAsyncLoadingCallbacks();
+            Collection<BiConsumer<? super World, ? super LoadingData<CubePos>>> asyncCallbacks = CubeGeneratorsRegistry
+                .getCubeAsyncLoadingCallbacks();
 
             if (!asyncCallbacks.isEmpty()) {
                 LoadingData<CubePos> chunkLoadingData = new LoadingData<>(pos, tag);
@@ -629,7 +647,8 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
                 ensureColumn();
 
                 if (generating) {
-                    throw new IllegalStateException("Cannot recursively generate a cube that is already being generated");
+                    throw new IllegalStateException(
+                        "Cannot recursively generate a cube that is already being generated");
                 }
 
                 Optional<Cube> generated;
@@ -668,7 +687,8 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
             if (populated) {
                 if (!cube.isInitialLightingDone() || !cube.isSurfaceTracked()) {
-                    ((ICubicWorldInternal) world).getLightingManager().doFirstLight(cube);
+                    ((ICubicWorldInternal) world).getLightingManager()
+                        .doFirstLight(cube);
                     cube.setInitialLightingDone(true);
                 }
 
@@ -725,6 +745,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
     }
 
     public enum CubeInitLevel {
+
         /**
          * The cube has been created, but not generated.
          */

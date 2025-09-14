@@ -48,8 +48,7 @@ public class PacketCubicWorldData implements IMessage {
 
     public PacketCubicWorldData() {}
 
-    public PacketCubicWorldData(WorldServer world)
-    {
+    public PacketCubicWorldData(WorldServer world) {
         this.minHeight = ((ICubicWorld) world).getMinHeight();
         this.maxHeight = ((ICubicWorld) world).getMaxHeight();
         if (world.getWorldInfo()

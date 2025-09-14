@@ -18,7 +18,8 @@ import com.cardinalstar.cubicchunks.util.XSTR;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
 
-public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator> implements ICubeTerrainGenerator<TGen> {
+public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator>
+    implements ICubeTerrainGenerator<TGen> {
 
     private final XSTR rng = new XSTR(0);
 
@@ -28,14 +29,13 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
 
     private final MutableCubePos cubePos = new MutableCubePos();
 
-
     private final TimedCache<CubePos, List<TSeed>> seedCache = new TimedCache<>(
         this::getSeedImpl,
         Duration.ofSeconds(10),
         (pos, list) -> {
-            //noinspection rawtypes
+            // noinspection rawtypes
             if (list instanceof ArrayList arrayList) {
-                //noinspection unchecked
+                // noinspection unchecked
                 listPool.releaseInstance(arrayList);
             }
         },
@@ -75,12 +75,14 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
     /**
      * Checks if the given cube has any features, and adds them to the list. The seed is stored in a timed cache, so
      * they must be immutable.
+     * 
      * @param rng An RNG that is seeded to a deterministic value for this cube.
      */
     protected abstract void getSeeds(Random rng, int cubeX, int cubeY, int cubeZ, List<TSeed> seeds);
 
     /**
      * Populates the current chunk (determined by {@code pos}) with the given feature seed.
+     * 
      * @param rng An RNG that is seeded to a deterministic value for this cube.
      */
     protected abstract void generate(Random rng, TSeed seed, WorldView worldView);
@@ -100,16 +102,13 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
 
         setWorldSeed(world.getSeed());
 
-        for (int x = cube.getX() - range; x <= cube.getX() + range; x++)
-        {
+        for (int x = cube.getX() - range; x <= cube.getX() + range; x++) {
             cubePos.x = x;
 
-            for (int y = cube.getY() - range; y <= cube.getY() + range; y++)
-            {
+            for (int y = cube.getY() - range; y <= cube.getY() + range; y++) {
                 cubePos.y = y;
 
-                for (int z = cube.getZ() - range; z <= cube.getZ() + range; z++)
-                {
+                for (int z = cube.getZ() - range; z <= cube.getZ() + range; z++) {
                     cubePos.z = z;
 
                     List<TSeed> seedList = seedCache.get(cubePos);

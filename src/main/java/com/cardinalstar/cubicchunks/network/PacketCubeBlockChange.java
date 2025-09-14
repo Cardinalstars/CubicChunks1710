@@ -20,8 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.network;
 
-import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
