@@ -207,7 +207,12 @@ public interface ICube extends XYZAddressable {
      *
      * @return {@code true} if this cube should be written back to disk
      */
-    public boolean needsSaving(boolean saveAll);
+    boolean needsSaving(boolean saveAll);
+
+    /**
+     * Marks this cube for saving.
+     */
+    void markDirty();
 
     /**
      * Check whether this cube was populated, i.e. if this cube was passed as argument to
