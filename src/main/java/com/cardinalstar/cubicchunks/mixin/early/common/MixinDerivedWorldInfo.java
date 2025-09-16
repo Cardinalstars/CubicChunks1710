@@ -21,23 +21,18 @@
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
 import net.minecraft.world.storage.DerivedWorldInfo;
-import net.minecraft.world.storage.WorldInfo;
 
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 
 @Mixin(DerivedWorldInfo.class)
 public class MixinDerivedWorldInfo extends MixinWorldInfo {
 
-//    @Shadow
-//    @Final
-//    private WorldInfo theWorldInfo;
-//
-//    @Override
-//    public boolean isCubic() {
-//        return ((ICubicWorldSettings) theWorldInfo).isCubic();
-//    }
+    // @Shadow
+    // @Final
+    // private WorldInfo theWorldInfo;
+    //
+    // @Override
+    // public boolean isCubic() {
+    // return ((ICubicWorldSettings) theWorldInfo).isCubic();
+    // }
 }

@@ -76,6 +76,7 @@ public interface ICubeProviderServer extends ICubeProvider {
      * {@code null} is acceptable in those cases
      */
     enum Requirement {
+
         // Warning, don't modify order of these constants - ordinals are used in comparisons
         /**
          * Only retrieve the cube/column if it is already cached

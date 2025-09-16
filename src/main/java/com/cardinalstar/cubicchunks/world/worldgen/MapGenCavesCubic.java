@@ -24,10 +24,12 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.XSTR;
 import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
 import com.gtnewhorizon.gtnhlib.util.CoordinatePacker;
+
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 
-public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.CaveSeed, VanillaCompatibilityGenerator> {
+public class MapGenCavesCubic
+    extends SeedBasedCubicPopulator<MapGenCavesCubic.CaveSeed, VanillaCompatibilityGenerator> {
 
     private final XSTR caveRandom = new XSTR(0);
 
@@ -46,13 +48,24 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
         int armCount = 1;
 
         if (rng.nextInt(16) == 0) {
-            seeds.add(new CaveSeed(rng.nextLong(), offsetX, offsetY, offsetZ, 1.0F + rng.nextFloat() * 6.0F, 0.0F, 0.0F, -1, -1, 0.5D));
+            seeds.add(
+                new CaveSeed(
+                    rng.nextLong(),
+                    offsetX,
+                    offsetY,
+                    offsetZ,
+                    1.0F + rng.nextFloat() * 6.0F,
+                    0.0F,
+                    0.0F,
+                    -1,
+                    -1,
+                    0.5D));
 
             armCount += rng.nextInt(4);
         }
 
         for (int armIndex = 0; armIndex < armCount; ++armIndex) {
-            float marchYaw = rng.nextFloat() * (float)Math.PI * 2.0F;
+            float marchYaw = rng.nextFloat() * (float) Math.PI * 2.0F;
             float marchPitch = (rng.nextFloat() - 0.5F) * 2.0F / 8.0F;
             float caveLength = rng.nextFloat() * 2.0F + rng.nextFloat();
 
@@ -60,7 +73,8 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
                 caveLength *= rng.nextFloat() * rng.nextFloat() * 3.0F + 1.0F;
             }
 
-            seeds.add(new CaveSeed(rng.nextLong(), offsetX, offsetY, offsetZ, caveLength, marchYaw, marchPitch, 0, 0, 1.0D));
+            seeds.add(
+                new CaveSeed(rng.nextLong(), offsetX, offsetY, offsetZ, caveLength, marchYaw, marchPitch, 0, 0, 1.0D));
         }
     }
 
@@ -72,7 +86,14 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
     protected void generateCave(CaveSeed caveSeed, WorldView worldView) {
         Box box = worldView.getBounds();
 
-        if (!scanOuterBoxForWater(worldView, box.getX1(), box.getX2(), box.getY1(), box.getY2(), box.getZ1(), box.getZ2())) {
+        if (!scanOuterBoxForWater(
+            worldView,
+            box.getX1(),
+            box.getX2(),
+            box.getY1(),
+            box.getY2(),
+            box.getZ1(),
+            box.getZ2())) {
             CubePos pos = worldView.getCube();
 
             for (Vector3ic v : caveSeed.getDigs(pos.getX(), pos.getY(), pos.getZ())) {
@@ -89,15 +110,13 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
         }
     }
 
-    private static boolean scanOuterBoxForWater(WorldView worldView, int xmin, int xmax, int zmin, int zmax, int ymax, int ymin) {
+    private static boolean scanOuterBoxForWater(WorldView worldView, int xmin, int xmax, int zmin, int zmax, int ymax,
+        int ymin) {
         int waterCount = 0;
 
-        for (int x = xmin; x < xmax; ++x)
-        {
-            for (int z = zmin; z < zmax; ++z)
-            {
-                for (int y = ymax + 1; y >= ymin - 1; --y)
-                {
+        for (int x = xmin; x < xmax; ++x) {
+            for (int z = zmin; z < zmax; ++z) {
+                for (int y = ymax + 1; y >= ymin - 1; --y) {
                     Block block = worldView.getBlock(x, y, z);
 
                     // Only check for still water, since flowing water generates in caves
@@ -113,8 +132,7 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
 
                     // If we've just scanned the top block (y == ymax + 1) and we aren't scanning the walls, then jump
                     // to the bottom (y == ymin)
-                    if (y != ymin - 1 && x != xmin && x != xmax - 1 && z != zmin && z != zmax - 1)
-                    {
+                    if (y != ymin - 1 && x != xmin && x != xmax - 1 && z != zmin && z != zmax - 1) {
                         y = ymin;
                     }
                 }
@@ -124,9 +142,8 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
         return false;
     }
 
-    //Exception biomes to make sure we generate like vanilla
-    private boolean isExceptionBiome(BiomeGenBase biome)
-    {
+    // Exception biomes to make sure we generate like vanilla
+    private boolean isExceptionBiome(BiomeGenBase biome) {
         if (biome == BiomeGenBase.mushroomIsland) return true;
         if (biome == BiomeGenBase.beach) return true;
         return biome == BiomeGenBase.desert;
@@ -139,26 +156,21 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
      * tries to make the floor the biome's top block
      *
      * @param worldView The world view
-     * @param x global X position
-     * @param y global Y position
-     * @param z global Z position
+     * @param x         global X position
+     * @param y         global Y position
+     * @param z         global Z position
      */
-    protected void digBlock(WorldView worldView, int x, int y, int z)
-    {
+    protected void digBlock(WorldView worldView, int x, int y, int z) {
         BiomeGenBase biome = worldView.getBiomeGenForBlock(x, y, z);
         Block block = worldView.getBlock(x, y, z);
 
-        Block top    = (isExceptionBiome(biome) ? Blocks.grass : biome.topBlock);
-        Block filler = (isExceptionBiome(biome) ? Blocks.dirt  : biome.fillerBlock);
+        Block top = (isExceptionBiome(biome) ? Blocks.grass : biome.topBlock);
+        Block filler = (isExceptionBiome(biome) ? Blocks.dirt : biome.fillerBlock);
 
-        if (block == Blocks.stone || block == Blocks.bedrock || block == filler || block == top)
-        {
-            if (false)
-            {
+        if (block == Blocks.stone || block == Blocks.bedrock || block == filler || block == top) {
+            if (false) {
                 worldView.setBlock(x, y, z, Blocks.lava, 0);
-            }
-            else
-            {
+            } else {
                 worldView.setBlock(x, y, z, Blocks.air, 0);
             }
         }
@@ -181,16 +193,14 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
 
         caveRandom.setSeed(seed);
 
-        if (stepCount <= 0)
-        {
+        if (stepCount <= 0) {
             int maxBlockRange = this.range * 16 - 16;
             stepCount = maxBlockRange - caveRandom.nextInt(maxBlockRange / 4);
         }
 
         boolean isCavern = false;
 
-        if (stepIndex == -1)
-        {
+        if (stepIndex == -1) {
             stepIndex = stepCount / 2;
             isCavern = true;
         }
@@ -199,9 +209,10 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
 
         boolean pitchModifier = caveRandom.nextInt(6) == 0;
 
-        for (; stepIndex < stepCount; ++stepIndex)
-        {
-            double sizeXZChunk = 1.5D + (double)(MathHelper.sin((float)stepIndex * (float)Math.PI / (float)stepCount) * caveLengthChunk * 1.0F);
+        for (; stepIndex < stepCount; ++stepIndex) {
+            double sizeXZChunk = 1.5D
+                + (double) (MathHelper.sin((float) stepIndex * (float) Math.PI / (float) stepCount) * caveLengthChunk
+                    * 1.0F);
             double sizeYChunk = sizeXZChunk * height;
 
             {
@@ -212,12 +223,9 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
                 offsetZ += MathHelper.sin(marchYaw) * multXZ;
             }
 
-            if (pitchModifier)
-            {
+            if (pitchModifier) {
                 marchPitch *= 0.92F;
-            }
-            else
-            {
+            } else {
                 marchPitch *= 0.7F;
             }
 
@@ -230,16 +238,36 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
             deltaPitch += (caveRandom.nextFloat() - caveRandom.nextFloat()) * caveRandom.nextFloat() * 2.0F;
             deltaYaw += (caveRandom.nextFloat() - caveRandom.nextFloat()) * caveRandom.nextFloat() * 4.0F;
 
-            if (!isCavern && stepIndex == teePoint && caveLengthChunk > 1.0F && stepCount > 0)
-            {
-                cave.branches.add(new CaveSeed(caveRandom.nextLong(), offsetX, offsetY, offsetZ, caveRandom.nextFloat() * 0.5F + 0.5F, marchYaw - ((float)Math.PI / 2F), marchPitch / 3.0F, stepIndex, stepCount, 1.0D));
-                cave.branches.add(new CaveSeed(caveRandom.nextLong(), offsetX, offsetY, offsetZ, caveRandom.nextFloat() * 0.5F + 0.5F, marchYaw + ((float)Math.PI / 2F), marchPitch / 3.0F, stepIndex, stepCount, 1.0D));
+            if (!isCavern && stepIndex == teePoint && caveLengthChunk > 1.0F && stepCount > 0) {
+                cave.branches.add(
+                    new CaveSeed(
+                        caveRandom.nextLong(),
+                        offsetX,
+                        offsetY,
+                        offsetZ,
+                        caveRandom.nextFloat() * 0.5F + 0.5F,
+                        marchYaw - ((float) Math.PI / 2F),
+                        marchPitch / 3.0F,
+                        stepIndex,
+                        stepCount,
+                        1.0D));
+                cave.branches.add(
+                    new CaveSeed(
+                        caveRandom.nextLong(),
+                        offsetX,
+                        offsetY,
+                        offsetZ,
+                        caveRandom.nextFloat() * 0.5F + 0.5F,
+                        marchYaw + ((float) Math.PI / 2F),
+                        marchPitch / 3.0F,
+                        stepIndex,
+                        stepCount,
+                        1.0D));
 
                 return;
             }
 
-            if (isCavern || caveRandom.nextInt(4) != 0)
-            {
+            if (isCavern || caveRandom.nextInt(4) != 0) {
                 int xmin = MathHelper.floor_double(offsetX - sizeXZChunk) - 1;
                 int xmax = MathHelper.floor_double(offsetX + sizeXZChunk) + 1;
                 int ymin = MathHelper.floor_double(offsetY - sizeYChunk) - 1;
@@ -247,22 +275,18 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
                 int zmin = MathHelper.floor_double(offsetZ - sizeXZChunk) - 1;
                 int zmax = MathHelper.floor_double(offsetZ + sizeXZChunk) + 1;
 
-                for (int globalX = xmin; globalX < xmax; ++globalX)
-                {
-                    double ellipseX = ((double)globalX + 0.5D - offsetX) / sizeXZChunk;
+                for (int globalX = xmin; globalX < xmax; ++globalX) {
+                    double ellipseX = ((double) globalX + 0.5D - offsetX) / sizeXZChunk;
 
-                    for (int globalZ = zmin; globalZ < zmax; ++globalZ)
-                    {
+                    for (int globalZ = zmin; globalZ < zmax; ++globalZ) {
                         double ellipseZ = ((double) globalZ + 0.5D - offsetZ) / sizeXZChunk;
 
-                        if (ellipseX * ellipseX + ellipseZ * ellipseZ < 1.0D)
-                        {
-                            for (int globalY = ymax - 1; globalY >= ymin; --globalY)
-                            {
+                        if (ellipseX * ellipseX + ellipseZ * ellipseZ < 1.0D) {
+                            for (int globalY = ymax - 1; globalY >= ymin; --globalY) {
                                 double ellipseY = ((double) globalY + 0.5D - offsetY) / sizeYChunk;
 
-                                if (ellipseY > -0.7D && ellipseX * ellipseX + ellipseY * ellipseY + ellipseZ * ellipseZ < 1.0D)
-                                {
+                                if (ellipseY > -0.7D
+                                    && ellipseX * ellipseX + ellipseY * ellipseY + ellipseZ * ellipseZ < 1.0D) {
                                     cave.dig(globalX, globalY, globalZ);
                                 }
                             }
@@ -270,8 +294,7 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
                     }
                 }
 
-                if (isCavern)
-                {
+                if (isCavern) {
                     break;
                 }
             }
@@ -279,6 +302,7 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
     }
 
     protected class CaveSeed {
+
         private final long seed;
         private final double offsetX;
         private final double offsetY;
@@ -296,7 +320,8 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
 
         private final List<CaveSeed> branches = new ArrayList<>();
 
-        public CaveSeed(long seed, double offsetX, double offsetY, double offsetZ, float caveLength, float marchYaw, float marchPitch, int stepIndex, int stepCount, double height) {
+        public CaveSeed(long seed, double offsetX, double offsetY, double offsetZ, float caveLength, float marchYaw,
+            float marchPitch, int stepIndex, int stepCount, double height) {
             this.seed = seed;
             this.offsetX = offsetX;
             this.offsetY = offsetY;
@@ -308,7 +333,13 @@ public class MapGenCavesCubic extends SeedBasedCubicPopulator<MapGenCavesCubic.C
             this.stepCount = stepCount;
             this.height = height;
 
-            aabb = new Box.Mutable((int) offsetX, (int) offsetY, (int) offsetZ, (int) offsetX, (int) offsetY, (int) offsetZ);
+            aabb = new Box.Mutable(
+                (int) offsetX,
+                (int) offsetY,
+                (int) offsetZ,
+                (int) offsetX,
+                (int) offsetY,
+                (int) offsetZ);
 
             walkCave(this);
         }

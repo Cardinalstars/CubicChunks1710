@@ -9,6 +9,7 @@ import net.minecraft.util.ResourceLocation;
 import com.gtnewhorizon.gtnhlib.util.data.IMod;
 import com.gtnewhorizon.gtnhmixins.builders.ITargetMod;
 import com.gtnewhorizon.gtnhmixins.builders.TargetModBuilder;
+
 import cpw.mods.fml.common.Loader;
 
 public enum Mods implements IMod, ITargetMod {
@@ -606,7 +607,8 @@ public enum Mods implements IMod, ITargetMod {
     Mods(String ID, String coremodClass) {
         this.ID = ID;
         this.resourceDomain = ID.toLowerCase(Locale.ENGLISH);
-        this.builder = new TargetModBuilder().setModId(getEffectiveModID()).setCoreModClass(coremodClass);
+        this.builder = new TargetModBuilder().setModId(getEffectiveModID())
+            .setCoreModClass(coremodClass);
     }
 
     @Override
