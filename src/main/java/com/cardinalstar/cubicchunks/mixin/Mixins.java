@@ -218,6 +218,10 @@ public enum Mixins implements IMixins {
     MIXIN_ENTITY_RENDERER(new MixinBuilder("Misc EntityRenderer fixes").addClientMixins("client.MixinEntityRenderer")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_ENTITY(new MixinBuilder("Fixing lighting issues for block exists").addClientMixins("client.MixinEntity")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+
     // =============================================================
     // Server Mixins
     // =============================================================
