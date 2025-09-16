@@ -557,16 +557,19 @@ public abstract class MixinChunk_Cubes {
         method = "func_150807_a",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;setExtBlockMetadata" + "(IIII)V",
+            target = "Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;setExtBlockMetadata(IIII)V",
             shift = At.Shift.AFTER))
     private void onEBSSet_setBlockWithMeta_setOpacity(int x, int y, int z, Block block, int meta,
         CallbackInfoReturnable<Boolean> cir) {
         if (!isColumn) {
             return;
         }
+
         this.isModified = true;
-        if (((IColumn) this).getCube(blockToCube(y))
-            .isSurfaceTracked()) {
+        ICube cube = ((IColumn) this).getCube(blockToCube(y));
+        cube.markDirty();
+
+        if (cube.isSurfaceTracked()) {
             opacityIndex.onOpacityChange(blockToLocal(x), y, blockToLocal(z), block.getLightOpacity());
             getWorldObj().getLightingManager()
                 .onHeightUpdate(x, y, z);
@@ -601,8 +604,8 @@ public abstract class MixinChunk_Cubes {
     private void setIsModifiedFromSetBlockWithMeta_Field(Chunk chunk, boolean isModifiedIn, int x, int y, int z,
         Block block, int meta) {
         if (isColumn) {
-            getWorldObj().getCubeFromBlockCoords(x, y, z)
-                .markDirty();
+            ICube cube = ((IColumn) this).getCube(blockToCube(y));
+            cube.markDirty();
         } else {
             isModified = isModifiedIn;
         }
@@ -625,9 +628,12 @@ public abstract class MixinChunk_Cubes {
         }
         Block block = getEBS_CubicChunks(blockToCube(y))
             .getBlockByExtId(Coords.blockToLocal(x), Coords.blockToLocal(y), Coords.blockToLocal(z)); // TODO WATCH
+
         this.isModified = true;
-        if (((IColumn) this).getCube(blockToCube(y))
-            .isSurfaceTracked()) {
+        ICube cube = ((IColumn) this).getCube(blockToCube(y));
+        cube.markDirty();
+
+        if (cube.isSurfaceTracked()) {
             opacityIndex.onOpacityChange(blockToLocal(x), y, blockToLocal(z), block.getLightOpacity());
             getWorldObj().getLightingManager()
                 .onHeightUpdate(x, y, z);
@@ -678,8 +684,8 @@ public abstract class MixinChunk_Cubes {
     private void setIsModifiedFromSetBlockMetadata_Field(Chunk chunk, boolean isModifiedIn, int x, int y, int z,
         int meta) {
         if (isColumn) {
-            getWorldObj().getCubeFromBlockCoords(x, y, z)
-                .markDirty();
+            ICube cube = ((IColumn) this).getCube(blockToCube(y));
+            cube.markDirty();
         } else {
             isModified = isModifiedIn;
         }
@@ -757,8 +763,8 @@ public abstract class MixinChunk_Cubes {
     private void setIsModifiedFromSetLightValue_Field(Chunk chunk, boolean isModifiedIn, EnumSkyBlock type, int x,
         int y, int z, int value) {
         if (isColumn) {
-            getWorldObj().getCubeFromBlockCoords(x, y, z)
-                .markDirty();
+            ICube cube = ((IColumn) this).getCube(blockToCube(y));
+            cube.markDirty();
         } else {
             isModified = isModifiedIn;
         }
