@@ -63,9 +63,6 @@ public class MixinEntityRenderer {
     // Disable existing void fog logic entirely for cubic worlds
     @Redirect(method = "setupFog", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/WorldProvider;getWorldHasVoidParticles()Z"))
     public boolean disableVoidFog(WorldProvider instance) {
-        if (!((ICubicWorld)this.mc.theWorld).isCubicWorld()) {
-            return instance.getWorldHasVoidParticles();
-        }
 
         return false;
     }
@@ -75,7 +72,7 @@ public class MixinEntityRenderer {
     public float modifyVoidFog(EntityRenderer instance, Operation<Float> original, @Local(argsOnly = true) float partialTicks) {
         float farPlaneDistance = original.call(instance);
 
-        if (!this.mc.theWorld.provider.getWorldHasVoidParticles() || !((ICubicWorld)this.mc.theWorld).isCubicWorld()) {
+        if (!this.mc.theWorld.provider.getWorldHasVoidParticles()) {
             return farPlaneDistance;
         }
 
