@@ -1,14 +1,10 @@
 package com.cardinalstar.cubicchunks.mixin.early.client;
 
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -23,6 +19,8 @@ import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.llamalad7.mixinextras.expression.Definition;
 import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalIntRef;
@@ -97,12 +95,14 @@ public class MixinRenderGlobal {
         return 33 * 2; // TODO STORE THIS MAX RENDER DISTANCE SOMEWHERE
     }
 
-    @Definition(id = "theWorld", field = "Lnet/minecraft/client/renderer/RenderGlobal;theWorld:Lnet/minecraft/client/multiplayer/WorldClient;")
+    @Definition(
+        id = "theWorld",
+        field = "Lnet/minecraft/client/renderer/RenderGlobal;theWorld:Lnet/minecraft/client/multiplayer/WorldClient;")
     @Definition(id = "blockExists", method = "Lnet/minecraft/client/multiplayer/WorldClient;blockExists(III)Z")
     @Expression("this.theWorld.blockExists(?, ?, ?)")
     @WrapOperation(method = "renderEntities", at = @At("MIXINEXTRAS:EXPRESSION"))
-    private boolean atYInRenderEntityCheck(WorldClient instance, int x, int y, int z, Operation<Boolean> original, @Local(name = "entity", type = Entity.class) Entity entity)
-    {
+    private boolean atYInRenderEntityCheck(WorldClient instance, int x, int y, int z, Operation<Boolean> original,
+        @Local(name = "entity", type = Entity.class) Entity entity) {
         return original.call(instance, x, MathHelper.floor_double(entity.posY), z);
     }
 }
