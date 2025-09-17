@@ -166,6 +166,10 @@ public enum Mixins implements IMixins {
     MIXIN_ENTITY_LIVING_BASE(new MixinBuilder("Fix enttiy handling").addClientMixins("common.MixinEntityLivingBase")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_NET_HANDLER_PLAY_SERVER(new MixinBuilder("Remove height check from NetHandlerPlayServer")
+        .addCommonMixins("common.MixinNetHandlerPlayServer")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
 
     // =============================================================
     // Client Mixins
@@ -217,6 +221,10 @@ public enum Mixins implements IMixins {
     MIXIN_ENTITY_RENDERER(new MixinBuilder("Misc EntityRenderer fixes").addClientMixins("client.MixinEntityRenderer")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_ENTITY(new MixinBuilder("Fixing lighting issues for block exists").addClientMixins("client.MixinEntity")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+
     // =============================================================
     // Server Mixins
     // =============================================================
