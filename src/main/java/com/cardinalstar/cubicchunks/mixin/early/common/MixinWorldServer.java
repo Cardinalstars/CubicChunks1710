@@ -161,11 +161,6 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         at = @At(value = "NEW", target = "net/minecraft/world/gen/ChunkProviderServer"))
     private ChunkProviderServer redirectChunkProviderServer(WorldServer world, IChunkLoader chunkLoader,
         IChunkProvider chunkGenerator) {
-        // The first time we call this it will just be used to give the AnvilSave handler to
-        // the WorldSpecificSaveHandler. After that, it will be repalced by the CubeProviderServer
-        if (theChunkProviderServer == null) {
-            return new ChunkProviderServer(world, chunkLoader, chunkGenerator);
-        }
         return new CubeProviderServer(world, chunkLoader, ((ICubicWorldProvider) world.provider).createCubeGenerator());
     }
 

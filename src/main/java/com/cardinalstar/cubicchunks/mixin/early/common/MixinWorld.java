@@ -48,7 +48,6 @@ import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
-import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
@@ -526,13 +525,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         // world
         });
 
-    @SuppressWarnings("unchecked")
-    private static final List<Class<? extends IChunkProvider>> allowedServerChunkProviderClasses = ImmutableList
-        .copyOf(new Class[] { ChunkProviderServer.class });
-
     private boolean shouldSkipWorld(World world) {
-        return !allowedServerWorldClasses.contains(world.getClass()) || !allowedServerChunkProviderClasses.contains(
-            world.getChunkProvider()
-                .getClass());
+        return !allowedServerWorldClasses.contains(world.getClass());
     }
 }

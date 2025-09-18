@@ -63,7 +63,6 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList2D;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList3D;
 import com.cardinalstar.cubicchunks.util.XZAddressable;
-import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.column.EmptyColumn;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
@@ -73,7 +72,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 
-import cpw.mods.fml.common.StartupQuery;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 /**
@@ -146,20 +144,11 @@ public class CubeProviderServer extends ChunkProviderServer
             // use the save format stored in the server's default world as the global world storage type
             // TODO THIS IS DEFINITELY WRONG RIGHT NOW
             World overworld = worldServer.provider.worldObj;
-            // World overworld = worldServer.func_73046_m().getEntityWorld();
-
-            WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) overworld.perWorldStorage
-                .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
-
-            StorageFormatProviderBase format = StorageFormatProviderBase.REGISTRY.get(savedData.storageFormat);
-            if (format == null) {
-                StartupQuery.notify("unsupported storage format \"" + savedData.storageFormat + '"');
-                StartupQuery.abort();
-            }
 
             this.cubeLoader = new CubeLoaderServer(
                 worldServer,
-                format.provideStorage(worldServer, path),
+                StorageFormatProviderBase.REGISTRY.get(StorageFormatProviderBase.DEFAULT)
+                    .provideStorage(worldServer, path),
                 cubeGen,
                 new LoadingCallbacks());
         } catch (IOException e) {

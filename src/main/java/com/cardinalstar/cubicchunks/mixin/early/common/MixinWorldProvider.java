@@ -42,7 +42,6 @@ import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorPr
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.SpawnPlaceFinder;
-import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 @ParametersAreNonnullByDefault
@@ -102,9 +101,7 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
             return ((ICubicWorldType) worldObj.getWorldInfo()
                 .getTerrainType()).createCubeGenerator(worldObj);
         }
-        WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) worldObj.perWorldStorage
-            .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
-        return VanillaCompatibilityGeneratorProviderBase.REGISTRY.get(savedData.compatibilityGeneratorType)
+        return VanillaCompatibilityGeneratorProviderBase.REGISTRY.get(VanillaCompatibilityGeneratorProviderBase.DEFAULT)
             .provideGenerator(this.createChunkGenerator(), worldObj);
     }
 
