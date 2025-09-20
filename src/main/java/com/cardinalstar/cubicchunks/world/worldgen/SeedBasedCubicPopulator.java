@@ -10,7 +10,6 @@ import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubeTerrainGenerator;
-import com.cardinalstar.cubicchunks.util.Bits;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ObjectPooler;
 import com.cardinalstar.cubicchunks.util.TimedCache;
@@ -30,6 +29,7 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
     private final MutableCubePos cubePos = new MutableCubePos();
 
     private final TimedCache<CubePos, List<TSeed>> seedCache = new TimedCache<>(
+        new FastCubePosMap<>(),
         this::getSeedImpl,
         new Duration[] { Duration.ofSeconds(10), Duration.ofSeconds(25), Duration.ofSeconds(100) },
         (pos, list) -> {
@@ -130,59 +130,6 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * This is a hacky subclass of CubePos. It's only meant for accessing the TimedCache, and nothing else. The CubePos
-     * fields aren't initialized properly, since they're all final, but the various get... methods work properly.
-     * This will always return the same hash as a CubePos, and it will always equal a CubePos with the same coord. The
-     * opposite is not true - a CubePos will never equal a MutableCubePos.
-     */
-    private static class MutableCubePos extends CubePos {
-
-        public int x;
-        public int y;
-        public int z;
-
-        public MutableCubePos() {
-            super(0, 0, 0);
-        }
-
-        @Override
-        public int getX() {
-            return x;
-        }
-
-        @Override
-        public int getY() {
-            return y;
-        }
-
-        public int getZ() {
-            return z;
-        }
-
-        public static CubePos clone(CubePos pos) {
-            if (pos instanceof MutableCubePos mutable) {
-                return new CubePos(mutable.x, mutable.y, mutable.z);
-            } else {
-                return pos.clone();
-            }
-        }
-
-        @Override
-        public final boolean equals(Object o) {
-            if (!(o instanceof CubePos other)) return false;
-
-            return other.getX() == x && other.getY() == y && other.getZ() == z;
-        }
-
-        @Override
-        public int hashCode() {
-            return Long.hashCode(
-                Bits.packSignedToLong(x, Y_BITS, Y_BIT_OFFSET) | Bits.packSignedToLong(y, X_BITS, X_BIT_OFFSET)
-                    | Bits.packSignedToLong(z, Z_BITS, Z_BIT_OFFSET));
         }
     }
 }

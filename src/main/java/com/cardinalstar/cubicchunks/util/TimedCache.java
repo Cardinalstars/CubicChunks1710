@@ -2,6 +2,7 @@ package com.cardinalstar.cubicchunks.util;
 
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -51,7 +52,7 @@ public class TimedCache<K, V> {
         }
     }
 
-    private final Object2ObjectOpenHashMap<K, Entry<K, V>> values = new Object2ObjectOpenHashMap<>();
+    private final Map<K, Entry<K, V>> values;
 
     private final Generation<K, V>[] generations;
 
@@ -63,11 +64,13 @@ public class TimedCache<K, V> {
     private final Function<K, K> clone;
 
     public TimedCache(Function<K, V> fetcher, Duration gen0Timeout) {
-        this(fetcher, getDefaultTimeouts(gen0Timeout), null, null);
+        this(new Object2ObjectOpenHashMap<>(), fetcher, getDefaultTimeouts(gen0Timeout), null, null);
     }
 
-    public TimedCache(Function<K, V> fetcher, Duration[] generationTimeouts, @Nullable BiConsumer<K, V> release,
+    public TimedCache(Map<K, ?> backingMap, Function<K, V> fetcher, Duration[] generationTimeouts, @Nullable BiConsumer<K, V> release,
         @Nullable Function<K, K> clone) {
+        //noinspection unchecked
+        this.values = (Map<K, Entry<K, V>>) backingMap;
         this.fetcher = fetcher;
         this.release = release;
         this.clone = clone;
