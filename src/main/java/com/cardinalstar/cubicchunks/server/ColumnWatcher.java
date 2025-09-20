@@ -103,7 +103,8 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
 
         if (this.isSentToPlayers) {
             assert column != null;
-            PacketEncoderColumn.createPacket(column).sendToPlayer(player);
+            PacketEncoderColumn.createPacket(column)
+                .sendToPlayer(player);
             MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(column.getChunkCoordIntPair(), player));
         }
     }
@@ -118,7 +119,8 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         }
 
         if (this.isSentToPlayers) {
-            PacketEncoderUnloadColumn.createPacket(pos.chunkXPos, pos.chunkZPos).sendToPlayer(player);
+            PacketEncoderUnloadColumn.createPacket(pos.chunkXPos, pos.chunkZPos)
+                .sendToPlayer(player);
         }
 
         if (column != null) {

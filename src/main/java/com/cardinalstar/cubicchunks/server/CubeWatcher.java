@@ -48,6 +48,7 @@ import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.base.Predicate;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
 import gnu.trove.list.TShortList;
 import gnu.trove.list.array.TShortArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -162,7 +163,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         }
 
         if (this.sentToPlayers) {
-            PacketEncoderUnloadCube.createPacket(cubePos).sendToPlayer(player);
+            PacketEncoderUnloadCube.createPacket(cubePos)
+                .sendToPlayer(player);
             cubicPlayerManager.removeSchedulesSendCubeToPlayer(cube, player);
         }
 

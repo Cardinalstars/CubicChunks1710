@@ -263,7 +263,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             try {
                 CubeGeneratorsRegistry.generateVanillaCube(this, world, cube);
             } catch (Throwable t) {
-                CubicChunks.LOGGER.error("Could not run non-vanilla generation for cube {},{},{}", cubeX, cubeY, cubeZ, t);
+                CubicChunks.LOGGER
+                    .error("Could not run non-vanilla generation for cube {},{},{}", cubeX, cubeY, cubeZ, t);
             }
 
             return cube;
@@ -417,7 +418,12 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             try {
                 CubeGeneratorsRegistry.populateVanillaCubic(world, cube);
             } catch (Throwable t) {
-                CubicChunks.LOGGER.error("Could not run non-vanilla population for cube {},{},{}", cube.getX(), cube.getY(), cube.getZ(), t);
+                CubicChunks.LOGGER.error(
+                    "Could not run non-vanilla population for cube {},{},{}",
+                    cube.getX(),
+                    cube.getY(),
+                    cube.getZ(),
+                    t);
             }
 
             Cube withinVanillaChunk = cube;

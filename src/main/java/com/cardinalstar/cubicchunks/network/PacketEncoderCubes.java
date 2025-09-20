@@ -37,6 +37,7 @@ import com.cardinalstar.cubicchunks.client.CubeProviderClient;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -44,7 +45,8 @@ import io.netty.buffer.Unpooled;
 public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.PacketCubes> {
 
     @Desugar
-    public record PacketCubes(CubePos[] cubePos, byte[] data, List<List<NBTTagCompound>> tileEntityTags) implements CCPacket {
+    public record PacketCubes(CubePos[] cubePos, byte[] data, List<List<NBTTagCompound>> tileEntityTags)
+        implements CCPacket {
 
         @Override
         public byte getPacketID() {
@@ -78,12 +80,14 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
         List<List<NBTTagCompound>> tileEntityTags = new ArrayList<>();
 
         cubes.forEach(cube -> {
-            if (cube.getTileEntityMap().isEmpty()) {
+            if (cube.getTileEntityMap()
+                .isEmpty()) {
                 tileEntityTags.add(Collections.emptyList());
             } else {
                 List<NBTTagCompound> list = new ArrayList<>();
 
-                for (TileEntity tileEntity : cube.getTileEntityMap().values()) {
+                for (TileEntity tileEntity : cube.getTileEntityMap()
+                    .values()) {
                     NBTTagCompound tag = new NBTTagCompound();
                     tileEntity.writeToNBT(tag);
                     list.add(tag);
@@ -107,9 +111,9 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
         buffer.writeByteArray(packet.data);
 
-        buffer.writeList(packet.tileEntityTags, (buf2, list) -> {
-            buf2.writeList(list, CCPacketBuffer::writeCompoundTag);
-        });
+        buffer.writeList(
+            packet.tileEntityTags,
+            (buf2, list) -> { buf2.writeList(list, CCPacketBuffer::writeCompoundTag); });
     }
 
     @Override
@@ -118,9 +122,8 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
         byte[] data = buf.readByteArray();
 
-        List<List<NBTTagCompound>> tileEntityTags = buf.readList(buf2 -> {
-            return buf2.readList(CCPacketBuffer::readCompoundTag);
-        });
+        List<List<NBTTagCompound>> tileEntityTags = buf
+            .readList(buf2 -> { return buf2.readList(CCPacketBuffer::readCompoundTag); });
 
         return new PacketCubes(cubePos, data, tileEntityTags);
     }

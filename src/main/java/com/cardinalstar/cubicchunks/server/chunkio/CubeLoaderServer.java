@@ -313,7 +313,10 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         }
 
         if (!pendingCubeUnloads.isEmpty()) {
-            CubicChunks.LOGGER.info("Garbage collected {} cubes (now have {} cubes loaded)", pendingCubeUnloads.size(), cubes.getSize());
+            CubicChunks.LOGGER.info(
+                "Garbage collected {} cubes (now have {} cubes loaded)",
+                pendingCubeUnloads.size(),
+                cubes.getSize());
         }
 
         List<ColumnInfo> pendingColumnUnloads = new ArrayList<>();
@@ -340,7 +343,10 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         }
 
         if (!pendingColumnUnloads.isEmpty()) {
-            CubicChunks.LOGGER.info("Garbage collected {} columns (now have {} columns loaded)", pendingColumnUnloads.size(), columns.getSize());
+            CubicChunks.LOGGER.info(
+                "Garbage collected {} columns (now have {} columns loaded)",
+                pendingColumnUnloads.size(),
+                columns.getSize());
         }
     }
 

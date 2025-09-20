@@ -12,6 +12,7 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.ChunkCoordIntPair;
 
 import com.cardinalstar.cubicchunks.util.CubePos;
+
 import io.netty.buffer.ByteBuf;
 
 public class CCPacketBuffer extends PacketBuffer {
@@ -97,10 +98,12 @@ public class CCPacketBuffer extends PacketBuffer {
     }
 
     public interface Encoder<T> {
+
         void encode(CCPacketBuffer buffer, T value);
     }
 
     public interface Decoder<T> {
+
         T decode(CCPacketBuffer buffer);
     }
 

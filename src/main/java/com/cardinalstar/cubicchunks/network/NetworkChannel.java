@@ -10,6 +10,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
+
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.FMLEmbeddedChannel;
 import cpw.mods.fml.common.network.FMLOutboundHandler;
@@ -41,15 +42,17 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
             .toArray(CCPacketEncoder[]::new);
 
         final int maxPacketID = Arrays.stream(packetTypes)
-            .mapToInt(CCPacketEncoder::getPacketID).max().getAsInt();
+            .mapToInt(CCPacketEncoder::getPacketID)
+            .max()
+            .getAsInt();
 
-        //noinspection unchecked
+        // noinspection unchecked
         this.encoders = new CCPacketEncoder[maxPacketID + 1];
 
         for (CCPacketEncoder<?> packetType : packetTypes) {
             int packetID = packetType.getPacketID();
             if (this.encoders[packetID] == null) {
-                //noinspection unchecked
+                // noinspection unchecked
                 this.encoders[packetID] = (CCPacketEncoder<CCPacket>) packetType;
             } else {
                 throw new IllegalArgumentException("Duplicate Packet ID! " + packetID);
@@ -59,7 +62,8 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
 
     @Override
     protected void encode(ChannelHandlerContext context, CCPacket packet, List<Object> output) {
-        ByteBuf buffer = Unpooled.buffer().writeByte(packet.getPacketID());
+        ByteBuf buffer = Unpooled.buffer()
+            .writeByte(packet.getPacketID());
         CCPacketEncoder<CCPacket> encoder = this.encoders[packet.getPacketID()];
         encoder.writePacket(new CCPacketBuffer(buffer), packet);
         output.add(
@@ -67,9 +71,7 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
                 buffer,
                 context.channel()
                     .attr(NetworkRegistry.FML_CHANNEL)
-                    .get()
-            )
-        );
+                    .get()));
     }
 
     @Override
@@ -134,7 +136,9 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
                     break;
                 }
                 Chunk tChunk = world.getChunkFromBlockCoords(x, z);
-                if (tPlayer.getServerForPlayer().getPlayerManager().isPlayerWatchingChunk(tPlayer, tChunk.xPosition, tChunk.zPosition)) {
+                if (tPlayer.getServerForPlayer()
+                    .getPlayerManager()
+                    .isPlayerWatchingChunk(tPlayer, tChunk.xPosition, tChunk.zPosition)) {
                     sendToPlayer(packet, tPlayer);
                 }
             }
@@ -146,7 +150,9 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
 
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, CCPacket packet) {
-            World world = FMLCommonHandler.instance().getEffectiveSide().isClient() ? getClientWorld() : null;
+            World world = FMLCommonHandler.instance()
+                .getEffectiveSide()
+                .isClient() ? getClientWorld() : null;
 
             encoders[packet.getPacketID()].process(world, packet);
         }

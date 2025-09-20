@@ -37,7 +37,8 @@ import com.github.bsideup.jabel.Desugar;
 public class PacketEncoderCubicWorldData extends CCPacketEncoder<PacketEncoderCubicWorldData.PacketCubicWorldData> {
 
     @Desugar
-    public record PacketCubicWorldData(int minHeight, int maxHeight, int minGenerationHeight, int maxGenerationHeight) implements CCPacket {
+    public record PacketCubicWorldData(int minHeight, int maxHeight, int minGenerationHeight, int maxGenerationHeight)
+        implements CCPacket {
 
         @Override
         public byte getPacketID() {
@@ -54,7 +55,8 @@ public class PacketEncoderCubicWorldData extends CCPacketEncoder<PacketEncoderCu
         int minGenerationHeight;
         int maxGenerationHeight;
 
-        if (world.getWorldInfo().getTerrainType() instanceof ICubicWorldType type) {
+        if (world.getWorldInfo()
+            .getTerrainType() instanceof ICubicWorldType type) {
             IntRange range = type.calculateGenerationHeightRange(world);
             minGenerationHeight = range.getMin();
             maxGenerationHeight = range.getMax();

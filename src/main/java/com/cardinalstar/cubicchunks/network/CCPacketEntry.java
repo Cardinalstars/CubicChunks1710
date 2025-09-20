@@ -1,6 +1,7 @@
 package com.cardinalstar.cubicchunks.network;
 
 public enum CCPacketEntry {
+
     Cubes(new PacketEncoderCubes()),
     Column(new PacketEncoderColumn()),
     UnloadColumn(new PacketEncoderUnloadColumn()),
@@ -8,8 +9,7 @@ public enum CCPacketEntry {
     CubeBlockChange(new PacketEncoderCubeBlockChange()),
     CubicWorldData(new PacketEncoderCubicWorldData()),
     HeightMapUpdate(new PacketEncoderHeightMapUpdate()),
-    CubeSkyLightUpdates(new PacketEncoderCubeSkyLightUpdates()),
-    ;
+    CubeSkyLightUpdates(new PacketEncoderCubeSkyLightUpdates()),;
 
     public final byte id = (byte) ordinal();
     public final CCPacketEncoder<?> encoder;

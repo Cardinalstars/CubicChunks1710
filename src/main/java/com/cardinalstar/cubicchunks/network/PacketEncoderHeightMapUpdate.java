@@ -38,6 +38,7 @@ import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.github.bsideup.jabel.Desugar;
+
 import gnu.trove.list.TByteList;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TByteArrayList;
@@ -47,7 +48,8 @@ import gnu.trove.list.array.TIntArrayList;
 public class PacketEncoderHeightMapUpdate extends CCPacketEncoder<PacketEncoderHeightMapUpdate.PacketHeightMapUpdate> {
 
     @Desugar
-    public record PacketHeightMapUpdate(ChunkCoordIntPair chunk, TByteList updates, TIntList heights) implements CCPacket {
+    public record PacketHeightMapUpdate(ChunkCoordIntPair chunk, TByteList updates, TIntList heights)
+        implements CCPacket {
 
         @Override
         public byte getPacketID() {
@@ -113,7 +115,8 @@ public class PacketEncoderHeightMapUpdate extends CCPacketEncoder<PacketEncoderH
 
         Chunk column = cubeCache.provideColumn(packet.chunk.chunkXPos, packet.chunk.chunkZPos);
         if (column instanceof EmptyChunk) {
-            CubicChunks.LOGGER.error("Ignored block update to blank column {},{}", packet.chunk.chunkXPos, packet.chunk.chunkZPos);
+            CubicChunks.LOGGER
+                .error("Ignored block update to blank column {},{}", packet.chunk.chunkXPos, packet.chunk.chunkZPos);
             return;
         }
 

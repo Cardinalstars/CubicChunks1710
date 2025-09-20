@@ -70,6 +70,7 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -388,12 +389,14 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
                 for (Cube cube : cubes) {
                     list.add(cube);
                     if (list.size() >= 100) {
-                        PacketEncoderCubes.createPacket(list).sendToPlayer(player);
+                        PacketEncoderCubes.createPacket(list)
+                            .sendToPlayer(player);
                         list.clear();
                     }
                 }
                 if (!list.isEmpty()) {
-                    PacketEncoderCubes.createPacket(list).sendToPlayer(player);
+                    PacketEncoderCubes.createPacket(list)
+                        .sendToPlayer(player);
                 }
                 // } else {
                 // vanillaNetworkHandler.sendCubeLoadPackets(cubes, player);

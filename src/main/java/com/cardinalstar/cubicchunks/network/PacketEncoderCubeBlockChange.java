@@ -37,6 +37,7 @@ import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
 import gnu.trove.TShortCollection;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
@@ -46,7 +47,8 @@ import gnu.trove.set.hash.TIntHashSet;
 public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderCubeBlockChange.PacketCubeBlockChange> {
 
     @Desugar
-    public record PacketCubeBlockChange(CubePos cubePos, short[] localAddresses, Block[] blocks, int[] blockMetas, int[] heightValues) implements CCPacket {
+    public record PacketCubeBlockChange(CubePos cubePos, short[] localAddresses, Block[] blocks, int[] blockMetas,
+        int[] heightValues) implements CCPacket {
 
         @Override
         public byte getPacketID() {
@@ -165,13 +167,8 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
         // apply the update
         for (int i = 0; i < packet.localAddresses.length; i++) {
             BlockPos pos = cube.localAddressToBlockPos(packet.localAddresses[i]);
-            worldClient.invalidateBlockReceiveRegion(
-                pos.getX(),
-                pos.getY(),
-                pos.getZ(),
-                pos.getX(),
-                pos.getY(),
-                pos.getZ());
+            worldClient
+                .invalidateBlockReceiveRegion(pos.getX(), pos.getY(), pos.getZ(), pos.getX(), pos.getY(), pos.getZ());
             worldClient.setBlock(pos.getX(), pos.getY(), pos.getZ(), packet.blocks[i], packet.blockMetas[i], 3);
         }
         cube.getTileEntityMap()

@@ -38,14 +38,17 @@ import com.cardinalstar.cubicchunks.util.Bits;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
+
 import gnu.trove.list.TShortList;
 
 // this class exists only for network compatibility with older servers
 @ParametersAreNonnullByDefault
-public class PacketEncoderCubeSkyLightUpdates extends CCPacketEncoder<PacketEncoderCubeSkyLightUpdates.PacketCubeSkyLightUpdates> {
+public class PacketEncoderCubeSkyLightUpdates
+    extends CCPacketEncoder<PacketEncoderCubeSkyLightUpdates.PacketCubeSkyLightUpdates> {
 
     @Desugar
-    public record PacketCubeSkyLightUpdates(CubePos pos, boolean isFullRelight, @Nullable byte[] data) implements CCPacket {
+    public record PacketCubeSkyLightUpdates(CubePos pos, boolean isFullRelight, @Nullable byte[] data)
+        implements CCPacket {
 
         @Override
         public byte getPacketID() {
@@ -86,7 +89,8 @@ public class PacketEncoderCubeSkyLightUpdates extends CCPacketEncoder<PacketEnco
         }
 
         byte[] data = Arrays.copyOf(
-            cube.getStorage().getSkylightArray().data,
+            cube.getStorage()
+                .getSkylightArray().data,
             Cube.SIZE * Cube.SIZE * Cube.SIZE / 2);
 
         return new PacketCubeSkyLightUpdates(cube.getCoords(), true, data);

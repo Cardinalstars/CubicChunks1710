@@ -5,7 +5,7 @@ import net.minecraft.world.World;
 
 public abstract class CCPacketEncoder<Packet extends CCPacket> {
 
-    protected CCPacketEncoder() { }
+    protected CCPacketEncoder() {}
 
     /**
      * Unique ID of this packet.
@@ -30,7 +30,8 @@ public abstract class CCPacketEncoder<Packet extends CCPacket> {
     public abstract void process(World world, Packet packet);
 
     /**
-     * This will be called just before {@link #process(World, CCPacket)}} to inform the handler about the source and type of
+     * This will be called just before {@link #process(World, CCPacket)}} to inform the handler about the source and
+     * type of
      * connection.
      */
     public void setINetHandler(INetHandler handler, Packet packet) {}

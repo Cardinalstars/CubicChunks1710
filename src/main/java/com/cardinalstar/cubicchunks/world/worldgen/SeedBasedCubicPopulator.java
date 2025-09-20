@@ -31,11 +31,7 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
 
     private final TimedCache<CubePos, List<TSeed>> seedCache = new TimedCache<>(
         this::getSeedImpl,
-        new Duration[] {
-            Duration.ofSeconds(10),
-            Duration.ofSeconds(25),
-            Duration.ofSeconds(100)
-        },
+        new Duration[] { Duration.ofSeconds(10), Duration.ofSeconds(25), Duration.ofSeconds(100) },
         (pos, list) -> {
             // noinspection rawtypes
             if (list instanceof ArrayList arrayList) {

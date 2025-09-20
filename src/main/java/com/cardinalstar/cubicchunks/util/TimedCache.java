@@ -14,6 +14,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 public class TimedCache<K, V> {
 
     private static class Entry<K, V> {
+
         public final K key;
         public final int keyHash;
         public final V value;
@@ -33,13 +34,14 @@ public class TimedCache<K, V> {
 
         @Override
         public boolean equals(Object obj) {
-            if (!(obj instanceof TimedCache.Entry<?,?> e)) return false;
+            if (!(obj instanceof TimedCache.Entry<?, ?>e)) return false;
 
             return key.equals(e.key);
         }
     }
 
     private static class Generation<K, V> {
+
         public final long expiration;
         public final ObjectOpenHashSet<Entry<K, V>> entries = new ObjectOpenHashSet<>();
         public long lastCleanup;
@@ -64,12 +66,13 @@ public class TimedCache<K, V> {
         this(fetcher, getDefaultTimeouts(gen0Timeout), null, null);
     }
 
-    public TimedCache(Function<K, V> fetcher, Duration[] generationTimeouts, @Nullable BiConsumer<K, V> release, @Nullable Function<K, K> clone) {
+    public TimedCache(Function<K, V> fetcher, Duration[] generationTimeouts, @Nullable BiConsumer<K, V> release,
+        @Nullable Function<K, K> clone) {
         this.fetcher = fetcher;
         this.release = release;
         this.clone = clone;
 
-        //noinspection unchecked
+        // noinspection unchecked
         this.generations = new Generation[generationTimeouts.length];
 
         for (int i = 0; i < generationTimeouts.length; i++) {

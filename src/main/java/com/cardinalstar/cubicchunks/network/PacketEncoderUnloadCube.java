@@ -68,7 +68,8 @@ public class PacketEncoderUnloadCube extends CCPacketEncoder<PacketEncoderUnload
         CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
 
         // This apparently makes visual chunk holes much more rare/nonexistent
-        cubeCache.getCube(packet.pos).markForRenderUpdate();
+        cubeCache.getCube(packet.pos)
+            .markForRenderUpdate();
         cubeCache.unloadCube(packet.pos);
     }
 }
