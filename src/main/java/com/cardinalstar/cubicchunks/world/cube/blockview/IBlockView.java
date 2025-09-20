@@ -20,7 +20,8 @@ public interface IBlockView {
     default IBlockView subView(Box box) {
         Box thisBox = getBounds();
 
-        if (thisBox != null && !thisBox.contains(box)) throw new IllegalArgumentException("sub view box must be completely contained within parent view's bounds");
+        if (thisBox != null && !thisBox.contains(box))
+            throw new IllegalArgumentException("sub view box must be completely contained within parent view's bounds");
 
         return new SubBlockView(this, box);
     }

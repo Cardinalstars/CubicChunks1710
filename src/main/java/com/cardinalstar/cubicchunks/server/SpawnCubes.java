@@ -124,9 +124,7 @@ public class SpawnCubes implements ITicket {
             spawnCubeZ,
             r,
             ry,
-            (x, y, z) -> {
-                serverCubeCache.loadCubeEagerly(x, y, z, ICubeProviderServer.Requirement.NBT);
-            });
+            (x, y, z) -> { serverCubeCache.loadCubeEagerly(x, y, z, ICubeProviderServer.Requirement.NBT); });
 
         forEachCube(spawnCubeX, spawnCubeY, spawnCubeZ, r, ry, (cubeX, cubeY, cubeZ) -> {
             ICubeProviderServer.Requirement req;

@@ -87,7 +87,7 @@ public interface ICubeGenerator {
      * This method should generate all cubes that may be affected by the population of {@code cube} before population.
      * It is also responsible for calling {@link Cube#setPopulated(boolean)} as necessary.
      *
-     * @param cube   The cube to populate
+     * @param cube The cube to populate
      */
     void populate(Cube cube);
 
@@ -95,8 +95,8 @@ public interface ICubeGenerator {
         return Optional.of(this.provideCube(chunk, cubeX, cubeY, cubeZ));
     }
 
-    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, @Nullable Block[] blocks, @Nullable byte[] blockMeta,
-        boolean forceGenerate) {
+    default Optional<Chunk> tryGenerateColumn(World world, int columnX, int columnZ, @Nullable Block[] blocks,
+        @Nullable byte[] blockMeta, boolean forceGenerate) {
         Chunk column = new Chunk(world, columnX, columnZ);
         this.generateColumn(column);
         return Optional.of(column);

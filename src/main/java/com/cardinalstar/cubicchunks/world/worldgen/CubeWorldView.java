@@ -113,8 +113,11 @@ public class CubeWorldView implements WorldView {
     }
 
     protected final void validateCoords(int x, int y, int z) {
-        if (x < startX || x >= endX) throw new IllegalArgumentException(String.format("illegal argument: x must fulfill min <= x < max (x=%s, min=%s, max=%s)", x, startX, endX));
-        if (y < startY || y >= endY) throw new IllegalArgumentException(String.format("illegal argument: y must fulfill min <= y < max (y=%s, min=%s, max=%s)", y, startY, endY));
-        if (z < startZ || z >= endZ) throw new IllegalArgumentException(String.format("illegal argument: z must fulfill min <= z < max (z=%s, min=%s, max=%s)", z, startZ, endZ));
+        if (x < startX || x >= endX) throw new IllegalArgumentException(
+            String.format("illegal argument: x must fulfill min <= x < max (x=%s, min=%s, max=%s)", x, startX, endX));
+        if (y < startY || y >= endY) throw new IllegalArgumentException(
+            String.format("illegal argument: y must fulfill min <= y < max (y=%s, min=%s, max=%s)", y, startY, endY));
+        if (z < startZ || z >= endZ) throw new IllegalArgumentException(
+            String.format("illegal argument: z must fulfill min <= z < max (z=%s, min=%s, max=%s)", z, startZ, endZ));
     }
 }

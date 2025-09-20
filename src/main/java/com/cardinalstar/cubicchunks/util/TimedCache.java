@@ -13,7 +13,8 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
 public class TimedCache<K, V> {
 
-    private final PriorityQueue<LongObjectMutablePair<K>> timing = new PriorityQueue<>(Comparator.comparingLong(LongObjectMutablePair::leftLong));
+    private final PriorityQueue<LongObjectMutablePair<K>> timing = new PriorityQueue<>(
+        Comparator.comparingLong(LongObjectMutablePair::leftLong));
 
     public final Object2ObjectOpenHashMap<K, V> values = new Object2ObjectOpenHashMap<>();
 
@@ -26,9 +27,11 @@ public class TimedCache<K, V> {
 
     private long lastCleanup;
 
-    private static final long CLEANUP_INTERVAL = Duration.ofMillis(1).toNanos();
+    private static final long CLEANUP_INTERVAL = Duration.ofMillis(1)
+        .toNanos();
 
-    public TimedCache(Function<K, V> fetcher, Duration timeout, @Nullable BiConsumer<K, V> release, Function<K, K> clone) {
+    public TimedCache(Function<K, V> fetcher, Duration timeout, @Nullable BiConsumer<K, V> release,
+        Function<K, K> clone) {
         this.fetcher = fetcher;
         this.timeoutNS = timeout.toNanos();
         this.release = release;

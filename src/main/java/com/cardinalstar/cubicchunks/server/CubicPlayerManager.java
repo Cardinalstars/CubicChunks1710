@@ -71,6 +71,7 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -174,7 +175,9 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
      */
     private long previousWorldTime = 0;
 
-    private final SetMultimap<EntityPlayerMP, Cube> cubesToSend = MultimapBuilder.hashKeys().hashSetValues().build();
+    private final SetMultimap<EntityPlayerMP, Cube> cubesToSend = MultimapBuilder.hashKeys()
+        .hashSetValues()
+        .build();
 
     // these player adds will be processed on the next tick
     // this exists as temporary workaround to player respawn code calling addPlayer() before spawning
@@ -198,7 +201,8 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             ((ICubicPlayerList) worldServer.func_73046_m()
                 .getConfigurationManager()).getVerticalViewDistance());
         // this.vanillaNetworkHandler = ((ICubicWorldInternal.Server) worldServer).getVanillaNetworkHandler();
-        ((ICubicWorldInternal.Server) worldServer).getCubeCache().registerCallback(this);
+        ((ICubicWorldInternal.Server) worldServer).getCubeCache()
+            .registerCallback(this);
     }
 
     // /**
@@ -641,7 +645,9 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         // So we put ChunkGc here so that we can be sure it has consistent data about player location, and that no
         // chunks are
         // loaded while we aren't looking.
-        ((ICubicWorldInternal.Server) getWorldServer()).getCubeCache().getCubeLoader().doGC();
+        ((ICubicWorldInternal.Server) getWorldServer()).getCubeCache()
+            .getCubeLoader()
+            .doGC();
     }
 
     private void updatePlayer(PlayerWrapper entry, CubePos oldPos, CubePos newPos) {
@@ -702,7 +708,11 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         // Force load the cube the player is in along with its 26 neighbours
         for (Vector3ic v : new Box(-1, -1, -1, 1, 1, 1)) {
-            cubeCache.getCube(newPos.getX() + v.x(), newPos.getY() + v.y(), newPos.getZ() + v.z(), ICubeProviderServer.Requirement.LIGHT);
+            cubeCache.getCube(
+                newPos.getX() + v.x(),
+                newPos.getY() + v.y(),
+                newPos.getZ() + v.z(),
+                ICubeProviderServer.Requirement.LIGHT);
         }
 
         getWorldServer().theProfiler.endSection();// Immediate nearby cube loading
@@ -930,6 +940,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
     public Iterable<Cube> getWatchedCubes() {
         return () -> new AbstractIterator<Cube>() {
+
             final Iterator<CubeWatcher> iterator = CubicPlayerManager.this.tickableCubeTracker.iterator();
 
             boolean shouldSkip(@Nullable Cube cube) {

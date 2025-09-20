@@ -43,7 +43,6 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.ChunkEvent.Load;
 
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
@@ -69,7 +68,6 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
 import com.cardinalstar.cubicchunks.world.column.CubeMap;
@@ -228,24 +226,25 @@ public abstract class MixinChunk_Cubes {
 
     // modify vanilla:
 
-//    @ModifyConstant(
-//        method = "<init>(Lnet/minecraft/world/World;II)V",
-//        constant = @Constant(intValue = 16),
-//        slice = @Slice(
-//            to = @At(
-//                value = "FIELD",
-//                target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-//                opcode = Opcodes.PUTFIELD)),
-//        allow = 1,
-//        require = 1)
-//    private int modifySectionArrayLength(int sixteen, World worldIn, int x, int z) {
-//        if (worldIn == null) {
-//            // Some mods construct chunks with null world, ignore them
-//            return sixteen;
-//        }
-//        IMinMaxHeight y = (IMinMaxHeight) worldIn;
-//        return Coords.blockToCube(y.getMaxHeight()) - Coords.blockToCube(y.getMinHeight());
-//    }
+    // @ModifyConstant(
+    // method = "<init>(Lnet/minecraft/world/World;II)V",
+    // constant = @Constant(intValue = 16),
+    // slice = @Slice(
+    // to = @At(
+    // value = "FIELD",
+    // target =
+    // "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
+    // opcode = Opcodes.PUTFIELD)),
+    // allow = 1,
+    // require = 1)
+    // private int modifySectionArrayLength(int sixteen, World worldIn, int x, int z) {
+    // if (worldIn == null) {
+    // // Some mods construct chunks with null world, ignore them
+    // return sixteen;
+    // }
+    // IMinMaxHeight y = (IMinMaxHeight) worldIn;
+    // return Coords.blockToCube(y.getMaxHeight()) - Coords.blockToCube(y.getMinHeight());
+    // }
 
     @Inject(method = "<init>(Lnet/minecraft/world/World;II)V", at = @At(value = "RETURN"))
     private void cubicChunkColumn_construct(World world, int x, int z, CallbackInfo cbi) {

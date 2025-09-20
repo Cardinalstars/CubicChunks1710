@@ -9,6 +9,7 @@ import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 
 import com.cardinalstar.cubicchunks.api.util.Box;
+
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -58,7 +59,8 @@ public class ChunkArrayBlockView implements IMutableBlockView {
         };
     }
 
-    public ChunkArrayBlockView(int spanX, int spanY, int spanZ, Int2ObjectFunction<Block> blocks, Int2IntFunction meta) {
+    public ChunkArrayBlockView(int spanX, int spanY, int spanZ, Int2ObjectFunction<Block> blocks,
+        Int2IntFunction meta) {
         this.spanX = spanX;
         this.spanY = spanY;
         this.spanZ = spanZ;

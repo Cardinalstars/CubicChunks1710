@@ -74,7 +74,8 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         this.column = cubeCache.getLoadedColumn(pos.chunkXPos, pos.chunkZPos);
 
         if (column == null) {
-            request = cubeCache.loadColumnEagerly(pos.chunkXPos, pos.chunkZPos, ICubeProviderServer.Requirement.GENERATE);
+            request = cubeCache
+                .loadColumnEagerly(pos.chunkXPos, pos.chunkZPos, ICubeProviderServer.Requirement.GENERATE);
         }
     }
 
@@ -87,11 +88,8 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
     @Override
     public void addPlayer(EntityPlayerMP player) {
         if (playersWatchingChunk.contains(player)) {
-            CubicChunks.LOGGER.debug(
-                "Failed to add player. {} already is in chunk {}, {}",
-                player,
-                pos.chunkXPos,
-                pos.chunkZPos);
+            CubicChunks.LOGGER
+                .debug("Failed to add player. {} already is in chunk {}, {}", player, pos.chunkXPos, pos.chunkZPos);
             return;
         }
 

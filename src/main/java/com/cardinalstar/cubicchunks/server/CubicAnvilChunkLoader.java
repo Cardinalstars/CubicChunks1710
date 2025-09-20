@@ -53,7 +53,8 @@ public class CubicAnvilChunkLoader extends AnvilChunkLoader {
     }
 
     private ICubeLoader getCubeLoader() {
-        return cubeProvider.get().getCubeLoader();
+        return cubeProvider.get()
+            .getCubeLoader();
     }
 
     @Override

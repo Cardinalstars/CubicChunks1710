@@ -57,7 +57,7 @@ public interface ICubicWorldServer extends ICubicWorld {
      * Can accept tickets from different worlds.
      *
      * @param ticket ForgeChunkManager ticket
-     * @param cube  position of the cube to force load
+     * @param cube   position of the cube to force load
      */
     void forceChunk(ForgeChunkManager.Ticket ticket, CubePos cube);
 

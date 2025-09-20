@@ -43,6 +43,7 @@ import com.cardinalstar.cubicchunks.util.ReflectionUtil;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.google.common.collect.ImmutableList;
+
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -60,12 +61,12 @@ public class CommonEventHandler {
         }
     }
 
-    @SubscribeEvent
-    public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
-        if (evt.entity instanceof EntityPlayerMP) {
-            PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
-        }
-    }
+//    @SubscribeEvent
+//    public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
+//        if (evt.entity instanceof EntityPlayerMP) {
+//            PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
+//        }
+//    }
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {

@@ -27,6 +27,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -53,18 +54,21 @@ public class PacketDispatcher {
      * Registers all packets. Side of a packet is the side on which the packet is handled.
      */
     public static void registerPackets() {
-        registerMessage(PacketCubes.Handler.class, PacketCubes.class);
-        registerMessage(PacketColumn.Handler.class, PacketColumn.class);
+        if (FMLCommonHandler.instance()
+            .getSide()
+            .isClient()) {
+            registerMessage(PacketCubes.Handler.class, PacketCubes.class);
+            registerMessage(PacketColumn.Handler.class, PacketColumn.class);
 
-        registerMessage(PacketUnloadColumn.Handler.class, PacketUnloadColumn.class);
-        registerMessage(PacketUnloadCube.Handler.class, PacketUnloadCube.class);
+            registerMessage(PacketUnloadColumn.Handler.class, PacketUnloadColumn.class);
+            registerMessage(PacketUnloadCube.Handler.class, PacketUnloadCube.class);
 
-        registerMessage(PacketCubeBlockChange.Handler.class, PacketCubeBlockChange.class);
+            registerMessage(PacketCubeBlockChange.Handler.class, PacketCubeBlockChange.class);
 
-        registerMessage(PacketCubicWorldData.Handler.class, PacketCubicWorldData.class);
-        registerMessage(PacketHeightMapUpdate.Handler.class, PacketHeightMapUpdate.class);
-        registerMessage(PacketCubeSkyLightUpdates.Handler.class, PacketCubeSkyLightUpdates.class);
-
+            registerMessage(PacketCubicWorldData.Handler.class, PacketCubicWorldData.class);
+            registerMessage(PacketHeightMapUpdate.Handler.class, PacketHeightMapUpdate.class);
+            registerMessage(PacketCubeSkyLightUpdates.Handler.class, PacketCubeSkyLightUpdates.class);
+        }
     }
 
     /**

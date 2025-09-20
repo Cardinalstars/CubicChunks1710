@@ -7,7 +7,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
  * The data is will be stored on disk, but will not be sent to client.
  */
 @ParametersAreNonnullByDefault
-public interface ICubicWorldSettings
-{
+public interface ICubicWorldSettings {
 
 }

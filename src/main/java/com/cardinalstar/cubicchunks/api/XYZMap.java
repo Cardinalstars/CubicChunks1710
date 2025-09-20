@@ -37,6 +37,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
  */
 @ParametersAreNonnullByDefault
 public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
+
     Long2ObjectOpenHashMap<T> items = new Long2ObjectOpenHashMap<>();
 
     private long key(long x, long y, long z) {
@@ -66,7 +67,8 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
     @Override
     @Nonnull
     public Iterator<T> iterator() {
-        return items.values().iterator();
+        return items.values()
+            .iterator();
     }
 
     public int getSize() {

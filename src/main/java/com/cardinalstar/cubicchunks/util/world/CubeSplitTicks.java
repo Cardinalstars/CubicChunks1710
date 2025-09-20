@@ -1,11 +1,11 @@
 package com.cardinalstar.cubicchunks.util.world;
 
-import com.cardinalstar.cubicchunks.util.CubePos;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.world.NextTickListEntry;
 
-import java.util.Collection;
+import com.cardinalstar.cubicchunks.util.CubePos;
+
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 public class CubeSplitTicks {
 
@@ -15,8 +15,7 @@ public class CubeSplitTicks {
         return byCube.get(coords);
     }
 
-    public void remove(NextTickListEntry entry)
-    {
+    public void remove(NextTickListEntry entry) {
         CubePos pos = CubePos.fromBlockCoords(entry.xCoord, entry.yCoord, entry.zCoord);
         ObjectOpenHashSet<NextTickListEntry> set = byCube.get(pos);
         set.remove(entry);
@@ -24,10 +23,10 @@ public class CubeSplitTicks {
             byCube.remove(pos);
         }
     }
+
     public boolean add(NextTickListEntry entry) {
         CubePos pos = CubePos.fromBlockCoords(entry.xCoord, entry.yCoord, entry.zCoord);
-        return byCube
-            .computeIfAbsent(pos, x -> new ObjectOpenHashSet<>())
+        return byCube.computeIfAbsent(pos, x -> new ObjectOpenHashSet<>())
             .add(entry);
     }
 }

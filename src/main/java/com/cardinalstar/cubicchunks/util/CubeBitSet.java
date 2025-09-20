@@ -30,6 +30,7 @@ public class CubeBitSet implements Iterable<Vector3ic> {
     @Nonnull
     public Iterator<Vector3ic> iterator() {
         return new AbstractIterator<>() {
+
             private int bit = -1;
 
             private final Vector3i v = new Vector3i();

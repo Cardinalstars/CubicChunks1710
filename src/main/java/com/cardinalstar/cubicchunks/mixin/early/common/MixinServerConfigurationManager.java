@@ -20,26 +20,34 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import javax.annotation.ParametersAreNonnullByDefault;
-
+import com.cardinalstar.cubicchunks.api.ICubicWorldServer;
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
+import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
+import com.cardinalstar.cubicchunks.network.ICubicJoinGamePacket;
+import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
+import com.cardinalstar.cubicchunks.server.ICubicPlayerList;
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.play.server.S01PacketJoinGame;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.management.ServerConfigurationManager;
 import net.minecraft.util.MathHelper;
+import net.minecraft.world.EnumDifficulty;
 import net.minecraft.world.WorldServer;
-
+import net.minecraft.world.WorldSettings;
+import net.minecraft.world.WorldType;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
-import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
-import com.cardinalstar.cubicchunks.server.ICubicPlayerList;
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @Mixin(ServerConfigurationManager.class)
@@ -78,17 +86,20 @@ public abstract class MixinServerConfigurationManager implements ICubicPlayerLis
         }
     }
 
-    // @Redirect(method = "playerLoggedOut",
-    // at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;setChunkModifiedV", ordinal = 0),
-    // require = 1)
-    // private void setChunkModifiedOnPlayerLoggedOut(Chunk chunkIn, EntityPlayerMP playerIn) {
-    // ICubicWorldInternal world = (ICubicWorldInternal) playerIn.getServerForPlayer();
-    // if (world.isCubicWorld()) {
-    // world.getCubeFromCubeCoords(playerIn.chunkCoordX, playerIn.chunkCoordY, playerIn.chunkCoordZ).markDirty();
-    // } else {
-    // ((World) world).getChunkFromBlockCoords(playerIn.chunkCoordX, playerIn.chunkCoordZ).setChunkModified();
-    // }
-    // }
+
+    @Redirect(method = "initializeConnectionToPlayer",
+    at = @At(value = "NEW", target = "(ILnet/minecraft/world/WorldSettings$GameType;ZILnet/minecraft/world/EnumDifficulty;ILnet/minecraft/world/WorldType;)Lnet/minecraft/network/play/server/S01PacketJoinGame;"),
+    require = 1)
+    S01PacketJoinGame intializeCubicWorldJoinPacket(int entityId, WorldSettings.GameType gameType, boolean isHardcore, int providerDimId, EnumDifficulty difficulty, int maxPlayers, WorldType worldType, @Local(type = WorldServer.class) WorldServer worldServer)
+    {
+        S01PacketJoinGame packet = new S01PacketJoinGame(entityId, gameType, isHardcore, providerDimId, difficulty, maxPlayers, worldType);
+        if (packet instanceof ICubicJoinGamePacket cubicJoinGamePacket && worldServer instanceof ICubicWorldServer cubicWorldServer)
+        {
+            cubicJoinGamePacket.InitCubicJoinGamePacket(cubicWorldServer.getMinHeight(), cubicWorldServer.getMaxHeight(), cubicWorldServer.getMinGenerationHeight(), cubicWorldServer.getMaxGenerationHeight());
+            return packet;
+        }
+        throw new NotCubicChunksWorldException();
+    }
 
     @Inject(
         method = "respawnPlayer",

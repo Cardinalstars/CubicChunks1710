@@ -43,7 +43,6 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.fixes.common.fakeheight.IASMEventHandler;
 import com.cardinalstar.cubicchunks.fixes.common.fakeheight.IEventBus;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 

@@ -19,12 +19,14 @@ public class CubeBlockView implements IMutableBlockView {
 
     @Override
     public void setBlock(int x, int y, int z, @Nonnull Block block) {
-        cube.getOrCreateStorage().func_150818_a(x, y, z, block);
+        cube.getOrCreateStorage()
+            .func_150818_a(x, y, z, block);
     }
 
     @Override
     public void setBlockMetadata(int x, int y, int z, int meta) {
-        cube.getOrCreateStorage().setExtBlockMetadata(x, y, z, meta);
+        cube.getOrCreateStorage()
+            .setExtBlockMetadata(x, y, z, meta);
     }
 
     @Override

@@ -12,6 +12,7 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 public interface ICubeLoader extends Flushable, Closeable {
 
     void pauseLoadCalls();
+
     void unpauseLoadCalls();
 
     Chunk getColumn(int x, int z, ICubeProviderServer.Requirement effort);
@@ -29,7 +30,9 @@ public interface ICubeLoader extends Flushable, Closeable {
     void unloadCube(int x, int y, int z);
 
     void save(boolean saveAll);
+
     void saveColumn(Chunk column);
+
     void saveCube(Cube cube);
 
     void doGC();
