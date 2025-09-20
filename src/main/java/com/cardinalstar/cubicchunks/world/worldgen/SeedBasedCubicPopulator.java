@@ -31,7 +31,11 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
 
     private final TimedCache<CubePos, List<TSeed>> seedCache = new TimedCache<>(
         this::getSeedImpl,
-        Duration.ofSeconds(10),
+        new Duration[] {
+            Duration.ofSeconds(10),
+            Duration.ofSeconds(25),
+            Duration.ofSeconds(100)
+        },
         (pos, list) -> {
             // noinspection rawtypes
             if (list instanceof ArrayList arrayList) {
@@ -75,14 +79,14 @@ public abstract class SeedBasedCubicPopulator<TSeed, TGen extends ICubeGenerator
     /**
      * Checks if the given cube has any features, and adds them to the list. The seed is stored in a timed cache, so
      * they must be immutable.
-     * 
+     *
      * @param rng An RNG that is seeded to a deterministic value for this cube.
      */
     protected abstract void getSeeds(Random rng, int cubeX, int cubeY, int cubeZ, List<TSeed> seeds);
 
     /**
      * Populates the current chunk (determined by {@code pos}) with the given feature seed.
-     * 
+     *
      * @param rng An RNG that is seeded to a deterministic value for this cube.
      */
     protected abstract void generate(Random rng, TSeed seed, WorldView worldView);
