@@ -62,21 +62,68 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
 
     @Override
     protected void encode(ChannelHandlerContext context, CCPacket packet, List<Object> output) {
-        ByteBuf buffer = Unpooled.buffer()
-            .writeByte(packet.getPacketID());
+        ByteBuf buffer = Unpooled.buffer().writeByte(packet.getPacketID());
         CCPacketEncoder<CCPacket> encoder = this.encoders[packet.getPacketID()];
         encoder.writePacket(new CCPacketBuffer(buffer), packet);
+
         output.add(
             new FMLProxyPacket(
-                buffer,
+                deflate(buffer),
                 context.channel()
                     .attr(NetworkRegistry.FML_CHANNEL)
                     .get()));
     }
 
+    private static ByteBuf deflate(ByteBuf buffer) {
+        ByteBuf compressed = Unpooled.buffer();
+
+        Deflater deflater = new Deflater();
+
+        byte[] outputBuffer = new byte[64];
+
+        deflater.setInput(buffer.array(), 0, buffer.readableBytes());
+        deflater.finish();
+
+        while (!deflater.finished()) {
+            int written = deflater.deflate(outputBuffer);
+            compressed.writeBytes(outputBuffer, 0, written);
+        }
+
+        return compressed;
+    }
+
+    private static ByteBuf inflate(ByteBuf buffer) throws DataFormatException {
+        ByteBuf decompressed = Unpooled.buffer();
+
+        Inflater inflater = new Inflater();
+
+        try {
+            byte[] outputBuffer = new byte[64];
+
+            inflater.setInput(buffer.array(), 0, buffer.readableBytes());
+
+            while (!inflater.finished()) {
+                int written = inflater.inflate(outputBuffer);
+                decompressed.writeBytes(outputBuffer, 0, written);
+            }
+        } finally {
+            inflater.end();
+        }
+
+        return decompressed;
+    }
+
     @Override
     protected void decode(ChannelHandlerContext context, FMLProxyPacket proxyPacket, List<Object> output) {
-        ByteBuf buffer = proxyPacket.payload();
+        ByteBuf buffer;
+
+        try {
+            buffer = inflate(proxyPacket.payload());
+        } catch (DataFormatException e) {
+            CubicChunks.LOGGER.error("Could not inflate packet received from server: it will be ignored", e);
+            return;
+        }
+
         CCPacketEncoder<CCPacket> encoder = this.encoders[buffer.readByte()];
         CCPacket packet = encoder.readPacket(new CCPacketBuffer(buffer));
         encoder.setINetHandler(proxyPacket.handler(), packet);
