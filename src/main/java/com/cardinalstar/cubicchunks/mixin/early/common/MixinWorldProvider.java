@@ -23,6 +23,7 @@ package com.cardinalstar.cubicchunks.mixin.early.common;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.World;
@@ -101,8 +102,7 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
             return ((ICubicWorldType) worldObj.getWorldInfo()
                 .getTerrainType()).createCubeGenerator(worldObj);
         }
-        return VanillaCompatibilityGeneratorProviderBase.REGISTRY.get(VanillaCompatibilityGeneratorProviderBase.DEFAULT)
-            .provideGenerator(this.createChunkGenerator(), worldObj);
+        throw new NotCubicChunksWorldException();
     }
 
     @Inject(method = "getRandomizedSpawnPoint", at = @At(value = "HEAD"), cancellable = true, remap = false)
