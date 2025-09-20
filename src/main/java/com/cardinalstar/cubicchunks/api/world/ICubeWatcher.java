@@ -37,8 +37,6 @@ public interface ICubeWatcher extends XYZAddressable {
     @Nullable
     ICube getCube();
 
-    void sendPacketToAllPlayers(IMessage packet);
-
     CubePos getCubePos();
 
     @Override

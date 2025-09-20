@@ -57,8 +57,7 @@ import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.api.world.CubeWatchEvent;
 import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.network.PacketCubes;
-import com.cardinalstar.cubicchunks.network.PacketDispatcher;
+import com.cardinalstar.cubicchunks.network.PacketEncoderCubes;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderCallback;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
 import com.cardinalstar.cubicchunks.util.CubePos;
@@ -71,7 +70,6 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
-
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -390,14 +388,12 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
                 for (Cube cube : cubes) {
                     list.add(cube);
                     if (list.size() >= 100) {
-                        PacketCubes packet = new PacketCubes(list);
-                        PacketDispatcher.sendTo(packet, player);
+                        PacketEncoderCubes.createPacket(list).sendToPlayer(player);
                         list.clear();
                     }
                 }
                 if (!list.isEmpty()) {
-                    PacketCubes packet = new PacketCubes(list);
-                    PacketDispatcher.sendTo(packet, player);
+                    PacketEncoderCubes.createPacket(list).sendToPlayer(player);
                 }
                 // } else {
                 // vanillaNetworkHandler.sendCubeLoadPackets(cubes, player);

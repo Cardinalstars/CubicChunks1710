@@ -45,7 +45,6 @@ import com.cardinalstar.cubicchunks.event.handlers.ClientEventHandler;
 import com.cardinalstar.cubicchunks.event.handlers.CommonEventHandler;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 import com.cardinalstar.cubicchunks.mixin.early.common.IIntegratedServer;
-import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.server.chunkio.RegionCubeStorage;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.SideUtils;
@@ -54,7 +53,6 @@ import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
 import com.cardinalstar.cubicchunks.worldgen.WorldgenHangWatchdog;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
-
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.ICrashCallable;
@@ -171,7 +169,6 @@ public class CubicChunks {
                 .bus()
                 .register(clientEventHandler);
         });
-        PacketDispatcher.registerPackets();
     }
 
     @Mod.EventHandler

@@ -20,61 +20,67 @@
  */
 package com.cardinalstar.cubicchunks.network;
 
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
-import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.google.common.base.Preconditions;
-
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import com.github.bsideup.jabel.Desugar;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 @ParametersAreNonnullByDefault
-public class PacketUnloadCube implements IMessage {
+public class PacketEncoderColumn extends CCPacketEncoder<PacketEncoderColumn.PacketColumn> {
 
-    private CubePos cubePos;
+    @Desugar
+    public record PacketColumn(int chunkX, int chunkZ, byte[] data) implements CCPacket {
 
-    public PacketUnloadCube() {}
-
-    public PacketUnloadCube(CubePos cubePos) {
-        this.cubePos = cubePos;
-    }
-
-    @Override
-    public void fromBytes(ByteBuf in) {
-        this.cubePos = new CubePos(in.readInt(), in.readInt(), in.readInt());
-    }
-
-    @Override
-    public void toBytes(ByteBuf out) {
-        out.writeInt(cubePos.getX());
-        out.writeInt(cubePos.getY());
-        out.writeInt(cubePos.getZ());
-    }
-
-    CubePos getCubePos() {
-        return Preconditions.checkNotNull(cubePos);
-    }
-
-    public static class Handler extends AbstractClientMessageHandler<PacketUnloadCube> {
-
-        @Nullable
         @Override
-        public void handleClientMessage(World world, EntityPlayer player, PacketUnloadCube message,
-            MessageContext ctx) {
-            ICubicWorld worldClient = (ICubicWorld) world;
-            CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
-
-            // This apparently makes visual chunk holes much more rare/nonexistent
-            cubeCache.getCube(message.getCubePos())
-                .markForRenderUpdate();
-            cubeCache.unloadCube(message.getCubePos());
+        public byte getPacketID() {
+            return CCPacketEntry.Column.id;
         }
+    }
+
+    public PacketEncoderColumn() {}
+
+    public static PacketColumn createPacket(Chunk column) {
+        ByteBuf buffer = Unpooled.buffer();
+        CCPacketBuffer out = new CCPacketBuffer(buffer);
+
+        WorldEncoder.encodeColumn(out, column);
+
+        return new PacketColumn(column.xPosition, column.zPosition, buffer.array());
+    }
+
+    @Override
+    public byte getPacketID() {
+        return CCPacketEntry.Column.id;
+    }
+
+    @Override
+    public void writePacket(CCPacketBuffer buffer, PacketColumn packet) {
+        buffer.writeInt(packet.chunkX);
+        buffer.writeInt(packet.chunkZ);
+
+        buffer.writeByteArray(packet.data);
+    }
+
+    @Override
+    public PacketColumn readPacket(CCPacketBuffer buffer) {
+        return new PacketColumn(buffer.readInt(), buffer.readInt(), buffer.readByteArray());
+    }
+
+    @Override
+    public void process(World world, PacketColumn packet) {
+        ICubicWorld worldClient = (ICubicWorld) world;
+        CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
+
+        Chunk column = cubeCache.loadChunk(packet.chunkX, packet.chunkZ);
+
+        ByteBuf buf = Unpooled.wrappedBuffer(packet.data);
+
+        WorldEncoder.decodeColumn(new CCPacketBuffer(buf), column);
     }
 }

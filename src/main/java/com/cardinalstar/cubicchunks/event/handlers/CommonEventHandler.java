@@ -36,14 +36,12 @@ import net.minecraftforge.event.world.WorldEvent;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.network.PacketCubicWorldData;
-import com.cardinalstar.cubicchunks.network.PacketDispatcher;
+import com.cardinalstar.cubicchunks.network.PacketEncoderCubicWorldData;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.google.common.collect.ImmutableList;
-
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -64,7 +62,7 @@ public class CommonEventHandler {
     @SubscribeEvent
     public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
         if (evt.entity instanceof EntityPlayerMP) {
-            PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
+            PacketEncoderCubicWorldData.createPacket((WorldServer) evt.world).sendToPlayer((EntityPlayerMP) evt.entity);
         }
     }
 
