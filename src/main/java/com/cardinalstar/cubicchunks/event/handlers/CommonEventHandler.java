@@ -61,12 +61,12 @@ public class CommonEventHandler {
         }
     }
 
-    @SubscribeEvent
-    public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
-        if (evt.entity instanceof EntityPlayerMP) {
-            PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
-        }
-    }
+//    @SubscribeEvent
+//    public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
+//        if (evt.entity instanceof EntityPlayerMP) {
+//            PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
+//        }
+//    }
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
