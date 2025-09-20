@@ -23,7 +23,6 @@ package com.cardinalstar.cubicchunks.mixin.early.common;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.World;
@@ -37,9 +36,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
-import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.SpawnPlaceFinder;

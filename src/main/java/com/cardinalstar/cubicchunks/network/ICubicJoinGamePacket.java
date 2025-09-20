@@ -1,7 +1,7 @@
 package com.cardinalstar.cubicchunks.network;
 
-public interface ICubicJoinGamePacket
-{
+public interface ICubicJoinGamePacket {
+
     int cubicChunks$getMinHeight();
 
     int cubicChunks$getMaxHeight();
