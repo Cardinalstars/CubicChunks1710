@@ -3,6 +3,9 @@ package com.cardinalstar.cubicchunks.network;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -10,7 +13,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
-
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.FMLEmbeddedChannel;
 import cpw.mods.fml.common.network.FMLOutboundHandler;
@@ -35,7 +37,7 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
     public static final NetworkChannel CHANNEL = new NetworkChannel();
 
     public NetworkChannel() {
-        this.channel = NetworkRegistry.INSTANCE.newChannel(CubicChunks.MODID, this, new HandlerShared());
+        this.channel = NetworkRegistry.INSTANCE.newChannel(CubicChunks.MODID + "1", this, new HandlerShared());
 
         CCPacketEncoder<?>[] packetTypes = Arrays.stream(CCPacketEntry.values())
             .map(e -> e.encoder)
@@ -58,6 +60,10 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
                 throw new IllegalArgumentException("Duplicate Packet ID! " + packetID);
             }
         }
+    }
+
+    public static void init() {
+        // forces this class to be loaded
     }
 
     @Override
