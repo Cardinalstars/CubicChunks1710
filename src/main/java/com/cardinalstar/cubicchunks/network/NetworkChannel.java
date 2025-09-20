@@ -13,6 +13,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
+
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.FMLEmbeddedChannel;
 import cpw.mods.fml.common.network.FMLOutboundHandler;
@@ -68,7 +69,8 @@ public class NetworkChannel extends MessageToMessageCodec<FMLProxyPacket, CCPack
 
     @Override
     protected void encode(ChannelHandlerContext context, CCPacket packet, List<Object> output) {
-        ByteBuf buffer = Unpooled.buffer().writeByte(packet.getPacketID());
+        ByteBuf buffer = Unpooled.buffer()
+            .writeByte(packet.getPacketID());
         CCPacketEncoder<CCPacket> encoder = this.encoders[packet.getPacketID()];
         encoder.writePacket(new CCPacketBuffer(buffer), packet);
 

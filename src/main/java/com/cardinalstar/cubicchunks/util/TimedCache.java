@@ -67,9 +67,9 @@ public class TimedCache<K, V> {
         this(new Object2ObjectOpenHashMap<>(), fetcher, getDefaultTimeouts(gen0Timeout), null, null);
     }
 
-    public TimedCache(Map<K, ?> backingMap, Function<K, V> fetcher, Duration[] generationTimeouts, @Nullable BiConsumer<K, V> release,
-        @Nullable Function<K, K> clone) {
-        //noinspection unchecked
+    public TimedCache(Map<K, ?> backingMap, Function<K, V> fetcher, Duration[] generationTimeouts,
+        @Nullable BiConsumer<K, V> release, @Nullable Function<K, K> clone) {
+        // noinspection unchecked
         this.values = (Map<K, Entry<K, V>>) backingMap;
         this.fetcher = fetcher;
         this.release = release;

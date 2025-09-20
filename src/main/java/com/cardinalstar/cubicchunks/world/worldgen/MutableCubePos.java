@@ -51,9 +51,8 @@ class MutableCubePos extends CubePos {
 
     @Override
     public int hashCode() {
-        return Long.hashCode(Bits.packSignedToLong(x, Y_BITS, Y_BIT_OFFSET) | Bits.packSignedToLong(
-            y,
-            X_BITS,
-            X_BIT_OFFSET) | Bits.packSignedToLong(z, Z_BITS, Z_BIT_OFFSET));
+        return Long.hashCode(
+            Bits.packSignedToLong(x, Y_BITS, Y_BIT_OFFSET) | Bits.packSignedToLong(y, X_BITS, X_BIT_OFFSET)
+                | Bits.packSignedToLong(z, Z_BITS, Z_BIT_OFFSET));
     }
 }
