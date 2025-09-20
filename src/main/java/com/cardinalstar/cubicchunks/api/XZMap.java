@@ -67,4 +67,8 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
         return items.values()
             .iterator();
     }
+
+    public int getSize() {
+        return items.size();
+    }
 }

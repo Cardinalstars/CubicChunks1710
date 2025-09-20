@@ -20,61 +20,56 @@
  */
 package com.cardinalstar.cubicchunks.network;
 
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.google.common.base.Preconditions;
-
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
-import io.netty.buffer.ByteBuf;
+import com.github.bsideup.jabel.Desugar;
 
 @ParametersAreNonnullByDefault
-public class PacketUnloadCube implements IMessage {
+public class PacketEncoderUnloadCube extends CCPacketEncoder<PacketEncoderUnloadCube.PacketUnloadCube> {
 
-    private CubePos cubePos;
+    @Desugar
+    public record PacketUnloadCube(CubePos pos) implements CCPacket {
 
-    public PacketUnloadCube() {}
-
-    public PacketUnloadCube(CubePos cubePos) {
-        this.cubePos = cubePos;
-    }
-
-    @Override
-    public void fromBytes(ByteBuf in) {
-        this.cubePos = new CubePos(in.readInt(), in.readInt(), in.readInt());
-    }
-
-    @Override
-    public void toBytes(ByteBuf out) {
-        out.writeInt(cubePos.getX());
-        out.writeInt(cubePos.getY());
-        out.writeInt(cubePos.getZ());
-    }
-
-    CubePos getCubePos() {
-        return Preconditions.checkNotNull(cubePos);
-    }
-
-    public static class Handler extends AbstractClientMessageHandler<PacketUnloadCube> {
-
-        @Nullable
         @Override
-        public void handleClientMessage(World world, EntityPlayer player, PacketUnloadCube message,
-            MessageContext ctx) {
-            ICubicWorld worldClient = (ICubicWorld) world;
-            CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
-
-            // This apparently makes visual chunk holes much more rare/nonexistent
-            cubeCache.getCube(message.getCubePos())
-                .markForRenderUpdate();
-            cubeCache.unloadCube(message.getCubePos());
+        public byte getPacketID() {
+            return CCPacketEntry.UnloadCube.id;
         }
+    }
+
+    public PacketEncoderUnloadCube() {}
+
+    public static PacketUnloadCube createPacket(CubePos cubePos) {
+        return new PacketUnloadCube(cubePos);
+    }
+
+    @Override
+    public byte getPacketID() {
+        return CCPacketEntry.UnloadCube.id;
+    }
+
+    @Override
+    public void writePacket(CCPacketBuffer buffer, PacketUnloadCube packet) {
+        buffer.writeCubePos(packet.pos);
+    }
+
+    @Override
+    public PacketUnloadCube readPacket(CCPacketBuffer buffer) {
+        return new PacketUnloadCube(buffer.readCubePos());
+    }
+
+    @Override
+    public void process(World world, PacketUnloadCube packet) {
+        ICubicWorld worldClient = (ICubicWorld) world;
+        CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
+
+        // This apparently makes visual chunk holes much more rare/nonexistent
+        cubeCache.getCube(packet.pos)
+            .markForRenderUpdate();
+        cubeCache.unloadCube(packet.pos);
     }
 }

@@ -45,7 +45,7 @@ import com.cardinalstar.cubicchunks.event.handlers.ClientEventHandler;
 import com.cardinalstar.cubicchunks.event.handlers.CommonEventHandler;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 import com.cardinalstar.cubicchunks.mixin.early.common.IIntegratedServer;
-import com.cardinalstar.cubicchunks.network.PacketDispatcher;
+import com.cardinalstar.cubicchunks.network.NetworkChannel;
 import com.cardinalstar.cubicchunks.server.chunkio.RegionCubeStorage;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.SideUtils;
@@ -171,7 +171,7 @@ public class CubicChunks {
                 .bus()
                 .register(clientEventHandler);
         });
-        PacketDispatcher.registerPackets();
+        NetworkChannel.init();
     }
 
     @Mod.EventHandler

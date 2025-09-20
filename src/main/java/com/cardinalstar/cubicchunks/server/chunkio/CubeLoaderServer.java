@@ -312,6 +312,13 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             unloadCube(pos.getX(), pos.getY(), pos.getZ());
         }
 
+        if (!pendingCubeUnloads.isEmpty()) {
+            CubicChunks.LOGGER.info(
+                "Garbage collected {} cubes (now have {} cubes loaded)",
+                pendingCubeUnloads.size(),
+                cubes.getSize());
+        }
+
         List<ColumnInfo> pendingColumnUnloads = new ArrayList<>();
 
         for (ColumnInfo columnInfo : columns) {
@@ -333,6 +340,13 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
         for (ColumnInfo column : pendingColumnUnloads) {
             unloadColumn(column);
+        }
+
+        if (!pendingColumnUnloads.isEmpty()) {
+            CubicChunks.LOGGER.info(
+                "Garbage collected {} columns (now have {} columns loaded)",
+                pendingColumnUnloads.size(),
+                columns.getSize());
         }
     }
 

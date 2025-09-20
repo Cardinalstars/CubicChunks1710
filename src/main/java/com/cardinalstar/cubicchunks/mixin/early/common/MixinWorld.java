@@ -302,8 +302,6 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     }
 
     protected void initCubicWorld(IntRange heightRange, IntRange generationRange) {
-        this.chunkProvider = this.createChunkProvider();
-
         // Set the world height boundaries to their highest and lowest values respectively
         this.minHeight = heightRange.getMin();
         this.maxHeight = heightRange.getMax();

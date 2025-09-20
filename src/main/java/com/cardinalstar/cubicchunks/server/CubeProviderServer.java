@@ -319,11 +319,11 @@ public class CubeProviderServer extends ChunkProviderServer
         profiler.endSection();
 
         if (columnsLoadedThisTick > 0) {
-            CubicChunks.LOGGER.info("Loaded " + columnsLoadedThisTick + " columns this tick");
+            CubicChunks.LOGGER.info("Loaded {} columns this tick", columnsLoadedThisTick);
         }
 
         if (cubesLoadedThisTick > 0) {
-            CubicChunks.LOGGER.info("Loaded " + cubesLoadedThisTick + " cubes this tick");
+            CubicChunks.LOGGER.info("Loaded {} cubes this tick", cubesLoadedThisTick);
         }
 
         doEagerLoading();

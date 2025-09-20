@@ -50,7 +50,7 @@ import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
  * This class also contains some helper methods to switch from/to block coordinates.
  */
 @ParametersAreNonnullByDefault
-public class CubePos implements Cloneable {
+public class CubePos implements Cloneable, XYZAddressable {
 
     public static final CubePos ZERO = new CubePos(0, 0, 0);
 
