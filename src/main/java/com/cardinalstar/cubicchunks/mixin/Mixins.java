@@ -64,10 +64,10 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Allowing lilypads to stay above 256 adn below 0.").addCommonMixins("common.MixinBlockLilyPad")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
-    MIXIN_S01PACKET_JOIN_GAME(
-        new MixinBuilder("Giving the packet info to initailize cubicWorlds for clients.").addCommonMixins("common.vanillaclient.MixinS01PacketJoinGame")
-            .setPhase(Phase.EARLY)
-            .setApplyIf(() -> true)),
+    MIXIN_S01PACKET_JOIN_GAME(new MixinBuilder("Giving the packet info to initailize cubicWorlds for clients.")
+        .addCommonMixins("common.vanillaclient.MixinS01PacketJoinGame")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
 
     // CHUNK
     MIXIN_CHUNK_COLUMN(
@@ -229,9 +229,10 @@ public enum Mixins implements IMixins {
     MIXIN_ENTITY(new MixinBuilder("Fixing lighting issues for block exists").addClientMixins("client.MixinEntity")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_NET_HANDLER_PLAY_CLIENT(new MixinBuilder("Initializes the client world as cubic.").addClientMixins("client.MixinNetHandlerPlayClient")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_NET_HANDLER_PLAY_CLIENT(
+        new MixinBuilder("Initializes the client world as cubic.").addClientMixins("client.MixinNetHandlerPlayClient")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
     // =============================================================
     // Server Mixins
     // =============================================================

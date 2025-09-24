@@ -25,18 +25,17 @@ import java.util.List;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldServerMulti;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.WorldEvent;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketEncoderCubicWorldData;
+
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
@@ -59,14 +58,6 @@ public class CommonEventHandler {
             ((ICubicWorldInternal) world).tickCubicWorld();
         }
     }
-
-//     @SubscribeEvent
-//     public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
-//         if (evt.entity instanceof EntityPlayerMP) {
-//             PacketEncoderCubicWorldData.createPacket((WorldServer) evt.world)
-//                 .sendToPlayer((EntityPlayerMP) evt.entity);
-//         }
-//     }
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
