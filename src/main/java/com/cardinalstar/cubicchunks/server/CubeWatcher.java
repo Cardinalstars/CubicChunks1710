@@ -37,9 +37,8 @@ import com.cardinalstar.cubicchunks.api.world.ICubeWatcher;
 import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
 import com.cardinalstar.cubicchunks.event.events.CubeUnWatchEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.network.PacketCubeBlockChange;
-import com.cardinalstar.cubicchunks.network.PacketDispatcher;
-import com.cardinalstar.cubicchunks.network.PacketUnloadCube;
+import com.cardinalstar.cubicchunks.network.PacketEncoderCubeBlockChange;
+import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadCube;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
@@ -50,7 +49,6 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.base.Predicate;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import gnu.trove.list.TShortList;
 import gnu.trove.list.array.TShortArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -165,7 +163,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         }
 
         if (this.sentToPlayers) {
-            PacketDispatcher.sendTo(new PacketUnloadCube(this.cubePos), player);
+            PacketEncoderUnloadCube.createPacket(cubePos)
+                .sendToPlayer(player);
             cubicPlayerManager.removeSchedulesSendCubeToPlayer(cube, player);
         }
 
@@ -271,34 +270,30 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
         World world = this.cube.getWorld();
 
-        if (this.dirtyBlocks.size() >= ForgeModContainer.clumpingThreshold) {
-            // send whole cube
-            this.players.forEach(entry -> cubicPlayerManager.scheduleSendCubeToPlayer(cube, entry));
-        } else {
-            // send all the dirty blocks
-            PacketCubeBlockChange packet = null;
-            for (EntityPlayerMP player : this.players) {
-                // if (cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
-                if (packet == null) { // create packet lazily
-                    packet = new PacketCubeBlockChange(this.cube, this.dirtyBlocks);
+        if (!this.players.isEmpty()) {
+            if (this.dirtyBlocks.size() >= ForgeModContainer.clumpingThreshold) {
+                // send whole cube
+                this.players.forEach(entry -> cubicPlayerManager.scheduleSendCubeToPlayer(cube, entry));
+            } else {
+                // send all the dirty blocks
+                var packet = PacketEncoderCubeBlockChange.createPacket(this.cube, this.dirtyBlocks);
+                for (EntityPlayerMP player : this.players) {
+                    packet.sendToPlayer(player);
                 }
-                PacketDispatcher.sendTo(packet, player);
-                // } else {
-                // cubicPlayerManager.vanillaNetworkHandler.sendBlockChanges(dirtyBlocks, cube, player);
-                // }
-            }
-            // send the block entites on those blocks too
-            this.dirtyBlocks.forEach(localAddress -> {
-                BlockPos pos = cube.localAddressToBlockPos(localAddress);
+                // send the block entities on those blocks too
+                this.dirtyBlocks.forEach(localAddress -> {
+                    BlockPos pos = cube.localAddressToBlockPos(localAddress);
 
-                Block block = this.cube.getBlock(pos.getX(), pos.getY(), pos.getZ());
-                int meta = this.cube.getBlockMetadata(pos.getX(), pos.getY(), pos.getZ());
-                if (block.hasTileEntity(meta)) {
-                    sendBlockEntityToAllPlayers(world.getTileEntity(pos.getX(), pos.getY(), pos.getZ()));
-                }
-                return true;
-            });
+                    Block block = this.cube.getBlock(pos.getX(), pos.getY(), pos.getZ());
+                    int meta = this.cube.getBlockMetadata(pos.getX(), pos.getY(), pos.getZ());
+                    if (block.hasTileEntity(meta)) {
+                        sendBlockEntityToAllPlayers(world.getTileEntity(pos.getX(), pos.getY(), pos.getZ()));
+                    }
+                    return true;
+                });
+            }
         }
+
         this.dirtyBlocks.clear();
     }
 
@@ -399,13 +394,6 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     private void sendPacketToAllPlayers(Packet packet) {
         for (EntityPlayerMP entry : this.players) {
             entry.playerNetServerHandler.sendPacket(packet);
-        }
-    }
-
-    @Override
-    public void sendPacketToAllPlayers(IMessage packet) {
-        for (EntityPlayerMP entry : this.players) {
-            PacketDispatcher.sendTo(packet, entry);
         }
     }
 
