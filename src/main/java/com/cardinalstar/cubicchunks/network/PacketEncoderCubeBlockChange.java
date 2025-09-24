@@ -24,7 +24,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
@@ -37,7 +36,6 @@ import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-
 import gnu.trove.TShortCollection;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
@@ -171,8 +169,5 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
                 .invalidateBlockReceiveRegion(pos.getX(), pos.getY(), pos.getZ(), pos.getX(), pos.getY(), pos.getZ());
             worldClient.setBlock(pos.getX(), pos.getY(), pos.getZ(), packet.blocks[i], packet.blockMetas[i], 3);
         }
-        cube.getTileEntityMap()
-            .values()
-            .forEach(TileEntity::updateContainingBlockInfo);
     }
 }

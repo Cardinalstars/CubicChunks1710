@@ -7,7 +7,6 @@ public enum CCPacketEntry {
     UnloadColumn(new PacketEncoderUnloadColumn()),
     UnloadCube(new PacketEncoderUnloadCube()),
     CubeBlockChange(new PacketEncoderCubeBlockChange()),
-    CubicWorldData(new PacketEncoderCubicWorldData()),
     HeightMapUpdate(new PacketEncoderHeightMapUpdate()),
     CubeSkyLightUpdates(new PacketEncoderCubeSkyLightUpdates()),;
 
