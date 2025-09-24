@@ -1,19 +1,22 @@
 package com.cardinalstar.cubicchunks.mixin.early.common.vanillaclient;
 
-import com.cardinalstar.cubicchunks.network.ICubicJoinGamePacket;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.S01PacketJoinGame;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.cardinalstar.cubicchunks.network.ICubicJoinGamePacket;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 @Mixin(S01PacketJoinGame.class)
-public class MixinS01PacketJoinGame implements ICubicJoinGamePacket
-{
+public class MixinS01PacketJoinGame implements ICubicJoinGamePacket {
+
     @Unique
     private int minHeight;
 
@@ -56,18 +59,16 @@ public class MixinS01PacketJoinGame implements ICubicJoinGamePacket
 
     @Unique
     @Override
-    public void InitCubicJoinGamePacket(int minHeight, int maxHeight, int minGenerationHeight, int maxGenerationHeight)
-    {
+    public void InitCubicJoinGamePacket(int minHeight, int maxHeight, int minGenerationHeight,
+        int maxGenerationHeight) {
         this.minHeight = minHeight;
         this.maxHeight = maxHeight;
         this.minGenerationHeight = minGenerationHeight;
         this.maxGenerationHeight = maxGenerationHeight;
     }
 
-
     @Inject(method = "writePacketData", at = @At("TAIL"))
-    private void injectInfoIntoPacket(PacketBuffer data, CallbackInfo ci)
-    {
+    private void injectInfoIntoPacket(PacketBuffer data, CallbackInfo ci) {
         data.writeInt(this.minHeight);
         data.writeInt(this.maxHeight);
         data.writeInt(this.minGenerationHeight);
@@ -75,8 +76,7 @@ public class MixinS01PacketJoinGame implements ICubicJoinGamePacket
     }
 
     @Inject(method = "readPacketData", at = @At("TAIL"))
-    private void readInfoFromPacket(PacketBuffer data, CallbackInfo ci)
-    {
+    private void readInfoFromPacket(PacketBuffer data, CallbackInfo ci) {
         if (data.readableBytes() >= 16) {
             this.minHeight = data.readInt();
             this.maxHeight = data.readInt();
