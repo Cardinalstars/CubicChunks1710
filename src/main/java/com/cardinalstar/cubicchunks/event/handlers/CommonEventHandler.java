@@ -34,6 +34,7 @@ import net.minecraftforge.event.world.WorldEvent;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
@@ -56,13 +57,6 @@ public class CommonEventHandler {
             ((ICubicWorldInternal) world).tickCubicWorld();
         }
     }
-
-    // @SubscribeEvent
-    // public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
-    // if (evt.entity instanceof EntityPlayerMP) {
-    // PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
-    // }
-    // }
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
