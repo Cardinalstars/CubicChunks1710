@@ -24,10 +24,11 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinWorldGenTaiga2")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_WORLD_GEN_HUGE_TREES(new MixinBuilder("Allowing generation and growing of huge trees (Jungle and pine) above 256 and below 0.")
-        .addCommonMixins("common.MixinWorldGenHugeTrees")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_WORLD_GEN_HUGE_TREES(
+        new MixinBuilder("Allowing generation and growing of huge trees (Jungle and pine) above 256 and below 0.")
+            .addCommonMixins("common.MixinWorldGenHugeTrees")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
     MIXIN_WORLD_GEN_FOREST(new MixinBuilder("Allowing generation and growing of birch(?) trees above 256 and below 0.")
         .addCommonMixins("common.MixinWorldGenForest")
         .setPhase(Phase.EARLY)
@@ -36,28 +37,35 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinWorldGenTrees")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_WORLD_GEN_SAVANNA_TREE(new MixinBuilder("Allowing generation and growing of Acacia saplings above 256 and below 0.")
-        .addCommonMixins("common.MixinWorldGenSavannaTree")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
-    MIXIN_WORLD_GEN_CANOPY_TREE(new MixinBuilder("Allowing generation and growing of dark oak saplings above 256 adn below 0.")
-        .addCommonMixins("common.MixinWorldGenCanopyTree")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_WORLD_GEN_SAVANNA_TREE(
+        new MixinBuilder("Allowing generation and growing of Acacia saplings above 256 and below 0.")
+            .addCommonMixins("common.MixinWorldGenSavannaTree")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
+    MIXIN_WORLD_GEN_CANOPY_TREE(
+        new MixinBuilder("Allowing generation and growing of dark oak saplings above 256 adn below 0.")
+            .addCommonMixins("common.MixinWorldGenCanopyTree")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
     MIXIN_BLOCK_FALLING(new MixinBuilder("Allowing blocks that are affected by gravity to fall normally.")
         .addCommonMixins("common.MixinBlockFalling")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_WORLD_GEN_BIG_MUSHROOM(new MixinBuilder("Allowing big mushrooms to generate and be grown above 256 and below 0.")
-        .addCommonMixins("common.MixinWorldGenBigMushroom")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_WORLD_GEN_BIG_MUSHROOM(
+        new MixinBuilder("Allowing big mushrooms to generate and be grown above 256 and below 0.")
+            .addCommonMixins("common.MixinWorldGenBigMushroom")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
     MIXIN_BLOCK_MUSHROOM(new MixinBuilder("Allowing mushrooms to be placed above 256 and below 0.")
         .addCommonMixins("common.MixinBlockMushroom")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_BLOCK_LILY_PAD(new MixinBuilder("Allowing lilypads to stay above 256 adn below 0.")
-        .addCommonMixins("common.MixinBlockLilyPad")
+    MIXIN_BLOCK_LILY_PAD(
+        new MixinBuilder("Allowing lilypads to stay above 256 adn below 0.").addCommonMixins("common.MixinBlockLilyPad")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
+    MIXIN_S01PACKET_JOIN_GAME(new MixinBuilder("Giving the packet info to initailize cubicWorlds for clients.")
+        .addCommonMixins("common.vanillaclient.MixinS01PacketJoinGame")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
 
@@ -116,11 +124,10 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Redirecting some things to use Y values.").addCommonMixins("common.MixinWorld_Tick")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
-    MIXIN_MAP_GEN(
-        new MixinBuilder("Misc patches to pass Worlds around to various map gen objects")
-            .addCommonMixins("common.MixinChunkProviderHell", "common.MixinMapGenBase")
-            .setPhase(Phase.EARLY)
-            .setApplyIf(() -> true)),
+    MIXIN_MAP_GEN(new MixinBuilder("Misc patches to pass Worlds around to various map gen objects")
+        .addCommonMixins("common.MixinChunkProviderHell", "common.MixinMapGenBase")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
 
     // ENTITY
     MIXIN_ENTITY_DEATH_FIX(new MixinBuilder("Replace -64 constant, to avoid killing entities below y=-64")
@@ -143,6 +150,7 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Giving Y position to structures.").addCommonMixins("common.MixinStructureStart")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+
     // SERVER
     MIXIN_INTEGRATED_SERVER_ACCESSOR(
         new MixinBuilder("Allows access to the worldsettings field.").addCommonMixins("common.IIntegratedServer")
@@ -221,7 +229,10 @@ public enum Mixins implements IMixins {
     MIXIN_ENTITY(new MixinBuilder("Fixing lighting issues for block exists").addClientMixins("client.MixinEntity")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-
+    MIXIN_NET_HANDLER_PLAY_CLIENT(
+        new MixinBuilder("Initializes the client world as cubic.").addClientMixins("client.MixinNetHandlerPlayClient")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
     // =============================================================
     // Server Mixins
     // =============================================================
@@ -233,7 +244,12 @@ public enum Mixins implements IMixins {
     MIXIN_DEDICATED_SERVER_HEIGHT_LIMITS(new MixinBuilder("Fixing height limit issues in dedicated server.")
         .addServerMixins("server.MixinDedicatedServer_HeightLimits")
         .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true));
+        .setApplyIf(() -> true)),
+    MIXIN_DEDICATED_SERVER_DEFAULT_LEVEL(
+        new MixinBuilder("Changing default level in servers with this mod installed to be VanillaCubic.")
+            .addServerMixins("server.MixinDedicatedServer_DefaultLevelType")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true));
 
     private final MixinBuilder builder;
 

@@ -41,4 +41,5 @@ dependencies {
     runtimeOnlyNonPublishable(rfg.deobf("curse.maven:spark-361579:4271867"))
 
     devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.2.21-GTNH-daily:dev")
+    // devOnlyNonPublishable("com.github.GTNewHorizons:Angelica:1.0.0-beta56:dev")
 }

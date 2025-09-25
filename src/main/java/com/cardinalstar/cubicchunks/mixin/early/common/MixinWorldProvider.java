@@ -39,11 +39,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
-import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.SpawnPlaceFinder;
-import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 @ParametersAreNonnullByDefault
@@ -77,7 +75,7 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
     @Inject(method = "getActualHeight", at = @At("HEAD"), cancellable = true, remap = false)
     private void getActualHeight(CallbackInfoReturnable<Integer> cir) {
         if (worldObj == null || !(worldObj.getWorldInfo()
-                .getTerrainType() instanceof ICubicWorldType)) {
+            .getTerrainType() instanceof ICubicWorldType)) {
             return;
         }
         cir.setReturnValue(((ICubicWorld) worldObj).getMaxGenerationHeight());
@@ -103,10 +101,7 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
             return ((ICubicWorldType) worldObj.getWorldInfo()
                 .getTerrainType()).createCubeGenerator(worldObj);
         }
-        WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) worldObj.perWorldStorage
-            .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
-        return VanillaCompatibilityGeneratorProviderBase.REGISTRY.get(savedData.compatibilityGeneratorType)
-            .provideGenerator(this.createChunkGenerator(), worldObj);
+        throw new NotCubicChunksWorldException();
     }
 
     @Inject(method = "getRandomizedSpawnPoint", at = @At(value = "HEAD"), cancellable = true, remap = false)

@@ -48,8 +48,6 @@ import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
-import net.minecraft.world.chunk.storage.IChunkLoader;
-import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
@@ -66,7 +64,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -229,8 +226,8 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         at = @At("MIXINEXTRAS:EXPRESSION"))
     public void initWorld(ISaveHandler p_i45369_1_, String p_i45369_2_, WorldSettings p_i45369_3_,
         WorldProvider p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci) {
-        if ((Object)this instanceof WorldServer) {
-            ((ICubicWorldInternal.Server)this).initCubicWorldServer();
+        if ((Object) this instanceof WorldServer) {
+            ((ICubicWorldInternal.Server) this).initCubicWorldServer();
         }
         WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) this.perWorldStorage
             .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
@@ -305,8 +302,6 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     }
 
     protected void initCubicWorld(IntRange heightRange, IntRange generationRange) {
-        this.chunkProvider = this.createChunkProvider();
-
         // Set the world height boundaries to their highest and lowest values respectively
         this.minHeight = heightRange.getMin();
         this.maxHeight = heightRange.getMax();
@@ -528,13 +523,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         // world
         });
 
-    @SuppressWarnings("unchecked")
-    private static final List<Class<? extends IChunkProvider>> allowedServerChunkProviderClasses = ImmutableList
-        .copyOf(new Class[] { ChunkProviderServer.class });
-
     private boolean shouldSkipWorld(World world) {
-        return !allowedServerWorldClasses.contains(world.getClass()) || !allowedServerChunkProviderClasses.contains(
-            world.getChunkProvider()
-                .getClass());
+        return !allowedServerWorldClasses.contains(world.getClass());
     }
 }

@@ -20,8 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.api.worldgen.structure.feature;
 
-import net.minecraft.world.World;
-
 import com.cardinalstar.cubicchunks.api.XYZAddressable;
 import com.cardinalstar.cubicchunks.util.CubePos;
 
@@ -33,5 +31,6 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 public interface ICubicFeatureStart extends XYZAddressable {
 
     int getChunkPosY();
+
     CubePos getCubePos();
 }
