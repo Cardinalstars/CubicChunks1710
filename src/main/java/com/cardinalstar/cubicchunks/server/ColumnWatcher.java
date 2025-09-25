@@ -37,10 +37,9 @@ import net.minecraftforge.event.world.ChunkWatchEvent;
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.world.IColumnWatcher;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.network.PacketColumn;
-import com.cardinalstar.cubicchunks.network.PacketDispatcher;
-import com.cardinalstar.cubicchunks.network.PacketHeightMapUpdate;
-import com.cardinalstar.cubicchunks.network.PacketUnloadColumn;
+import com.cardinalstar.cubicchunks.network.PacketEncoderColumn;
+import com.cardinalstar.cubicchunks.network.PacketEncoderHeightMapUpdate;
+import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadColumn;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
@@ -74,7 +73,8 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         this.column = cubeCache.getLoadedColumn(pos.chunkXPos, pos.chunkZPos);
 
         if (column == null) {
-            request = cubeCache.loadColumnEagerly(pos.chunkXPos, pos.chunkZPos, ICubeProviderServer.Requirement.GENERATE);
+            request = cubeCache
+                .loadColumnEagerly(pos.chunkXPos, pos.chunkZPos, ICubeProviderServer.Requirement.GENERATE);
         }
     }
 
@@ -87,11 +87,8 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
     @Override
     public void addPlayer(EntityPlayerMP player) {
         if (playersWatchingChunk.contains(player)) {
-            CubicChunks.LOGGER.debug(
-                "Failed to add player. {} already is in chunk {}, {}",
-                player,
-                pos.chunkXPos,
-                pos.chunkZPos);
+            CubicChunks.LOGGER
+                .debug("Failed to add player. {} already is in chunk {}, {}", player, pos.chunkXPos, pos.chunkZPos);
             return;
         }
 
@@ -106,8 +103,8 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
 
         if (this.isSentToPlayers) {
             assert column != null;
-            PacketColumn message = new PacketColumn(column);
-            PacketDispatcher.sendTo(message, player);
+            PacketEncoderColumn.createPacket(column)
+                .sendToPlayer(player);
             MinecraftForge.EVENT_BUS.post(new ChunkWatchEvent.Watch(column.getChunkCoordIntPair(), player));
         }
     }
@@ -122,7 +119,8 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         }
 
         if (this.isSentToPlayers) {
-            PacketDispatcher.sendTo(new PacketUnloadColumn(pos), player);
+            PacketEncoderUnloadColumn.createPacket(pos.chunkXPos, pos.chunkZPos)
+                .sendToPlayer(player);
         }
 
         if (column != null) {
@@ -168,9 +166,9 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         if (this.column == null) return false;
 
         try {
-            PacketColumn message = new PacketColumn(column);
+            var message = PacketEncoderColumn.createPacket(column);
             for (EntityPlayerMP player : playersWatchingChunk) {
-                PacketDispatcher.sendTo(message, player);
+                message.sendToPlayer(player);
             }
             isSentToPlayers = true;
         } catch (Throwable throwable) {
@@ -203,10 +201,11 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
         if (this.dirtyColumns.isEmpty()) return;
 
         assert this.column != null;
+
+        var packet = PacketEncoderHeightMapUpdate.createPacket(dirtyColumns, this.column);
+
         for (EntityPlayerMP player : this.playersWatchingChunk) {
-            // if (this.cubicPlayerManager.vanillaNetworkHandler.hasCubicChunks(player)) {
-            PacketDispatcher.sendTo(new PacketHeightMapUpdate(dirtyColumns, this.column), player);
-            // }
+            packet.sendToPlayer(player);
         }
 
         this.dirtyColumns.clear();

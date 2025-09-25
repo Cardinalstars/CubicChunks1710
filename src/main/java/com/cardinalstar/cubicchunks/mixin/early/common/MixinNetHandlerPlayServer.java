@@ -10,7 +10,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(NetHandlerPlayServer.class)
 public class MixinNetHandlerPlayServer {
 
-    @Redirect(method = "processPlayerBlockPlacement", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getBuildLimit()I"))
+    @Redirect(
+        method = "processPlayerBlockPlacement",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getBuildLimit()I"))
     public int noopHeightChecks(MinecraftServer instance) {
         return Integer.MAX_VALUE;
     }

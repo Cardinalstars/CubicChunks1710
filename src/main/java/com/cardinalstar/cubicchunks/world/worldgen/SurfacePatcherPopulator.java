@@ -9,10 +9,8 @@ public class SurfacePatcherPopulator implements ICubicPopulator {
 
     @Override
     public void generate(World world, CubePos pos) {
-
         if (pos.getY() >= 0 && pos.getY() < 16) {
 
         }
-
     }
 }

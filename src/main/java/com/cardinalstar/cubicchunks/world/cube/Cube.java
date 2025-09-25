@@ -431,7 +431,7 @@ public class Cube implements ICube {
         int metadata = getBlockMetadata(x, y, z);
         if (this.getBlock(x, y, z)
             .hasTileEntity(metadata)) {
-            ChunkPosition chunkposition = new ChunkPosition(x, tileEntityIn.yCoord , z);
+            ChunkPosition chunkposition = new ChunkPosition(x, tileEntityIn.yCoord, z);
 
             TileEntity existing = this.cubeTileEntityMap.remove(chunkposition);
 
@@ -742,13 +742,13 @@ public class Cube implements ICube {
     }
 
     // TODO Check that is this is updated correctly in the CubeProviderServer
-     /**
+    /**
      * Mark this cube as saved to disk
      */
-     public void markSaved() {
-         this.isModified = false;
-         this.cubeLightData.markSaved(this);
-     }
+    public void markSaved() {
+        this.isModified = false;
+        this.cubeLightData.markSaved(this);
+    }
 
     @Override
     public void markDirty() {

@@ -63,7 +63,8 @@ public class CubeGeneratorsRegistry {
     private static final TreeSet<PopulatorWrapper> sortedVanillaPopulatorList = new TreeSet<>();
 
     @Desugar
-    private record GeneratorWrapper<T extends ICubeGenerator>(ICubeTerrainGenerator<T> generator, int weight) implements Comparable<GeneratorWrapper<T>> {
+    private record GeneratorWrapper<T extends ICubeGenerator> (ICubeTerrainGenerator<T> generator, int weight)
+        implements Comparable<GeneratorWrapper<T>> {
 
         @Override
         public int compareTo(GeneratorWrapper<T> o) {
@@ -84,7 +85,8 @@ public class CubeGeneratorsRegistry {
      * Register a world generator that runs exclusively in the vanilla compatibility generator. This will not run for
      * other world types.
      */
-    public static void registerVanillaGenerator(ICubeTerrainGenerator<VanillaCompatibilityGenerator> generator, int priority) {
+    public static void registerVanillaGenerator(ICubeTerrainGenerator<VanillaCompatibilityGenerator> generator,
+        int priority) {
         Preconditions.checkNotNull(generator);
         sortedVanillaGeneratorList.add(new GeneratorWrapper<>(generator, priority));
     }
@@ -94,7 +96,7 @@ public class CubeGeneratorsRegistry {
      * generation to the world call this
      *
      * @param generator The generator that invoked this event
-     * @param cube The cube to generate
+     * @param cube      The cube to generate
      */
     public static void generateVanillaCube(VanillaCompatibilityGenerator generator, World world, Cube cube) {
         for (GeneratorWrapper<VanillaCompatibilityGenerator> wrapper : sortedVanillaGeneratorList) {
@@ -118,8 +120,8 @@ public class CubeGeneratorsRegistry {
      * Callback hook for cube gen - if your mod wishes to add extra mod related
      * generation to the world call this
      *
-     * @param world  The {@link ICubicWorld} we're generating for
-     * @param pos    is position of the populated cube
+     * @param world The {@link ICubicWorld} we're generating for
+     * @param pos   is position of the populated cube
      */
     public static void populateVanillaWorld(World world, CubePos pos) {
         for (PopulatorWrapper wrapper : sortedVanillaPopulatorList) {
