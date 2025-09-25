@@ -45,7 +45,7 @@ import com.cardinalstar.cubicchunks.event.handlers.ClientEventHandler;
 import com.cardinalstar.cubicchunks.event.handlers.CommonEventHandler;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
 import com.cardinalstar.cubicchunks.mixin.early.common.IIntegratedServer;
-import com.cardinalstar.cubicchunks.network.PacketDispatcher;
+import com.cardinalstar.cubicchunks.network.NetworkChannel;
 import com.cardinalstar.cubicchunks.server.chunkio.RegionCubeStorage;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.SideUtils;
@@ -60,7 +60,11 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.ICrashCallable;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
-import cpw.mods.fml.common.event.*;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.network.NetworkCheckHandler;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -167,7 +171,7 @@ public class CubicChunks {
                 .bus()
                 .register(clientEventHandler);
         });
-        PacketDispatcher.registerPackets();
+        NetworkChannel.init();
     }
 
     @Mod.EventHandler
@@ -185,7 +189,8 @@ public class CubicChunks {
         SideUtils.runForSide(() -> () -> {
             IIntegratedServer integratedServer = cast(event.getServer());
             ICubicWorldSettings settings = cast(integratedServer.getWorldSettings());
-            event.getServer().setBuildLimit(CubicChunks.MAX_SUPPORTED_BLOCK_Y);
+            event.getServer()
+                .setBuildLimit(CubicChunks.MAX_SUPPORTED_BLOCK_Y);
         }, () -> () -> {
             // no-op, done by mixin
         });

@@ -25,9 +25,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.XYZAddressable;
-
 import com.cardinalstar.cubicchunks.util.CubePos;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 
 @ParametersAreNonnullByDefault
 public interface ICubeWatcher extends XYZAddressable {
@@ -36,8 +34,6 @@ public interface ICubeWatcher extends XYZAddressable {
 
     @Nullable
     ICube getCube();
-
-    void sendPacketToAllPlayers(IMessage packet);
 
     CubePos getCubePos();
 

@@ -43,15 +43,24 @@ public class SubBlockView implements IBlockView {
 
     public Box getBox() {
         if (effectiveBox == null) {
-            effectiveBox = new Box(0, 0, 0, box.getX2() - box.getX1(), box.getY2() - box.getY1(), box.getZ2() - box.getZ1());
+            effectiveBox = new Box(
+                0,
+                0,
+                0,
+                box.getX2() - box.getX1(),
+                box.getY2() - box.getY1(),
+                box.getZ2() - box.getZ1());
         }
 
         return effectiveBox;
     }
 
     protected final void validateCoords(int x, int y, int z) {
-        if (x < 0 || x >= (box.getX2() - box.getX1())) throw new IllegalArgumentException(String.format("illegal argument: x (x=%s, x1=%s, x2=%s)", x, box.getX1(), box.getX2()));
-        if (y < 0 || y >= (box.getY2() - box.getY1())) throw new IllegalArgumentException(String.format("illegal argument: y (y=%s, y1=%s, y2=%s)", y, box.getY1(), box.getY2()));
-        if (z < 0 || z >= (box.getZ2() - box.getZ1())) throw new IllegalArgumentException(String.format("illegal argument: z (z=%s, z1=%s, z2=%s)", z, box.getZ1(), box.getZ2()));
+        if (x < 0 || x >= (box.getX2() - box.getX1())) throw new IllegalArgumentException(
+            String.format("illegal argument: x (x=%s, x1=%s, x2=%s)", x, box.getX1(), box.getX2()));
+        if (y < 0 || y >= (box.getY2() - box.getY1())) throw new IllegalArgumentException(
+            String.format("illegal argument: y (y=%s, y1=%s, y2=%s)", y, box.getY1(), box.getY2()));
+        if (z < 0 || z >= (box.getZ2() - box.getZ1())) throw new IllegalArgumentException(
+            String.format("illegal argument: z (z=%s, z1=%s, z2=%s)", z, box.getZ1(), box.getZ2()));
     }
 }

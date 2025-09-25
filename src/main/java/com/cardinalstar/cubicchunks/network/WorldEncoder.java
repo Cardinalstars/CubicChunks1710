@@ -26,7 +26,6 @@ import java.util.Objects;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
@@ -39,14 +38,25 @@ import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-
 // TODO Watch implementation packet io functions for block data arrays and serialization length
 @ParametersAreNonnullByDefault
 class WorldEncoder {
 
-    static void encodeCubes(PacketBuffer out, Collection<Cube> cubes) {
+    static void encodeColumn(CCPacketBuffer out, Chunk column) {
+        // 1. biomes
+        out.writeBytes(column.getBiomeArray());
+        ((IColumnInternal) column).writeHeightmapDataForClient(out);
+    }
+
+    static void decodeColumn(CCPacketBuffer in, Chunk column) {
+        // 1. biomes
+        in.readBytes(column.getBiomeArray());
+        if (in.readableBytes() > 0) {
+            ((IColumnInternal) column).loadClientHeightmapData(in);
+        }
+    }
+
+    static void encodeCubes(CCPacketBuffer out, Collection<Cube> cubes) {
         // write first all the flags, then all the block data, then all the light data etc for better compression
 
         // 1. emptiness
@@ -103,21 +113,7 @@ class WorldEncoder {
         cubes.forEach(cube -> { if (cube.getBiomeArray() != null) out.writeBytes(cube.getBiomeArray()); });
     }
 
-    static void encodeColumn(PacketBuffer out, Chunk column) {
-        // 1. biomes
-        out.writeBytes(column.getBiomeArray());
-        ((IColumnInternal) column).writeHeightmapDataForClient(out);
-    }
-
-    static void decodeColumn(PacketBuffer in, Chunk column) {
-        // 1. biomes
-        in.readBytes(column.getBiomeArray());
-        if (in.readableBytes() > 0) {
-            ((IColumnInternal) column).loadClientHeightmapData(in);
-        }
-    }
-
-    static void decodeCube(PacketBuffer in, List<Cube> cubes) {
+    static void decodeCube(CCPacketBuffer in, List<Cube> cubes) {
         cubes.stream()
             .filter(Objects::nonNull)
             .forEach(Cube::setClientCube);
@@ -229,59 +225,5 @@ class WorldEncoder {
             in.readBytes(blockBiomeArray);
             cube.setBiomeArray(blockBiomeArray);
         }
-    }
-
-    static int getEncodedSize(Chunk column) {
-        return column.getBiomeArray().length + Cube.SIZE * Cube.SIZE * Integer.BYTES;
-    }
-
-    static int getEncodedSize(Collection<Cube> cubes) {
-        int size = 0;
-
-        // 1. isEmpty, hasStorage and hasBiomeArray flags packed in one byte
-        size += cubes.size();
-
-        // 2. block IDs and metadata
-        for (Cube cube : cubes) {
-            ExtendedBlockStorage storage = cube.getStorage();
-            if (!cube.isEmpty()) {
-                // noinspection ConstantConditions
-                size += storage.getBlockLSBArray().length;
-                NibbleArray msb = storage.getBlockMSBArray();
-                size++; // Account for boolean hasMSB
-                if (msb != null) {
-                    size += msb.data.length;
-                }
-                size += storage.getMetadataArray().data.length;
-            }
-            if (storage != null) {
-                size += storage.getBlocklightArray().data.length;
-                if (!cube.getWorld().provider.hasNoSky) {
-                    size += storage.getSkylightArray().data.length;
-                }
-            }
-        }
-
-        // heightmaps
-        size += 256 * Integer.BYTES * cubes.size();
-        // biomes
-        for (Cube cube : cubes) {
-            byte[] biomeArray = cube.getBiomeArray();
-            if (biomeArray == null) continue;
-            size += biomeArray.length;
-        }
-        return size;
-    }
-
-    static ByteBuf createByteBufForWrite(byte[] data) {
-        ByteBuf bytebuf = Unpooled.wrappedBuffer(data);
-        bytebuf.writerIndex(0);
-        return bytebuf;
-    }
-
-    static ByteBuf createByteBufForRead(byte[] data) {
-        ByteBuf bytebuf = Unpooled.wrappedBuffer(data);
-        bytebuf.readerIndex(0);
-        return bytebuf;
     }
 }
