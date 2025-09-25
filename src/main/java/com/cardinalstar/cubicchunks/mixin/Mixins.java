@@ -245,10 +245,11 @@ public enum Mixins implements IMixins {
         .addServerMixins("server.MixinDedicatedServer_HeightLimits")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_DEDICATED_SERVER_DEFAULT_LEVEL(new MixinBuilder("Changing default level in servers with this mod installed to be VanillaCubic.")
-        .addServerMixins("server.MixinDedicatedServer_DefaultLevelType")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true));
+    MIXIN_DEDICATED_SERVER_DEFAULT_LEVEL(
+        new MixinBuilder("Changing default level in servers with this mod installed to be VanillaCubic.")
+            .addServerMixins("server.MixinDedicatedServer_DefaultLevelType")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true));
 
     private final MixinBuilder builder;
 
