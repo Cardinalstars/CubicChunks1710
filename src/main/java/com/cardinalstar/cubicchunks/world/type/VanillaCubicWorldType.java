@@ -36,8 +36,9 @@ import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
 @ParametersAreNonnullByDefault
 public class VanillaCubicWorldType extends WorldType implements ICubicWorldType {
 
+    public static final String vanillaCubicLevelString = "VanillaCubic";
     private VanillaCubicWorldType() {
-        super("VanillaCubic");
+        super(vanillaCubicLevelString);
     }
 
     public static VanillaCubicWorldType create() {
