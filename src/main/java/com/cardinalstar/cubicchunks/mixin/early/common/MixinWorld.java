@@ -30,6 +30,8 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.server.CubeProviderServer;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
@@ -497,6 +499,12 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Override
     public boolean isBlockColumnLoaded(int x, int y, int z) {
         return this.chunkExists(blockToCube(x), blockToCube(z));
+    }
+
+    @Override
+    public boolean cubeExists(int x, int y, int z)
+    {
+        return ((ICubeProvider) this.chunkProvider).cubeExists(x, y, z);
     }
 
     @ModifyConstant(method = "getCollidingBoundingBoxes", constant = @Constant(intValue = 64), require = 1)
