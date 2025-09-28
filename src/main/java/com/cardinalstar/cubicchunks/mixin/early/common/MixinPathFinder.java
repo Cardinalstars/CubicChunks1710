@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(PathFinder.class)
 public class MixinPathFinder
 {
-    @Definition(id = "p_75858_3_", local = @Local(name = "p_75858_3_"))
+    @Definition(id = "p_75858_3_", local = @Local(type = int.class, ordinal = 1, argsOnly = true))
     @Expression("p_75858_3_ > 0")
     @WrapOperation(method = "getSafePoint", at = @At("MIXINEXTRAS:EXPRESSION"))
     boolean redirectLessThan0Comparison(int yPosition, int zero, Operation<Boolean> original, @Local(argsOnly = true, ordinal = 0) Entity entity)
@@ -32,7 +32,7 @@ public class MixinPathFinder
     @Redirect(method = "func_82565_a", at = @At("MIXINEXTRAS:EXPRESSION"))
     private static Block CheckWorldLoaded(World world, int x, int y, int z)
     {
-        if (((ICubicWorld) world).cubeExists(x, y, z))
+        if (world.blockExists(x, y, z))
         {
             return world.getBlock(x, y, z);
         }

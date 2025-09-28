@@ -113,7 +113,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
                                           @Local(argsOnly = true, ordinal = 1) int y,
                                           @Local(argsOnly = true, ordinal = 2) int z)
     {
-        return cubeExists(x, y, z);
+        return cubeExists(x >> 4, y >> 4, z >> 4);
     }
 
     // checkChunksExist
