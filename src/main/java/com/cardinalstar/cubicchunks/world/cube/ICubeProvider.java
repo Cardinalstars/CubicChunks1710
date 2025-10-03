@@ -24,11 +24,11 @@ package com.cardinalstar.cubicchunks.world.cube;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 
 @ParametersAreNonnullByDefault
 public interface ICubeProvider {
@@ -64,7 +64,9 @@ public interface ICubeProvider {
      * @param cubeX x coordinate of the cube
      * @param cubeY y coordinate of the cube
      * @param cubeZ zPosition coordinate of the cube
-     * @return true iff, for this position, {@link ICubeProviderServer#getCube(int, int, int, ICubeProviderServer.Requirement)} with {@link ICubeProviderServer.Requirement#LOAD}
+     * @return true iff, for this position,
+     *         {@link ICubeProviderServer#getCube(int, int, int, ICubeProviderServer.Requirement)} with
+     *         {@link ICubeProviderServer.Requirement#LOAD}
      *         would return a non-null value. The result is guaranteed to be true only if the world save is not
      *         corrupted
      *         and can otherwise be correctly read.

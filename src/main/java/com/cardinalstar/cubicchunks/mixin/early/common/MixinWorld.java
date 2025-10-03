@@ -30,8 +30,6 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.server.CubeProviderServer;
-import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
@@ -83,6 +81,7 @@ import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.google.common.collect.ImmutableList;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
@@ -502,8 +501,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     }
 
     @Override
-    public boolean cubeExists(int x, int y, int z)
-    {
+    public boolean cubeExists(int x, int y, int z) {
         return ((ICubeProvider) this.chunkProvider).cubeExists(x, y, z);
     }
 

@@ -20,21 +20,19 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import com.cardinalstar.cubicchunks.api.IColumn;
-import com.cardinalstar.cubicchunks.api.ICube;
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.world.cube.BlankCube;
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Local;
+import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+import javax.annotation.ParametersAreNonnullByDefault;
+
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.chunk.Chunk;
+
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -46,11 +44,16 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Objects;
-
-import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
+import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.world.cube.BlankCube;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 
 /**
  * Contains fixes for hardcoded height checks and other height-related issues.
@@ -104,15 +107,10 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
 
     @Definition(id = "chunkExists", method = "Lnet/minecraft/world/World;chunkExists(II)Z")
     @Expression("this.chunkExists(?, ?)")
-    @Redirect(
-        method = "blockExists",
-        at = @At("MIXINEXTRAS:EXPRESSION")
-    )
+    @Redirect(method = "blockExists", at = @At("MIXINEXTRAS:EXPRESSION"))
     boolean redirectChunkExistsCubeExists(World instance, int p_72916_1_, int p_72916_2_,
-                                          @Local(argsOnly = true, ordinal = 0) int x,
-                                          @Local(argsOnly = true, ordinal = 1) int y,
-                                          @Local(argsOnly = true, ordinal = 2) int z)
-    {
+        @Local(argsOnly = true, ordinal = 0) int x, @Local(argsOnly = true, ordinal = 1) int y,
+        @Local(argsOnly = true, ordinal = 2) int z) {
         return cubeExists(x >> 4, y >> 4, z >> 4);
     }
 

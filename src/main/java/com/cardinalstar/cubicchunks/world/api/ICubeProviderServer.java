@@ -57,7 +57,6 @@ public interface ICubeProviderServer extends ICubeProvider {
     @Nullable
     ICube getCube(int cubeX, int cubeY, int cubeZ, Requirement req);
 
-
     /**
      * The effort made to retrieve a cube or column. Any further work should not be done, and returning
      * {@code null} is acceptable in those cases

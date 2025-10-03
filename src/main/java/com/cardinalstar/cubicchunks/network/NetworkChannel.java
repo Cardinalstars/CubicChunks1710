@@ -3,9 +3,6 @@ package com.cardinalstar.cubicchunks.network;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;

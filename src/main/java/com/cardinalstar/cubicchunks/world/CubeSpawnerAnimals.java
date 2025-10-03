@@ -38,7 +38,6 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChunkCoordinates;
-import net.minecraft.util.MathHelper;
 import net.minecraft.world.SpawnerAnimals;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -85,7 +84,8 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
             if (worldEntityCount > maxEntityCount) {
                 continue;
             }
-            List<CubePos> shuffled = getShuffledCopy(this.cubesForSpawn).subList(0, Math.min(this.cubesForSpawn.size(), 2 * (2 * SPAWN_RADIUS + 1)));
+            List<CubePos> shuffled = getShuffledCopy(this.cubesForSpawn)
+                .subList(0, Math.min(this.cubesForSpawn.size(), 2 * (2 * SPAWN_RADIUS + 1)));
             totalSpawnCount += spawnCreatureTypeInAllChunks(mobType, world, shuffled);
         }
         return totalSpawnCount;
@@ -118,15 +118,15 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                         if (isEdge) {
                             continue;
                         }
-                        CubeWatcher cubeInfo = ((CubicPlayerManager) world.getPlayerManager())
-                            .getCubeWatcher(cubePos);
+                        CubeWatcher cubeInfo = ((CubicPlayerManager) world.getPlayerManager()).getCubeWatcher(cubePos);
 
                         if (cubeInfo != null && cubeInfo.isSentToPlayers()) {
                             allCubes.add(cubePos);
 
                             // TODO Make this spawn culling more intelligent. Also
                             // maybe make this biased for the surface?
-                            if (!cubeInfo.getCube().isEmpty()) {
+                            if (!cubeInfo.getCube()
+                                .isEmpty()) {
                                 possibleCubes.add(cubePos);
                             }
                         }
@@ -137,8 +137,7 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
         return chunkCount;
     }
 
-    private int spawnCreatureTypeInAllChunks(EnumCreatureType mobType, WorldServer world,
-        List<CubePos> cubeList) {
+    private int spawnCreatureTypeInAllChunks(EnumCreatureType mobType, WorldServer world, List<CubePos> cubeList) {
         ChunkCoordinates spawnPoint = world.getSpawnPoint();
         int posX, posY, posZ;
 
