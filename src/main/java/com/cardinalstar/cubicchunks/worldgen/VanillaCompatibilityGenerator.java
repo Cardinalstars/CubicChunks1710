@@ -151,9 +151,17 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
         var bottomBlock = histogram.object2IntEntrySet()
             .stream()
-            .filter(
-                e -> e.getKey()
-                    .getBlock() != Blocks.bedrock)
+            .filter(e -> {
+                if (e.getKey()
+                    .getBlock() == Blocks.bedrock) return false;
+                if (e.getKey()
+                    .getBlock() == Blocks.air) return false;
+                if (!e.getKey()
+                    .getBlock()
+                    .isNormalCube()) return false;
+
+                return true;
+            })
             .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
 
         ImmutableBlockMeta filler = bottomBlock.map(Map.Entry::getKey)
