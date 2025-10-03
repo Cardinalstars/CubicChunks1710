@@ -233,6 +233,8 @@ public interface ICubicWorld extends IMinMaxHeight {
 
     boolean isBlockColumnLoaded(int x, int y, int z, boolean allowEmpty);
 
+    boolean cubeExists(int x, int y, int z);
+
     int getMinGenerationHeight();
 
     int getMaxGenerationHeight();

@@ -81,6 +81,7 @@ import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.google.common.collect.ImmutableList;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
@@ -497,6 +498,11 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Override
     public boolean isBlockColumnLoaded(int x, int y, int z) {
         return this.chunkExists(blockToCube(x), blockToCube(z));
+    }
+
+    @Override
+    public boolean cubeExists(int x, int y, int z) {
+        return ((ICubeProvider) this.chunkProvider).cubeExists(x, y, z);
     }
 
     @ModifyConstant(method = "getCollidingBoundingBoxes", constant = @Constant(intValue = 64), require = 1)

@@ -150,6 +150,18 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Giving Y position to structures.").addCommonMixins("common.MixinStructureStart")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+    MIXIN_PATH_NAVIGATE(new MixinBuilder("Fixing casting issues for doubles to ints if they are negative.")
+        .addCommonMixins("common.MixinPathNavigate")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+    MIXIN_ENTITY_MINECART(new MixinBuilder("Fixing minecarts getting auto-killed below y = -64")
+        .addCommonMixins("common.MixinEntityMinecart")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+    MIXIN_PATH_FINDER(
+        new MixinBuilder("Fixing mobs walking off into chasms below y = 0").addCommonMixins("common.MixinPathFinder")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
 
     // SERVER
     MIXIN_INTEGRATED_SERVER_ACCESSOR(

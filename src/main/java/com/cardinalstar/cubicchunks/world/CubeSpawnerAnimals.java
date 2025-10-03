@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -37,7 +38,6 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChunkCoordinates;
-import net.minecraft.util.MathHelper;
 import net.minecraft.world.SpawnerAnimals;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -71,7 +71,7 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
         }
         this.cubesForSpawn.clear();
 
-        int chunkCount = addEligibleChunks(world, this.cubesForSpawn);
+        int chunkCount = addEligibleCubes(world, this.cubesForSpawn);
         int totalSpawnCount = 0;
 
         for (EnumCreatureType mobType : EnumCreatureType.values()) {
@@ -84,31 +84,29 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
             if (worldEntityCount > maxEntityCount) {
                 continue;
             }
-            ArrayList<CubePos> shuffled = getShuffledCopy(this.cubesForSpawn);
+            List<CubePos> shuffled = getShuffledCopy(this.cubesForSpawn)
+                .subList(0, Math.min(this.cubesForSpawn.size(), 2 * (2 * SPAWN_RADIUS + 1)));
             totalSpawnCount += spawnCreatureTypeInAllChunks(mobType, world, shuffled);
         }
         return totalSpawnCount;
     }
 
-    private int addEligibleChunks(WorldServer world, Set<CubePos> possibleChunks) {
+    private int addEligibleCubes(WorldServer world, Set<CubePos> possibleCubes) {
         int chunkCount = 0;
         Random r = world.rand;
         Set<CubePos> allCubes = new HashSet<>();
         for (EntityPlayer player : world.playerEntities) {
-            // if (player.isSpectator()) {
-            // continue;
-            // }
             CubePos center = CubePos.fromEntity(player);
 
             for (int cubeXRel = -SPAWN_RADIUS; cubeXRel <= SPAWN_RADIUS; ++cubeXRel) {
                 for (int cubeYRel = -SPAWN_RADIUS; cubeYRel <= SPAWN_RADIUS; ++cubeYRel) {
                     for (int cubeZRel = -SPAWN_RADIUS; cubeZRel <= SPAWN_RADIUS; ++cubeZRel) {
-                        CubePos chunkPos = center.add(cubeXRel, cubeYRel, cubeZRel);
+                        CubePos cubePos = center.add(cubeXRel, cubeYRel, cubeZRel);
 
-                        if (allCubes.contains(chunkPos)) {
+                        if (allCubes.contains(cubePos)) {
                             continue;
                         }
-                        assert !possibleChunks.contains(chunkPos);
+                        assert !possibleCubes.contains(cubePos);
                         ++chunkCount;
 
                         boolean isEdge = cubeXRel == -SPAWN_RADIUS || cubeXRel == SPAWN_RADIUS
@@ -120,13 +118,16 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                         if (isEdge) {
                             continue;
                         }
-                        CubeWatcher chunkInfo = ((CubicPlayerManager) world.getPlayerManager())
-                            .getCubeWatcher(chunkPos);
+                        CubeWatcher cubeInfo = ((CubicPlayerManager) world.getPlayerManager()).getCubeWatcher(cubePos);
 
-                        if (chunkInfo != null && chunkInfo.isSentToPlayers()) {
-                            allCubes.add(chunkPos);
-                            if (r.nextInt(SPAWN_RADIUS * 2 + 1) == 0) {
-                                possibleChunks.add(chunkPos);
+                        if (cubeInfo != null && cubeInfo.isSentToPlayers()) {
+                            allCubes.add(cubePos);
+
+                            // TODO Make this spawn culling more intelligent. Also
+                            // maybe make this biased for the surface?
+                            if (!cubeInfo.getCube()
+                                .isEmpty()) {
+                                possibleCubes.add(cubePos);
                             }
                         }
                     }
@@ -136,21 +137,20 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
         return chunkCount;
     }
 
-    private int spawnCreatureTypeInAllChunks(EnumCreatureType mobType, WorldServer world,
-        ArrayList<CubePos> chunkList) {
+    private int spawnCreatureTypeInAllChunks(EnumCreatureType mobType, WorldServer world, List<CubePos> cubeList) {
         ChunkCoordinates spawnPoint = world.getSpawnPoint();
         int posX, posY, posZ;
 
         int totalSpawned = 0;
 
-        nextChunk: for (CubePos currentChunkPos : chunkList) {
-            BlockPos blockpos = getRandomChunkPosition(world, currentChunkPos);
+        nextChunk: for (CubePos currentCubePos : cubeList) {
+            BlockPos blockpos = getRandomCubePosition(world, currentCubePos);
             if (blockpos == null) {
                 continue;
             }
             Block block = world.getBlock(blockpos.x, blockpos.y, blockpos.z);
 
-            if (block.isNormalCube()) {
+            if (block.isNormalCube() || !(block.getMaterial() == mobType.getCreatureMaterial())) {
                 continue;
             }
             int blockX = blockpos.getX();
@@ -159,27 +159,27 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
 
             int currentPackSize = 0;
 
-            for (int k2 = 0; k2 < 3; ++k2) {
+            for (int spawnAttempt = 0; spawnAttempt < 3; ++spawnAttempt) {
                 int entityBlockX = blockX;
                 int entityY = blockY;
                 int entityBlockZ = blockZ;
                 int searchRadius = 6;
                 BiomeGenBase.SpawnListEntry biomeMobs = null;
                 IEntityLivingData entityData = null;
-                int numSpawnAttempts = MathHelper.ceiling_double_int(Math.random() * 4.0D);
 
                 Random rand = world.rand;
-                for (int spawnAttempt = 0; spawnAttempt < numSpawnAttempts; ++spawnAttempt) {
+                for (int attempt = 0; attempt < 4; ++attempt) {
                     entityBlockX += rand.nextInt(searchRadius) - rand.nextInt(searchRadius);
                     entityY += rand.nextInt(1) - rand.nextInt(1);
                     entityBlockZ += rand.nextInt(searchRadius) - rand.nextInt(searchRadius);
                     posX = entityBlockX;
                     posY = entityY;
                     posZ = entityBlockZ;
-                    float entityX = (float) entityBlockX + 0.5F;
-                    float entityZ = (float) entityBlockZ + 0.5F;
 
                     if (!SpawnerAnimals.canCreatureTypeSpawnAtLocation(mobType, world, posX, posY, posZ)) continue;
+
+                    float entityX = (float) entityBlockX + 0.5F;
+                    float entityZ = (float) entityBlockZ + 0.5F;
 
                     if (world.getClosestPlayer(entityX, entityY, entityZ, 24.0D) != null
                         || MathUtil.distanceSq(entityX, entityY, entityZ, spawnPoint) < 576.0D) {
@@ -245,7 +245,7 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
     }
 
     @Nullable
-    private static BlockPos getRandomChunkPosition(WorldServer world, CubePos pos) {
+    private static BlockPos getRandomCubePosition(WorldServer world, CubePos pos) {
         int blockX = pos.getMinBlockX() + world.rand.nextInt(Cube.SIZE);
         int blockZ = pos.getMinBlockZ() + world.rand.nextInt(Cube.SIZE);
 
