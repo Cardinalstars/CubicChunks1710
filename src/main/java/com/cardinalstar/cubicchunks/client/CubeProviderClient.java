@@ -72,6 +72,11 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
     }
 
     @Override
+    public boolean cubeExists(int cubeX, int cubeY, int cubeZ) {
+        return true;
+    }
+
+    @Override
     public Chunk provideChunk(int x, int z) {
         return super.provideChunk(x, z);
     }
