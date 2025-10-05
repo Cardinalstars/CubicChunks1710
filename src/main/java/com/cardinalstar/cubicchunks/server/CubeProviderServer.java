@@ -430,22 +430,12 @@ public class CubeProviderServer extends ChunkProviderServer
         return cubeGen.getPossibleCreatures(type, x, y, z);
     }
 
-    // @Nullable @Override
-    // public BlockPos getNearestStructurePos(World worldIn, String name, BlockPos pos, boolean findUnexplored) {
-    // return cubeGen.getClosestStructure(name, pos, findUnexplored);
-    // }
-
     // getLoadedChunkCount() in ChunkProviderServer is fine - CHECKED: 1.10.2-12.18.1.2092
 
     @Override
     public boolean chunkExists(int cubeX, int cubeZ) {
         return cubeLoader.getColumn(cubeX, cubeZ, Requirement.GET_CACHED) != null;
     }
-
-    // @Override // TODO: What it does? implement it
-    // public boolean isInsideStructure(World p_193413_1_, String p_193413_2_, BlockPos p_193413_3_) {
-    // return false;
-    // }
 
     // ==============================
     // =====CubicChunks methods======
@@ -639,7 +629,7 @@ public class CubeProviderServer extends ChunkProviderServer
     }
 
     @Override
-    public boolean isCubeGenerated(int cubeX, int cubeY, int cubeZ) {
+    public boolean cubeExists(int cubeX, int cubeY, int cubeZ) {
         return cubeLoader.cubeExists(cubeX, cubeY, cubeZ);
     }
 
