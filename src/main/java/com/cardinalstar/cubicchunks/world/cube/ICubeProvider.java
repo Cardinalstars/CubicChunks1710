@@ -28,6 +28,7 @@ import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 
 @ParametersAreNonnullByDefault
 public interface ICubeProvider {
@@ -55,4 +56,20 @@ public interface ICubeProvider {
     Chunk getLoadedColumn(int x, int z); // more strictly define the return type
 
     Chunk provideColumn(int x, int z); // more strictly define the return type
+
+    /**
+     * Returns true if the specified cube has been already generated (either loaded or saved
+     * on disk).
+     *
+     * @param cubeX x coordinate of the cube
+     * @param cubeY y coordinate of the cube
+     * @param cubeZ zPosition coordinate of the cube
+     * @return true iff, for this position,
+     *         {@link ICubeProviderServer#getCube(int, int, int, ICubeProviderServer.Requirement)} with
+     *         {@link ICubeProviderServer.Requirement#LOAD}
+     *         would return a non-null value. The result is guaranteed to be true only if the world save is not
+     *         corrupted
+     *         and can otherwise be correctly read.
+     */
+    boolean cubeExists(int cubeX, int cubeY, int cubeZ);
 }
