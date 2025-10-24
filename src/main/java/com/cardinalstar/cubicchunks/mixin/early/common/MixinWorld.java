@@ -422,7 +422,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
 
     @Inject(method = "updateLightByType", at = @At("HEAD"), cancellable = true)
     private void updateLightByType(EnumSkyBlock lightType, int x, int y, int z, CallbackInfoReturnable<Boolean> ci) {
-        ci.setReturnValue(getLightingManager().checkLightFor(lightType, x, y, z));
+        ci.setReturnValue(getLightingManager() != null && getLightingManager().checkLightFor(lightType, x, y, z));
     }
 
     /**

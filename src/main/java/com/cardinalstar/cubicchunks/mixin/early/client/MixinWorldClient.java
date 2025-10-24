@@ -62,7 +62,7 @@ public abstract class MixinWorldClient extends MixinWorld implements ICubicWorld
 
     @Override
     public void tickCubicWorld() {
-        getLightingManager().onTick();
+        if (getLightingManager() != null) getLightingManager().onTick();
     }
 
     @Override
