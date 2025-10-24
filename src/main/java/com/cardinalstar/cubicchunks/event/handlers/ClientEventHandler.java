@@ -41,16 +41,16 @@ import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.compat.CubicChunksVideoSettings;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.early.client.IGuiCreateWorld;
 import com.cardinalstar.cubicchunks.mixin.early.client.IGuiOptionsRowList;
-import com.cardinalstar.cubicchunks.mixin.early.client.IGuiScreen;
 import com.cardinalstar.cubicchunks.mixin.early.client.IGuiVideoSettings;
+import com.cardinalstar.cubicchunks.modcompat.angelica.AngelicaInterop;
 import com.cardinalstar.cubicchunks.server.ICubicPlayerList;
 import com.cardinalstar.cubicchunks.util.MathUtil;
-
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -91,52 +91,12 @@ public class ClientEventHandler {
     public void initGuiEvent(InitGuiEvent.Post event) {
 
         GuiScreen currentGui = event.gui;
-        if (currentGui instanceof GuiVideoSettings) {
+        if (currentGui instanceof GuiVideoSettings && !AngelicaInterop.hasDelegate()) {
             GuiVideoSettings gvs = (GuiVideoSettings) currentGui;
-            if (!FMLClientHandler.instance()
-                .hasOptifine()) {
-                IGuiOptionsRowList gowl = (IGuiOptionsRowList) ((IGuiVideoSettings) gvs).getOptionsRowList();
-                GuiOptionsRowList.Row row = this.createRow(100, gvs.width);
-                gowl.getOptions()
-                    .add(1, row);
-            } else {
-                int idx = 3;
-                int btnSpacing = 20;
-                ((IGuiScreen) gvs).getButtonList()
-                    .add(
-                        idx,
-                        new VertViewDistanceSlider(
-                            100,
-                            gvs.width / 2 - 155 + 160,
-                            gvs.height / 6 + btnSpacing * (idx / 2) - 12));
-                List<GuiButton> buttons = ((IGuiScreen) gvs).getButtonList();
-                // reposition all buttons except the last 4 (last 3 and done)
-                for (int i = 0; i < buttons.size() - 4; i++) {
-                    GuiButton btn = buttons.get(i);
-                    int x = gvs.width / 2 - 155 + i % 2 * 160;
-                    int y = gvs.height / 6 + 21 * (i / 2) - 12;
-                    btn.xPosition = x;
-                    btn.yPosition = y;
-                }
-                // now position the last 3 buttons excluding "done" to be 3-in-a-row
-                for (int i = buttons.size() - 4; i < buttons.size() - 1; i++) {
-                    GuiButton btn = buttons.get(i);
-
-                    int newBtnWidth = 150 * 2 / 3;
-                    int minX = gvs.width / 2 - 155;
-                    int maxX = gvs.width / 2 - 155 + 160 + btn.width;
-
-                    int minXCenter = minX + newBtnWidth / 2;
-                    int maxXCenter = maxX - newBtnWidth / 2;
-
-                    int x = minXCenter + (i % 3) * (maxXCenter - minXCenter) / 2 - newBtnWidth / 2;
-                    int y = gvs.height / 6 + 21 * (buttons.size() - 4) / 2 - 12;
-
-                    btn.xPosition = x;
-                    btn.yPosition = y;
-                    btn.width = newBtnWidth;
-                }
-            }
+            IGuiOptionsRowList gowl = (IGuiOptionsRowList) ((IGuiVideoSettings) gvs).getOptionsRowList();
+            GuiOptionsRowList.Row row = this.createRow(100, gvs.width);
+            gowl.getOptions()
+                .add(1, row);
         }
     }
 
@@ -147,13 +107,14 @@ public class ClientEventHandler {
 
     private class VertViewDistanceSlider extends GuiButton {
 
-        private final int MAX_VIEW_DIST = CubicChunks.hasOptifine() ? 64 : 32;
+        private final int minViewDist = CubicChunksVideoSettings.getMinVerticalViewDistance();
+        private final int maxViewDist = CubicChunksVideoSettings.getMaxVerticalViewDistance();
         private float sliderValue;
         public boolean dragging;
 
         public VertViewDistanceSlider(int buttonId, int x, int y) {
             super(buttonId, x, y, 150, 20, "");
-            this.sliderValue = MathUtil.unlerp(CubicChunksConfig.verticalCubeLoadDistance, 2, MAX_VIEW_DIST);
+            this.sliderValue = getSliderValue();
             this.displayString = this.createDisplayString();
         }
 
@@ -176,9 +137,8 @@ public class ClientEventHandler {
                 if (this.dragging) {
                     this.sliderValue = (float) (mouseX - (this.xPosition + 4)) / (float) (this.width - 8);
                     this.sliderValue = MathHelper.clamp_float(this.sliderValue, 0.0F, 1.0F);
-                    CubicChunksConfig
-                        .setVerticalViewDistance(Math.round(MathUtil.lerp(this.sliderValue, 2, MAX_VIEW_DIST)));
-                    this.sliderValue = MathUtil.unlerp(CubicChunksConfig.verticalCubeLoadDistance, 2, MAX_VIEW_DIST);
+                    onSliderValueChanged();
+                    this.sliderValue = getSliderValue();
                     this.displayString = this.createDisplayString();
                 }
 
@@ -211,9 +171,8 @@ public class ClientEventHandler {
             if (super.mousePressed(mc, mouseX, mouseY)) {
                 this.sliderValue = (float) (mouseX - (this.xPosition + 4)) / (float) (this.width - 8);
                 this.sliderValue = MathHelper.clamp_float(this.sliderValue, 0.0F, 1.0F);
-                CubicChunksConfig
-                    .setVerticalViewDistance(Math.round(MathUtil.lerp(this.sliderValue, 2, MAX_VIEW_DIST)));
-                this.sliderValue = MathUtil.unlerp(CubicChunksConfig.verticalCubeLoadDistance, 2, MAX_VIEW_DIST);
+                onSliderValueChanged();
+                this.sliderValue = getSliderValue();
                 this.displayString = this.createDisplayString();
                 this.dragging = true;
                 return true;
@@ -222,10 +181,19 @@ public class ClientEventHandler {
             }
         }
 
+        private void onSliderValueChanged() {
+            CubicChunksVideoSettings
+                .setVerticalViewDistance(Math.round(MathUtil.lerp(this.sliderValue, minViewDist, maxViewDist)));
+        }
+
+        private float getSliderValue() {
+            return MathUtil.unlerp(CubicChunksVideoSettings.getVerticalViewDistance(), minViewDist, maxViewDist);
+        }
+
         private String createDisplayString() {
             return I18n.format(
                 CubicChunks.MODID + ".gui.vertical_cube_load_distance",
-                CubicChunksConfig.verticalCubeLoadDistance);
+                CubicChunksVideoSettings.getVerticalViewDistance());
         }
 
         /**

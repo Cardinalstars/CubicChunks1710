@@ -25,6 +25,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
+import com.cardinalstar.cubicchunks.modcompat.angelica.AngelicaInterop;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.github.bsideup.jabel.Desugar;
@@ -71,5 +72,9 @@ public class PacketEncoderUnloadCube extends CCPacketEncoder<PacketEncoderUnload
         cubeCache.getCube(packet.pos)
             .markForRenderUpdate();
         cubeCache.unloadCube(packet.pos);
+
+        if (AngelicaInterop.hasDelegate()) {
+            AngelicaInterop.getDelegate().onCubeLoaded(packet.pos.getX(), packet.pos.getY(), packet.pos.getZ());
+        }
     }
 }
