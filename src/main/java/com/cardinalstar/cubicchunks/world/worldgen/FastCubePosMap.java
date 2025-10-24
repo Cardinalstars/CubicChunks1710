@@ -8,32 +8,13 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 
 import com.cardinalstar.cubicchunks.api.XYZAddressable;
+import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
-
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 public class FastCubePosMap<V> extends AbstractMap<CubePos, V> {
-
-    public static final int MASK = 0x1FFFFF;
-    public static final int SHIFT = 21;
-
-    public static long key(long x, long y, long z) {
-        return ((x & MASK) << SHIFT << SHIFT) | ((y & MASK) << SHIFT) | (z & MASK);
-    }
-
-    private static int x(long key) {
-        return (int) ((key >> SHIFT >> SHIFT) & MASK);
-    }
-
-    private static int y(long key) {
-        return (int) ((key >> SHIFT) & MASK);
-    }
-
-    private static int z(long key) {
-        return (int) (key & MASK);
-    }
 
     public final Long2ObjectOpenHashMap<V> map = new Long2ObjectOpenHashMap<>();
 
@@ -41,19 +22,19 @@ public class FastCubePosMap<V> extends AbstractMap<CubePos, V> {
     public V get(Object key) {
         XYZAddressable pos = (XYZAddressable) key;
 
-        return map.get(key(pos.getX(), pos.getY(), pos.getZ()));
+        return map.get(Coords.key(pos.getX(), pos.getY(), pos.getZ()));
     }
 
     @Override
     public V remove(Object key) {
         XYZAddressable pos = (XYZAddressable) key;
 
-        return map.remove(key(pos.getX(), pos.getY(), pos.getZ()));
+        return map.remove(Coords.key(pos.getX(), pos.getY(), pos.getZ()));
     }
 
     @Override
     public V put(CubePos key, V value) {
-        return map.put(key(key.getX(), key.getY(), key.getZ()), value);
+        return map.put(Coords.key(key.getX(), key.getY(), key.getZ()), value);
     }
 
     private class FastEntry implements Entry<CubePos, V> {
@@ -101,9 +82,9 @@ public class FastCubePosMap<V> extends AbstractMap<CubePos, V> {
                         var e = iter.next();
 
                         entry.entry = e;
-                        entry.pos.x = x(e.getLongKey());
-                        entry.pos.y = y(e.getLongKey());
-                        entry.pos.z = z(e.getLongKey());
+                        entry.pos.x = Coords.x(e.getLongKey());
+                        entry.pos.y = Coords.y(e.getLongKey());
+                        entry.pos.z = Coords.z(e.getLongKey());
 
                         return entry;
                     }

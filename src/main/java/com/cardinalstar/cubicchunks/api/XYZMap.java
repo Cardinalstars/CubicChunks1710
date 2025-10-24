@@ -25,6 +25,7 @@ import java.util.Iterator;
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.util.Coords;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 /**
@@ -40,16 +41,12 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
 
     Long2ObjectOpenHashMap<T> items = new Long2ObjectOpenHashMap<>();
 
-    private long key(long x, long y, long z) {
-        return ((x & 0x1FFFFF) << 42) | ((y & 0x1FFFFF) << 21) | (z & 0x1FFFFF);
-    }
-
     public T remove(int x, int y, int z) {
-        return items.remove(key(x, y, z));
+        return items.remove(Coords.key(x, y, z));
     }
 
     public final T get(int x, int y, int z) {
-        return items.get(key(x, y, z));
+        return items.get(Coords.key(x, y, z));
     }
 
     public final T get(XYZAddressable xyz) {
@@ -57,7 +54,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
     }
 
     public final void put(T item) {
-        items.put(key(item.getX(), item.getY(), item.getZ()), item);
+        items.put(Coords.key(item.getX(), item.getY(), item.getZ()), item);
     }
 
     public final void remove(T item) {

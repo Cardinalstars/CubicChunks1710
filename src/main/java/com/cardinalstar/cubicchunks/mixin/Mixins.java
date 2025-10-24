@@ -261,7 +261,18 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Changing default level in servers with this mod installed to be VanillaCubic.")
             .addServerMixins("server.MixinDedicatedServer_DefaultLevelType")
             .setPhase(Phase.EARLY)
-            .setApplyIf(() -> true));
+            .setApplyIf(() -> true)),
+
+    // =============================================================
+    // Mod Mixins
+    // =============================================================
+    MIXIN_COORD_PACKER(new MixinBuilder("Overwrite GTNHLib CoordinatePacker algorithm with a CC-compatible one")
+        .addCommonMixins("common.MixinCoordinatePacker")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+
+    //
+    ;
 
     private final MixinBuilder builder;
 
