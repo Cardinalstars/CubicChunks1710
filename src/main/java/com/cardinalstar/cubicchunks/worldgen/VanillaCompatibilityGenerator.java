@@ -63,6 +63,7 @@ import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
 import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
+
 import cpw.mods.fml.common.IWorldGenerator;
 import cpw.mods.fml.common.registry.GameRegistry;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
@@ -150,11 +151,23 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             }
         }
 
-        var bottomBlock = histogram.object2IntEntrySet().stream()
-            .filter(e -> e.getKey().getBlock() != Blocks.bedrock)
+        var bottomBlock = histogram.object2IntEntrySet()
+            .stream()
+            .filter(e -> {
+                if (e.getKey()
+                    .getBlock() == Blocks.bedrock) return false;
+                if (e.getKey()
+                    .getBlock() == Blocks.air) return false;
+                if (!e.getKey()
+                    .getBlock()
+                    .isNormalCube()) return false;
+
+                return true;
+            })
             .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
 
-        ImmutableBlockMeta filler = bottomBlock.map(Map.Entry::getKey).orElse(new BlockMeta(Blocks.air, 0));
+        ImmutableBlockMeta filler = bottomBlock.map(Map.Entry::getKey)
+            .orElse(new BlockMeta(Blocks.air, 0));
 
         return new FillerInfo(filler);
     }
@@ -174,7 +187,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     private FillerInfo analyzeTopFiller(IBlockView blockView) {
         Object2IntOpenHashMap<ImmutableBlockMeta> histogram = new Object2IntOpenHashMap<>();
 
-        int top = blockView.getBounds().getY2();
+        int top = blockView.getBounds()
+            .getY2();
 
         // Scan three layers for top and bottom cubes to guard against bedrock walls
         for (int y = top - 1; y > top - 4; y--) {
@@ -185,11 +199,15 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             }
         }
 
-        var topBlock = histogram.object2IntEntrySet().stream()
-            .filter(e -> e.getKey().getBlock() != Blocks.bedrock)
+        var topBlock = histogram.object2IntEntrySet()
+            .stream()
+            .filter(
+                e -> e.getKey()
+                    .getBlock() != Blocks.bedrock)
             .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
 
-        ImmutableBlockMeta filler = topBlock.map(Map.Entry::getKey).orElse(new BlockMeta(Blocks.air, 0));
+        ImmutableBlockMeta filler = topBlock.map(Map.Entry::getKey)
+            .orElse(new BlockMeta(Blocks.air, 0));
 
         return new FillerInfo(filler);
     }
@@ -197,9 +215,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
     @Override
     public void generateColumn(Chunk column) {
 
-        this.biomes = this.world.getWorldChunkManager().loadBlockGeneratorData(
-            this.biomes,
-            column.xPosition * 16, column.zPosition * 16, 16, 16);
+        this.biomes = this.world.getWorldChunkManager()
+            .loadBlockGeneratorData(this.biomes, column.xPosition * 16, column.zPosition * 16, 16, 16);
 
         byte[] biomeArray = column.getBiomeArray();
         for (int i = 0; i < biomeArray.length; ++i) {
@@ -226,7 +243,9 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 int[] blockMeta = new int[4096];
 
                 cubeData = new ChunkArrayBlockView(
-                    16, 16, 16,
+                    16,
+                    16,
+                    16,
                     ObjectArrayList.wrap(blocks),
                     IntArrayList.wrap(blockMeta));
 
@@ -239,7 +258,9 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 int[] blockMeta = new int[4096];
 
                 cubeData = new ChunkArrayBlockView(
-                    16, 16, 16,
+                    16,
+                    16,
+                    16,
                     ObjectArrayList.wrap(blocks),
                     IntArrayList.wrap(blockMeta));
 
@@ -249,9 +270,14 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                 cubeData = getVanillaChunkSlice(cubeX, cubeY, cubeZ);
             }
 
-            Cube cube = new Cube(chunk, cubeY,cubeData);
+            Cube cube = new Cube(chunk, cubeY, cubeData);
 
-            CubeGeneratorsRegistry.generateVanillaCube(this, world, cube);
+            try {
+                CubeGeneratorsRegistry.generateVanillaCube(this, world, cube);
+            } catch (Throwable t) {
+                CubicChunks.LOGGER
+                    .error("Could not run non-vanilla generation for cube {},{},{}", cubeX, cubeY, cubeZ, t);
+            }
 
             return cube;
         } finally {
@@ -291,7 +317,8 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
     private void generateVanillaChunk(int cubeX, int cubeZ, Random rand) {
         if (CubicChunksConfig.optimizedCompatibilityGenerator) {
-            try (ICubicWorldInternal.CompatGenerationScope ignored = ((ICubicWorldInternal.Server) world).doCompatibilityGeneration()) {
+            try (ICubicWorldInternal.CompatGenerationScope ignored = ((ICubicWorldInternal.Server) world)
+                .doCompatibilityGeneration()) {
                 lastChunk = vanilla.provideChunk(cubeX, cubeZ);
 
                 Block[] compatBlocks = ((IColumnInternal) lastChunk).getCompatGenerationBlockArray();
@@ -302,7 +329,9 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
                     CubicChunksConfig.optimizedCompatibilityGenerator = false;
                 } else {
                     lastChunkView = new ChunkArrayBlockView(
-                        16, worldHeightBlocks, 16,
+                        16,
+                        worldHeightBlocks,
+                        16,
                         wrapBlockArray(compatBlocks),
                         wrapByteArray(compatBlockMeta));
 
@@ -400,18 +429,29 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
 
             WorldgenHangWatchdog.startWorldGen();
 
-            CubeGeneratorsRegistry.populateVanillaCube(world, cube.getCoords());
+            try {
+                CubeGeneratorsRegistry.populateVanillaCube(world, cube.getCoords());
+            } catch (Throwable t) {
+                CubicChunks.LOGGER.error(
+                    "Could not run non-vanilla population for cube {},{},{}",
+                    cube.getX(),
+                    cube.getY(),
+                    cube.getZ(),
+                    t);
+            }
 
             Cube withinVanillaChunk = cube;
 
             // Cubes outside this range are only filled with their respective block
             // No population takes place
             if (!isWithinVanillaWorld(cube)) {
-                withinVanillaChunk = getCubeLoader().getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
+                withinVanillaChunk = getCubeLoader()
+                    .getCube(cube.getX(), 0, cube.getZ(), ICubeProviderServer.Requirement.GENERATE);
             }
 
             // Populate the vanilla chunk if it isn't already
-            if (withinVanillaChunk != null && !withinVanillaChunk.isFullyPopulated()) populateChunk(getCubeLoader(), cube);
+            if (withinVanillaChunk != null && !withinVanillaChunk.isFullyPopulated())
+                populateChunk(getCubeLoader(), cube);
 
             // Always set the requested cube to populated, even if it's outside of the vanilla chunk (and therefore had
             // no work done on it).
@@ -439,9 +479,10 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
         }
 
         // Second, we regenerate the heightmap of all horizontally adjacent cubes
-        for (int x = -1;  x <=1; x++) {
-            for (int z = -1; z <=1; z++) {
-                Cube cube2 = loader.getCube(cube.getX() + x, cube.getY(), cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                Cube cube2 = loader
+                    .getCube(cube.getX() + x, cube.getY(), cube.getZ() + z, ICubeProviderServer.Requirement.GENERATE);
                 ((IColumnInternal) cube2.getColumn()).recalculateStagingHeightmap();
             }
         }
@@ -460,12 +501,7 @@ public class VanillaCompatibilityGenerator implements ICubeGenerator {
             // Then we can populate this cube
             vanilla.populate(vanilla, cube.getX(), cube.getZ());
 
-            GameRegistry.generateWorld(
-                cube.getX(),
-                cube.getZ(),
-                world,
-                vanilla,
-                world.getChunkProvider());
+            GameRegistry.generateWorld(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
 
             applyModGenerators(cube.getX(), cube.getZ(), world, vanilla, world.getChunkProvider());
         } catch (Throwable t) {

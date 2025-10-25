@@ -32,7 +32,6 @@ public class XSTR extends Random {
 
     private static final long serialVersionUID = 6208727693524452904L;
     private long seed;
-    private long last;
     private static final double DOUBLE_UNIT = 0x1.0p-53; // 1.0 / (1L << 53)
     private static final float FLOAT_UNIT = 0x1.0p-24f; // 1.0f / (1 << 24)
     private static final AtomicLong seedUniquifier = new AtomicLong(8682522807148012L);
@@ -200,7 +199,7 @@ public class XSTR extends Random {
      */
     @Override
     public int nextInt(int bound) {
-        last = seed ^ (seed << 21);
+        long last = seed ^ (seed << 21);
         last ^= (last >>> 35);
         last ^= (last << 4);
         seed = last;

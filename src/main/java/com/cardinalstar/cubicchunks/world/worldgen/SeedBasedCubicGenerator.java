@@ -10,7 +10,6 @@ import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubeTerrainGenerator;
-import com.cardinalstar.cubicchunks.util.Bits;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ObjectPooler;
 import com.cardinalstar.cubicchunks.util.TimedCache;
@@ -28,14 +27,14 @@ public abstract class SeedBasedCubicGenerator<TSeed, TGen extends ICubeGenerator
 
     private final MutableCubePos cubePos = new MutableCubePos();
 
-
     private final TimedCache<CubePos, List<TSeed>> seedCache = new TimedCache<>(
+        new FastCubePosMap<>(),
         this::getSeedImpl,
-        Duration.ofSeconds(10),
+        new Duration[] { Duration.ofSeconds(10), Duration.ofSeconds(25), Duration.ofSeconds(100) },
         (pos, list) -> {
-            //noinspection rawtypes
+            // noinspection rawtypes
             if (list instanceof ArrayList arrayList) {
-                //noinspection unchecked
+                // noinspection unchecked
                 listPool.releaseInstance(arrayList);
             }
         },
@@ -75,12 +74,14 @@ public abstract class SeedBasedCubicGenerator<TSeed, TGen extends ICubeGenerator
     /**
      * Checks if the given cube has any features, and adds them to the list. The seed is stored in a timed cache, so
      * they must be immutable.
+     *
      * @param rng An RNG that is seeded to a deterministic value for this cube.
      */
     protected abstract void getSeeds(Random rng, int cubeX, int cubeY, int cubeZ, List<TSeed> seeds);
 
     /**
      * Populates the current chunk (determined by {@code pos}) with the given feature seed.
+     *
      * @param rng An RNG that is seeded to a deterministic value for this cube.
      */
     protected abstract void generate(Random rng, TSeed seed, WorldView worldView);
@@ -100,16 +101,13 @@ public abstract class SeedBasedCubicGenerator<TSeed, TGen extends ICubeGenerator
 
         setWorldSeed(world.getSeed());
 
-        for (int x = cube.getX() - range; x <= cube.getX() + range; x++)
-        {
+        for (int x = cube.getX() - range; x <= cube.getX() + range; x++) {
             cubePos.x = x;
 
-            for (int y = cube.getY() - range; y <= cube.getY() + range; y++)
-            {
+            for (int y = cube.getY() - range; y <= cube.getY() + range; y++) {
                 cubePos.y = y;
 
-                for (int z = cube.getZ() - range; z <= cube.getZ() + range; z++)
-                {
+                for (int z = cube.getZ() - range; z <= cube.getZ() + range; z++) {
                     cubePos.z = z;
 
                     List<TSeed> seedList = seedCache.get(cubePos);
@@ -131,59 +129,6 @@ public abstract class SeedBasedCubicGenerator<TSeed, TGen extends ICubeGenerator
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * This is a hacky subclass of CubePos. It's only meant for accessing the TimedCache, and nothing else. The CubePos
-     * fields aren't initialized properly, since they're all final, but the various get... methods work properly.
-     * This will always return the same hash as a CubePos, and it will always equal a CubePos with the same coord. The
-     * opposite is not true - a CubePos will never equal a MutableCubePos.
-     */
-    private static class MutableCubePos extends CubePos {
-
-        public int x;
-        public int y;
-        public int z;
-
-        public MutableCubePos() {
-            super(0, 0, 0);
-        }
-
-        @Override
-        public int getX() {
-            return x;
-        }
-
-        @Override
-        public int getY() {
-            return y;
-        }
-
-        public int getZ() {
-            return z;
-        }
-
-        public static CubePos clone(CubePos pos) {
-            if (pos instanceof MutableCubePos mutable) {
-                return new CubePos(mutable.x, mutable.y, mutable.z);
-            } else {
-                return pos.clone();
-            }
-        }
-
-        @Override
-        public final boolean equals(Object o) {
-            if (!(o instanceof CubePos other)) return false;
-
-            return other.getX() == x && other.getY() == y && other.getZ() == z;
-        }
-
-        @Override
-        public int hashCode() {
-            return Long.hashCode(
-                Bits.packSignedToLong(x, Y_BITS, Y_BIT_OFFSET) | Bits.packSignedToLong(y, X_BITS, X_BIT_OFFSET)
-                    | Bits.packSignedToLong(z, Z_BITS, Z_BIT_OFFSET));
         }
     }
 }

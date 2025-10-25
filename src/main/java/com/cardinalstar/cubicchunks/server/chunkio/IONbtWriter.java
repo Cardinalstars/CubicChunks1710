@@ -29,7 +29,6 @@ import java.util.List;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompressedStreamTools;
@@ -39,7 +38,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.event.world.ChunkDataEvent;
 
@@ -57,6 +55,7 @@ import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 import cpw.mods.fml.common.FMLLog;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 @ParametersAreNonnullByDefault
 class IONbtWriter {

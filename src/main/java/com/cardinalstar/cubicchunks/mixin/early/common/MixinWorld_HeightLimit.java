@@ -21,7 +21,6 @@
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
 import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
-import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
 
 import java.util.Objects;
 
@@ -30,7 +29,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.chunk.Chunk;
@@ -107,6 +105,15 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         return getMaxHeight();
     }
 
+    @Definition(id = "chunkExists", method = "Lnet/minecraft/world/World;chunkExists(II)Z")
+    @Expression("this.chunkExists(?, ?)")
+    @Redirect(method = "blockExists", at = @At("MIXINEXTRAS:EXPRESSION"))
+    boolean redirectChunkExistsCubeExists(World instance, int p_72916_1_, int p_72916_2_,
+        @Local(argsOnly = true, ordinal = 0) int x, @Local(argsOnly = true, ordinal = 1) int y,
+        @Local(argsOnly = true, ordinal = 2) int z) {
+        return cubeExists(x >> 4, y >> 4, z >> 4);
+    }
+
     // checkChunksExist
     @ModifyConstant(
         method = "checkChunksExist",
@@ -165,9 +172,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     // getFullBlockLightValue
     @Definition(id = "y", local = @Local(argsOnly = true, ordinal = 1, type = int.class))
     @Expression("y < 0")
-    @WrapOperation(
-        method = "getFullBlockLightValue",
-        at = @At("MIXINEXTRAS:EXPRESSION"))
+    @WrapOperation(method = "getFullBlockLightValue", at = @At("MIXINEXTRAS:EXPRESSION"))
     private boolean getFullBlockLightValue_heightLimits_min(int left, int right, Operation<Boolean> original) {
         return left < getMinHeight();
     }
@@ -185,13 +190,10 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     // ================= getBlockLightValue_do ======================
     @Definition(id = "y", local = @Local(argsOnly = true, ordinal = 1, type = int.class))
     @Expression("y < 0")
-    @WrapOperation(
-        method = "getBlockLightValue_do",
-        at = @At("MIXINEXTRAS:EXPRESSION"))
+    @WrapOperation(method = "getBlockLightValue_do", at = @At("MIXINEXTRAS:EXPRESSION"))
     private boolean getBlockLightValue_do_heightLimits_min(int left, int right, Operation<Boolean> original) {
         return left < getMinHeight();
     }
-
 
     @ModifyConstant(method = "getBlockLightValue_do", constant = @Constant(intValue = 256, ordinal = 0))
     private int getBlockLightValue_do_heightLimits_max(int original) {
@@ -393,8 +395,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     @Group(name = "exists", max = 1)
     @Inject(method = "checkChunksExist(IIIIII)Z", at = @At(value = "HEAD"), cancellable = true, require = 1)
     private void checkChunksExistInject(int xStart, int yStart, int zStart, int xEnd, int yEnd, int zEnd,
-        @Nonnull CallbackInfoReturnable<Boolean> cbi)
-    {
+        @Nonnull CallbackInfoReturnable<Boolean> cbi) {
         cbi.setReturnValue(this.testForCubes(xStart, yStart, zStart, xEnd, yEnd, zEnd, Objects::nonNull));
     }
 
@@ -410,8 +411,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
      * @reason CubicChunks needs to check if cube is loaded instead of chunk
      */
     @Inject(method = "blockExists(III)Z", cancellable = true, at = @At(value = "HEAD"))
-    private void isBlockLoaded(int x, int y, int z, CallbackInfoReturnable<Boolean> cbi)
-    {
+    private void isBlockLoaded(int x, int y, int z, CallbackInfoReturnable<Boolean> cbi) {
         ICube cube = this.getCubeCache()
             .getLoadedCube(blockToCube(x), blockToCube(y), blockToCube(z));
         cbi.setReturnValue(cube != null && !(cube instanceof BlankCube));
@@ -423,7 +423,8 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     private boolean updateEntityWithOptionalForce_chunkExists0(World world, int chunkX, int chunkZ, Entity entity,
         boolean force) {
         assert this == (Object) world;
-        ICube cube = this.getCubeCache().getLoadedCube(entity.chunkCoordX, entity.chunkCoordY, entity.chunkCoordZ);
+        ICube cube = this.getCubeCache()
+            .getLoadedCube(entity.chunkCoordX, entity.chunkCoordY, entity.chunkCoordZ);
         return cube != null;
     }
 
@@ -437,7 +438,8 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         int y = Coords.blockToCube(entity.posY);
         int z = Coords.blockToCube(entity.posZ);
 
-        ICube cube = this.getCubeCache().getLoadedCube(x, y, z);
+        ICube cube = this.getCubeCache()
+            .getLoadedCube(x, y, z);
 
         return cube != null;
     }
@@ -519,14 +521,11 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         return this.chunkExists(chunkX, chunkZ);
     }
 
-    @Redirect(method = "markAndNotifyBlock", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;func_150802_k()Z"))
-    private boolean isValidForRendering(
-        Chunk column,
-        @Local(argsOnly = true, ordinal = 0) int x,
-        @Local(argsOnly = true, ordinal = 1) int y,
-        @Local(argsOnly = true, ordinal = 2) int z
-    )
-    {
+    @Redirect(
+        method = "markAndNotifyBlock",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;func_150802_k()Z"))
+    private boolean isValidForRendering(Chunk column, @Local(argsOnly = true, ordinal = 0) int x,
+        @Local(argsOnly = true, ordinal = 1) int y, @Local(argsOnly = true, ordinal = 2) int z) {
         ICube cube = ((IColumn) column).getCube(Coords.blockToCube(y));
 
         if (cube == null || cube.isEmpty()) return false;

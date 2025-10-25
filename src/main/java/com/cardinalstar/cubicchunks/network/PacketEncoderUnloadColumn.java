@@ -20,61 +20,58 @@
  */
 package com.cardinalstar.cubicchunks.network;
 
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
-import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.modcompat.angelica.AngelicaInterop;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.google.common.base.Preconditions;
-
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
-import io.netty.buffer.ByteBuf;
+import com.github.bsideup.jabel.Desugar;
 
 @ParametersAreNonnullByDefault
-public class PacketUnloadCube implements IMessage {
+public class PacketEncoderUnloadColumn extends CCPacketEncoder<PacketEncoderUnloadColumn.PacketUnloadColumn> {
 
-    private CubePos cubePos;
+    @Desugar
+    public record PacketUnloadColumn(int chunkX, int chunkZ) implements CCPacket {
 
-    public PacketUnloadCube() {}
-
-    public PacketUnloadCube(CubePos cubePos) {
-        this.cubePos = cubePos;
-    }
-
-    @Override
-    public void fromBytes(ByteBuf in) {
-        this.cubePos = new CubePos(in.readInt(), in.readInt(), in.readInt());
-    }
-
-    @Override
-    public void toBytes(ByteBuf out) {
-        out.writeInt(cubePos.getX());
-        out.writeInt(cubePos.getY());
-        out.writeInt(cubePos.getZ());
-    }
-
-    CubePos getCubePos() {
-        return Preconditions.checkNotNull(cubePos);
-    }
-
-    public static class Handler extends AbstractClientMessageHandler<PacketUnloadCube> {
-
-        @Nullable
         @Override
-        public void handleClientMessage(World world, EntityPlayer player, PacketUnloadCube message,
-            MessageContext ctx) {
-            ICubicWorld worldClient = (ICubicWorld) world;
-            CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
+        public byte getPacketID() {
+            return CCPacketEntry.UnloadColumn.id;
+        }
+    }
 
-            // This apparently makes visual chunk holes much more rare/nonexistent
-            cubeCache.getCube(message.getCubePos())
-                .markForRenderUpdate();
-            cubeCache.unloadCube(message.getCubePos());
+    public PacketEncoderUnloadColumn() {}
+
+    public static PacketUnloadColumn createPacket(int chunkX, int chunkZ) {
+        return new PacketUnloadColumn(chunkX, chunkZ);
+    }
+
+    @Override
+    public byte getPacketID() {
+        return CCPacketEntry.UnloadColumn.id;
+    }
+
+    @Override
+    public void writePacket(CCPacketBuffer buffer, PacketUnloadColumn packet) {
+        buffer.writeInt(packet.chunkX);
+        buffer.writeInt(packet.chunkZ);
+    }
+
+    @Override
+    public PacketUnloadColumn readPacket(CCPacketBuffer buffer) {
+        return new PacketUnloadColumn(buffer.readInt(), buffer.readInt());
+    }
+
+    @Override
+    public void process(World world, PacketUnloadColumn packet) {
+        ICubicWorld worldClient = (ICubicWorld) world;
+        CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
+
+        cubeCache.unloadChunk(packet.chunkX, packet.chunkZ);
+
+        if (AngelicaInterop.hasDelegate()) {
+            AngelicaInterop.getDelegate().onColumnUnloaded(packet.chunkX, packet.chunkZ);
         }
     }
 }

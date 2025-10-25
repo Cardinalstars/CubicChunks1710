@@ -17,8 +17,11 @@ import com.llamalad7.mixinextras.expression.Expression;
 public class MixinChunkProviderGenerate {
 
     @Definition(
-        id = "caveGenerator", field = "Lnet/minecraft/world/gen/ChunkProviderGenerate;caveGenerator:Lnet/minecraft/world/gen/MapGenBase;")
-    @Definition(id = "func_151539_a", method = "Lnet/minecraft/world/gen/MapGenBase;func_151539_a(Lnet/minecraft/world/chunk/IChunkProvider;Lnet/minecraft/world/World;II[Lnet/minecraft/block/Block;)V")
+        id = "caveGenerator",
+        field = "Lnet/minecraft/world/gen/ChunkProviderGenerate;caveGenerator:Lnet/minecraft/world/gen/MapGenBase;")
+    @Definition(
+        id = "func_151539_a",
+        method = "Lnet/minecraft/world/gen/MapGenBase;func_151539_a(Lnet/minecraft/world/chunk/IChunkProvider;Lnet/minecraft/world/World;II[Lnet/minecraft/block/Block;)V")
     @Expression("this.caveGenerator.func_151539_a(?, ?, ?, ?, ?)")
     @Redirect(method = "provideChunk", at = @At("MIXINEXTRAS:EXPRESSION"))
     public void noopCaveGen(MapGenBase instance, IChunkProvider i2, World k1, int j1, int i, Block[] p_151539_1_) {

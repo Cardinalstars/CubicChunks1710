@@ -222,8 +222,7 @@ public class CubicChunkManager {
         ticket.setTag("cubicchunks", cubicNBT);
     }
 
-    public static void onLoadEntityTicketChunk(World world, ForgeChunkManager.Ticket tick)
-    {
+    public static void onLoadEntityTicketChunk(World world, ForgeChunkManager.Ticket tick) {
         ICubicTicketInternal ticket = (ICubicTicketInternal) tick;
         ((ICubicWorld) world)
             .getCubeFromCubeCoords(ticket.getEntityChunkX(), ticket.getEntityChunkY(), ticket.getEntityChunkZ());

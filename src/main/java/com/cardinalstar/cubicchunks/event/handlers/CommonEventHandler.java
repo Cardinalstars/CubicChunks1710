@@ -25,24 +25,21 @@ import java.util.List;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldServerMulti;
 import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.WorldEvent;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.network.PacketCubicWorldData;
-import com.cardinalstar.cubicchunks.network.PacketDispatcher;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.google.common.collect.ImmutableList;
+
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -57,13 +54,6 @@ public class CommonEventHandler {
         // Forge (at least version 11.14.3.1521) doesn't call this event for client world.
         if (evt.phase == TickEvent.Phase.END && evt.side == Side.SERVER) {
             ((ICubicWorldInternal) world).tickCubicWorld();
-        }
-    }
-
-    @SubscribeEvent
-    public void onPlayerJoinWorld(EntityJoinWorldEvent evt) {
-        if (evt.entity instanceof EntityPlayerMP) {
-            PacketDispatcher.sendTo(new PacketCubicWorldData((WorldServer) evt.world), (EntityPlayerMP) evt.entity);
         }
     }
 

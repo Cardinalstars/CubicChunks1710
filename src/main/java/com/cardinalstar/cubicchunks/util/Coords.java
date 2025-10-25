@@ -154,4 +154,24 @@ public class Coords {
     public static Random coordsSeedRandom(long seed, int x, int y, int z) {
         return new Random(coordsSeedHash(seed, x, y, z));
     }
+
+    public static final int MASK = 0x1FFFFF;
+    public static final int SHIFT = 21;
+
+    public static long key(long x, long y, long z) {
+        return ((x & MASK) << SHIFT << SHIFT) | ((y & MASK) << SHIFT) | (z & MASK);
+    }
+
+    public static int x(long key) {
+        return (int) ((key >> SHIFT >> SHIFT) & MASK);
+    }
+
+    public static int y(long key) {
+        return (int) ((key >> SHIFT) & MASK);
+    }
+
+    public static int z(long key) {
+        return (int) (key & MASK);
+    }
+
 }

@@ -20,16 +20,14 @@
  */
 package com.cardinalstar.cubicchunks.api;
 
-import java.util.Arrays;
 import java.util.Iterator;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.cardinalstar.cubicchunks.util.XZAddressable;
+
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 /**
  * Hash table implementation for objects in a 2-dimensional cartesian coordinate system.
@@ -66,6 +64,11 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
     @Override
     @Nonnull
     public Iterator<T> iterator() {
-        return items.values().iterator();
+        return items.values()
+            .iterator();
+    }
+
+    public int getSize() {
+        return items.size();
     }
 }
