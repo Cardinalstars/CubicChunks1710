@@ -56,7 +56,6 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
     public PacketEncoderCubes() {}
 
     public static PacketCubes createPacket(List<Cube> cubes) {
-        CubicChunks.LOGGER.info("Sending packet with {} cubes", cubes.size());
         cubes.sort(
             Comparator.comparingInt(Cube::getY)
                 .thenComparingInt(Cube::getX)

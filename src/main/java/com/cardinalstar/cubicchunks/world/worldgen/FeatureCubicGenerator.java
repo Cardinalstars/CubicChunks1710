@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Random;
 
 import com.cardinalstar.cubicchunks.api.util.Box;
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 
-public abstract class FeatureCubicGenerator<TSeed, TGen extends ICubeGenerator> extends SeedBasedCubicGenerator<WorldgenFeature<TSeed>, TGen> {
+public abstract class FeatureCubicGenerator<TSeed, TGen extends IWorldGenerator> extends SeedBasedCubicGenerator<WorldgenFeature<TSeed>, TGen> {
 
     protected FeatureCubicGenerator(int range) {
         super(range);

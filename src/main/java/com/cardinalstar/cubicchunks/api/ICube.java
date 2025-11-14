@@ -38,8 +38,8 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
-import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
@@ -216,7 +216,7 @@ public interface ICube extends XYZAddressable {
 
     /**
      * Check whether this cube was populated, i.e. if this cube was passed as argument to
-     * {@link ICubeGenerator#populate(ICube)}. Check there for more information regarding
+     * {@link IWorldGenerator#populate(ICube)}. Check there for more information regarding
      * population.
      *
      * @return {@code true} if this cube has been populated, {@code false} otherwise
@@ -225,7 +225,7 @@ public interface ICube extends XYZAddressable {
 
     /**
      * Check whether this cube was fully populated, i.e. if any cube potentially writing to this cube was passed as an
-     * argument to {@link ICubeGenerator#populate(ICube)}. Check there for more
+     * argument to {@link IWorldGenerator#populate(ICube)}. Check there for more
      * information regarding population
      *
      * @return {@code true} if this cube has been populated, {@code false} otherwise
@@ -246,17 +246,17 @@ public interface ICube extends XYZAddressable {
      */
     boolean isInitialLightingDone();
 
-    default CubeLoaderServer.CubeInitLevel getInitLevel() {
-        if (isPopulated() && isInitialLightingDone() && isSurfaceTracked()) {
-            return CubeLoaderServer.CubeInitLevel.Lit;
-        } else if (isPopulated()) {
-            return CubeLoaderServer.CubeInitLevel.Populated;
+    default CubeInitLevel getInitLevel() {
+        if (isFullyPopulated() && isInitialLightingDone() && isSurfaceTracked()) {
+            return CubeInitLevel.Lit;
+        } else if (isFullyPopulated()) {
+            return CubeInitLevel.Populated;
         } else {
-            return CubeLoaderServer.CubeInitLevel.Generated;
+            return CubeInitLevel.Generated;
         }
     }
 
-    default boolean isInitializedToLevel(CubeLoaderServer.CubeInitLevel initLevel) {
+    default boolean isInitializedToLevel(CubeInitLevel initLevel) {
         return getInitLevel().ordinal() >= initLevel.ordinal();
     }
 

@@ -21,6 +21,7 @@
 
 package com.cardinalstar.cubicchunks;
 
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -43,7 +44,6 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.ResourceLocation;
 
 import com.cardinalstar.cubicchunks.command.CubicCommandBase;
 import com.cardinalstar.cubicchunks.command.SubCommandBase;
@@ -52,7 +52,6 @@ import com.google.common.collect.Range;
 import com.google.common.collect.TreeRangeSet;
 import com.gtnewhorizon.gtnhlib.config.Config;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
-
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -71,12 +70,12 @@ public class CubicChunksConfig {
     public static boolean optimizedCompatibilityGenerator = true;
 
     @Config.LangKey("cubicchunks.config.force_cc")
-    @Config.Comment("Determines when a cubic chunks world should be created for non-cubic-chunks world types.\n"
-        + "NONE - only when cubic chunks world type\n"
-        + "NEW_WORLD - only for newly created worlds\n"
-        + "LOAD_NOT_EXCLUDED - load all worlds as cubic chunks, except excluded dimensions\n"
-        + "ALWAYS - load everything as cubic chunks. Overrides forceDimensionExcludes")
-    public static ForceCCMode forceLoadCubicChunks = ForceCCMode.NONE;
+    @Config.Comment("""
+            Determines when a cubic chunks world should be created for non-cubic-chunks world types.
+            DEFAULT - only when cubic chunks world type
+            LOAD_NOT_EXCLUDED - load all worlds as cubic chunks, except excluded dimensions
+            ALWAYS - load everything as cubic chunks. Overrides forceDimensionExcludes""")
+    public static ForceCCMode forceLoadCubicChunks = ForceCCMode.DEFAULT;
 
     @Config.LangKey("cubicchunks.config.cubegen_per_tick")
     @Config.Comment("The maximum number of cubic chunks to generate per tick.")
@@ -139,10 +138,6 @@ public class CubicChunksConfig {
     @Config.LangKey("cubicchunks.config.biome_temperature_scale_max_y")
     @Config.Comment("Above this height, biome temperature will no longer change")
     public static int biomeTemperatureScaleMaxY = 256;
-
-    @Config.LangKey("cubicchunks.config.compatibility_generator_type")
-    @Config.Comment("Vanilla compatibility generator type, which will convert vanilla world type generators output in cubic")
-    public static String compatibilityGeneratorType = "cubicchunks:default";
 
     @Config.LangKey("cubicchunks.config.storage_format")
     @Config.Comment("The storage format. Note: this will be used for all newly created worlds. Existing worlds will continue to use the format they were created with.\n"
@@ -227,6 +222,18 @@ public class CubicChunksConfig {
     public static int defaultMaxCubesPerChunkloadingTicket = 25 * 16;
     @Config.Ignore
     public static Map<String, Integer> modMaxCubesPerChunkloadingTicket = new HashMap<>();
+
+    @Config.LangKey("cubicchunks.config.optimizations")
+    @Config.Comment("Options controlling various optimizations.")
+    public static Optimizations optimizations = new Optimizations();
+
+    public static final class Optimizations {
+
+        @Config.LangKey("cubicchunks.config.optimizations.background_threads")
+        @Config.Comment("Maximum number of threads to use for background tasks (world I/O, noise generation, etc).")
+        public int backgroundThreads = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors() / 2;
+
+    }
 
     static {
         modMaxCubesPerChunkloadingTicket.put("cubicchunks", defaultMaxCubesPerChunkloadingTicket);
@@ -355,17 +362,6 @@ public class CubicChunksConfig {
         sync();
     }
 
-    public static void disableCubicChunks() {
-        forceLoadCubicChunks = ForceCCMode.NONE;
-        sync();
-    }
-
-    public static void setGenerator(ResourceLocation generatorTypeIn) {
-        if (forceLoadCubicChunks == ForceCCMode.NONE) forceLoadCubicChunks = ForceCCMode.NEW_WORLD;
-        compatibilityGeneratorType = generatorTypeIn.toString();
-        sync();
-    }
-
     public static boolean isDimensionExcluded(int dimension) {
         if (excludedDimensionsRanges == null) {
             initDimensionRanges();
@@ -374,9 +370,11 @@ public class CubicChunksConfig {
     }
 
     public enum ForceCCMode {
-        NONE,
-        NEW_WORLD,
+        /// only when cubic chunks world type
+        DEFAULT,
+        /// load all worlds as cubic chunks, except excluded dimensions
         LOAD_NOT_EXCLUDED,
+        /// load everything as cubic chunks. Overrides forceDimensionExcludes
         ALWAYS
     }
 

@@ -23,6 +23,7 @@ package com.cardinalstar.cubicchunks.mixin.early.common;
 import static com.cardinalstar.cubicchunks.util.Coords.cubeToMinBlock;
 import static com.cardinalstar.cubicchunks.util.ReflectionUtil.cast;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -61,6 +62,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
@@ -79,6 +81,7 @@ import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.ISpawnerAnimals;
 import com.cardinalstar.cubicchunks.world.chunkloader.CubicChunkManager;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.savedata.WorldFormatSavedData;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
@@ -162,6 +165,16 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
     private ChunkProviderServer redirectChunkProviderServer(WorldServer world, IChunkLoader chunkLoader,
         IChunkProvider chunkGenerator) {
         return new CubeProviderServer(world, chunkLoader, ((ICubicWorldProvider) world.provider).createCubeGenerator());
+    }
+
+    @Inject(method = "getChunkSaveLocation", at = @At("HEAD"), cancellable = true, remap = false)
+    private void redirectChunkSaveLocation(CallbackInfoReturnable<File> cir) {
+        if (this.theChunkProviderServer == null) {
+            WorldFormatSavedData format = WorldFormatSavedData.get((WorldServer) (Object) this);
+
+            //noinspection DataFlowIssue
+            cir.setReturnValue(format.getFormat().getWorldSaveDirectory(this.saveHandler, (WorldServer) (Object) this).toFile());
+        }
     }
 
     @WrapOperation(
@@ -422,5 +435,12 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
             }
         }
         this.theProfiler.endSection();
+    }
+
+    /// Immediate block updates rarely work well in CC. Vanilla expects there to be a hard limit to the number of steps
+    /// something can take, but CC removes many of those limits so it's better to just disable the feature for now.
+    @Redirect(method = "scheduleBlockUpdateWithPriority", at = @At(value = "FIELD", target = "Lnet/minecraft/world/WorldServer;scheduledUpdatesAreImmediate:Z"))
+    private boolean disableImmediateBlockUpdates(WorldServer instance) {
+        return false;
     }
 }

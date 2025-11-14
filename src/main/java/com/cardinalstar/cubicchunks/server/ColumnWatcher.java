@@ -44,7 +44,6 @@ import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.XZAddressable;
-import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 
 @ParametersAreNonnullByDefault
 public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnWatcher {
@@ -63,24 +62,16 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
 
     public boolean isSentToPlayers;
 
-    private CubeProviderServer.EagerColumnLoadRequest request;
-
     public ColumnWatcher(CubicPlayerManager cubicPlayerManager, ChunkCoordIntPair pos) {
         this.cubicPlayerManager = cubicPlayerManager;
         this.pos = pos;
         this.cubeCache = ((ICubicWorldInternal.Server) cubicPlayerManager.getWorldServer()).getCubeCache();
 
         this.column = cubeCache.getLoadedColumn(pos.chunkXPos, pos.chunkZPos);
-
-        if (column == null) {
-            request = cubeCache
-                .loadColumnEagerly(pos.chunkXPos, pos.chunkZPos, ICubeProviderServer.Requirement.GENERATE);
-        }
     }
 
     public void onColumnLoaded(Chunk column) {
         this.column = column;
-        request = null;
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
@@ -113,10 +104,6 @@ public class ColumnWatcher implements XZAddressable, BucketSorterEntry, IColumnW
     @Override
     public void removePlayer(EntityPlayerMP player) {
         if (!playersWatchingChunk.remove(player)) return;
-
-        if (request != null) {
-            request.cancel();
-        }
 
         if (this.isSentToPlayers) {
             PacketEncoderUnloadColumn.createPacket(pos.chunkXPos, pos.chunkZPos)

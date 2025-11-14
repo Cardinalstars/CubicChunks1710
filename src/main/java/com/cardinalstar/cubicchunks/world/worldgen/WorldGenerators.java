@@ -1,10 +1,16 @@
 package com.cardinalstar.cubicchunks.world.worldgen;
 
+import static com.cardinalstar.cubicchunks.api.worldgen.BuiltinWorldDecorators.CUBIC_VANILLA;
+
+import java.util.Random;
+
 import net.minecraft.init.Blocks;
 
-import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
+import com.cardinalstar.cubicchunks.util.DoubleInterval;
 import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.world.worldgen.compat.DeepslateCubePopulator;
+import com.cardinalstar.cubicchunks.world.worldgen.noise.OctavesSampler;
+import com.cardinalstar.cubicchunks.world.worldgen.noise.ScaledNoise;
 import com.gtnewhorizon.gtnhlib.util.data.LazyBlock;
 import cpw.mods.fml.common.Optional;
 
@@ -22,19 +28,44 @@ public class WorldGenerators {
     }
 
     private static void initVanilla() {
-        CubeGeneratorsRegistry.registerVanillaGenerator("caves", new MapGenCavesCubic());
+//        CUBIC_VANILLA.terrain().register(
+//            "noodle-caves",
+//            new NoodleCaveGenerator(),
+//            "required-by:caves-all");
+//
+//        CUBIC_VANILLA.terrain().register(
+//            "spaghetti-caves",
+//            new SpaghettiCaveGenerator(),
+//            "required-by:caves-all");
 
-        CubeGeneratorsRegistry.registerVanillaPopulator(
-            "water-spouts",
-            new MapGenCaveFluids(WATER_STILL));
+        CUBIC_VANILLA.terrain().registerTarget("caves-all");
 
-        CubeGeneratorsRegistry.registerVanillaPopulator(
-            "lava-spouts",
-            new MapGenCaveFluids(LAVA_STILL));
+        // TODO: block carver
+        // TODO: pillar caves
+        // TODO: aquifers
+
+//        CubeGeneratorsRegistry.registerVanillaPopulator(
+//            "water-spouts",
+//            new MapGenCaveFluids(WATER_STILL));
+//
+//        CubeGeneratorsRegistry.registerVanillaPopulator(
+//            "lava-spouts",
+//            new MapGenCaveFluids(LAVA_STILL));
     }
 
     @Optional.Method(modid = Mods.ModIDs.ET_FUTURUM_REQUIEM)
     private static void initEFR() {
-        CubeGeneratorsRegistry.registerVanillaPopulator("low-deepslate", new DeepslateCubePopulator(), "water-spouts", "lava-spouts");
+        CUBIC_VANILLA.population().register(
+            "low-deepslate",
+            new DeepslateCubePopulator());
+    }
+
+    private static final double CHOOSER_SCALE = 0.01;
+
+    public static final DoubleInterval NOODLE_CAVES = new DoubleInterval(0.7, 1);
+    public static final DoubleInterval PILLAR_CAVES = new DoubleInterval(0, 0.3);
+
+    public static ScaledNoise caveChooser(Random rng) {
+        return new ScaledNoise(new OctavesSampler(rng, 2), CHOOSER_SCALE);
     }
 }

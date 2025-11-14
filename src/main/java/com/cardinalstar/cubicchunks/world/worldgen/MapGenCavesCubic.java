@@ -13,12 +13,12 @@ import net.minecraft.world.biome.BiomeGenBase;
 import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.util.XSTR;
-import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
+import com.cardinalstar.cubicchunks.worldgen.VanillaWorldGenerator;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 
 import com.gtnewhorizon.gtnhlib.util.data.LazyBlock;
 
-public class MapGenCavesCubic extends FeatureCubicGenerator<MapGenCavesCubic.CaveSeed, VanillaCompatibilityGenerator> {
+public class MapGenCavesCubic extends FeatureCubicGenerator<MapGenCavesCubic.CaveSeed, VanillaWorldGenerator> {
 
     private final XSTR caveRandom = new XSTR(0);
 

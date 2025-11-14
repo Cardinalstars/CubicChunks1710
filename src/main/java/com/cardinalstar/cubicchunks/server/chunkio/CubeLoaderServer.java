@@ -1,23 +1,15 @@
 package com.cardinalstar.cubicchunks.server.chunkio;
 
+import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
+
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.function.BiConsumer;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.ChunkCoordIntPair;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.storage.IThreadedFileIO;
-import net.minecraft.world.storage.ThreadedFileIOBase;
 import net.minecraftforge.common.ForgeChunkManager;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
@@ -26,65 +18,69 @@ import com.cardinalstar.cubicchunks.api.XYZAddressable;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.XZMap;
 import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
-import com.cardinalstar.cubicchunks.api.worldgen.CubeGeneratorsRegistry;
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
-import com.cardinalstar.cubicchunks.api.worldgen.LoadingData;
+import com.cardinalstar.cubicchunks.api.worldgen.GenerationResult;
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
+import com.cardinalstar.cubicchunks.event.events.ColumnEvent;
+import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.util.Array3D;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.XZAddressable;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
+import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-
-import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
-public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
+public class CubeLoaderServer implements ICubeLoader {
 
     private final WorldServer world;
-    private final ICubicStorage storage;
-    private final ICubeGenerator generator;
+    private final ICubeIO cubeIO;
+    private final IWorldGenerator generator;
     private final CubeLoaderCallback callback;
 
     private final XYZMap<CubeInfo> cubes = new XYZMap<>();
     private final XZMap<ColumnInfo> columns = new XZMap<>();
 
-    private final LinkedTransferQueue<Pair<ChunkCoordIntPair, NBTTagCompound>> columnQueue = new LinkedTransferQueue<>();
-    private final LinkedTransferQueue<Pair<CubePos, NBTTagCompound>> cubeQueue = new LinkedTransferQueue<>();
-
-    private final Map<ChunkCoordIntPair, NBTTagCompound> pendingColumns = new ConcurrentHashMap<>();
-    private final Map<CubePos, NBTTagCompound> pendingCubes = new ConcurrentHashMap<>();
-
-    private boolean pauseLoadCalls = false;
+    private int pauseLoadCalls;
     private final List<Cube> pendingCubeLoads = new ArrayList<>();
     private final List<Chunk> pendingColumnLoads = new ArrayList<>();
 
-    public CubeLoaderServer(WorldServer world, ICubicStorage storage, ICubeGenerator generator,
+    private Array3D<Cube> cache;
+
+    public CubeLoaderServer(WorldServer world, ICubicStorage storage, IWorldGenerator generator,
         CubeLoaderCallback callback) {
         this.world = world;
-        this.storage = storage;
+        this.cubeIO = new CubeIO(storage, generator instanceof IPreloadFailureDelegate delegate ? delegate : null);
         this.generator = generator;
         this.callback = callback;
     }
 
+    @Override
     public void pauseLoadCalls() {
-        pauseLoadCalls = true;
+        pauseLoadCalls++;
     }
 
+    @Override
     public void unpauseLoadCalls() {
-        pauseLoadCalls = false;
-
-        for (Chunk column : pendingColumnLoads) {
-            callback.onColumnLoaded(column);
+        if (pauseLoadCalls <= 0) {
+            pauseLoadCalls = 0;
+            return;
         }
 
-        pendingColumnLoads.clear();
+        if (--pauseLoadCalls == 0) {
+            for (Chunk column : pendingColumnLoads) {
+                callback.onColumnLoaded(column);
+            }
 
-        for (Cube cube : pendingCubeLoads) {
-            callback.onCubeLoaded(cube);
+            pendingColumnLoads.clear();
+
+            for (Cube cube : pendingCubeLoads) {
+                callback.onCubeLoaded(cube);
+            }
+
+            pendingCubeLoads.clear();
         }
-
-        pendingCubeLoads.clear();
     }
 
     @Override
@@ -128,9 +124,25 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         return success ? column : null;
     }
 
+    private Cube lastCube;
+
     @Override
     public Cube getLoadedCube(int x, int y, int z) {
+        if (cache != null) {
+            Cube cube = cache.get(x, y, z);
+
+            if (cube != null) return cube;
+        } else {
+            if (lastCube != null && lastCube.getX() == x && lastCube.getY() == y && lastCube.getZ() == z) {
+                return lastCube;
+            }
+        }
+
         CubeInfo cube = cubes.get(x, y, z);
+
+        if (cache == null) {
+            lastCube = cube == null ? null : cube.cube;
+        }
 
         return cube == null ? null : cube.cube;
     }
@@ -139,17 +151,21 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
     public boolean cubeExists(int x, int y, int z) {
         if (getLoadedCube(x, y, z) != null) return true;
 
-        try {
-            if (storage.cubeExists(new CubePos(x, y, z))) return true;
-        } catch (IOException e) {
-            CubicChunks.LOGGER.error("Could not check if cube exists", e);
-        }
+        if (cubeIO.cubeExists(new CubePos(x, y, z))) return true;
 
         return false;
     }
 
     @Override
     public Cube getCube(int x, int y, int z, Requirement effort) {
+        if (cache != null) {
+            Cube cube = cache.get(x, y, z);
+
+            if (cube != null && cube.getInitLevel().ordinal() >= CubeInitLevel.fromRequirement(effort).ordinal()) {
+                return cube;
+            }
+        }
+
         CubeInfo cubeInfo = cubes.get(x, y, z);
 
         Cube loaded = cubeInfo != null ? cubeInfo.cube : null;
@@ -163,7 +179,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             cubes.put(cubeInfo = new CubeInfo(x, y, z));
         }
 
-        CubeInitLevel before = cubeInfo.getInitLevel();
+        boolean changed = cubeInfo.updateInitLevel();
 
         boolean success;
 
@@ -173,17 +189,58 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             throw new RuntimeException(String.format("Could not generate cube at %d,%d,%d", x, y, z), throwable);
         }
 
-        CubeInitLevel after = cubeInfo.getInitLevel();
+        changed |= cubeInfo.updateInitLevel();
 
         if (cubeInfo.cube == null) {
             cubes.remove(cubeInfo);
         } else {
-            if (success && before != after) {
-                callback.onCubeGenerated(cubeInfo.cube, after);
+            if (success && changed) {
+                callback.onCubeGenerated(cubeInfo.cube, cubeInfo.getInitLevel());
             }
         }
 
+        if (success && cache != null) {
+            cache.set(x, y, z, cubeInfo.cube);
+        }
+
         return success ? cubeInfo.cube : null;
+    }
+
+    @Override
+    public void onCubeGenerated(int x, int y, int z) {
+        CubeInfo cubeInfo = cubes.get(x, y, z);
+
+        if (cubeInfo == null) return;
+
+        if (cubeInfo.updateInitLevel()) {
+            callback.onCubeGenerated(cubeInfo.cube, cubeInfo.getInitLevel());
+        }
+    }
+
+    @Override
+    public void cacheCubes(int x, int y, int z, int spanx, int spany, int spanz, Requirement effort) {
+        cache = new Array3D<>(spanx, spany, spanz, x, y, z, new Cube[spanx * spany * spanz]);
+
+        for (int x2 = 0; x2 < spanx; x2++) {
+            for (int y2 = 0; y2 < spany; y2++) {
+                for (int z2 = 0; z2 < spanz; z2++) {
+                    cache.set(x + x2, y + y2, z + z2, getCube(x + x2, y + y2, z + z2, effort));
+                }
+            }
+        }
+    }
+
+    @Override
+    public void uncacheCubes() {
+        cache = null;
+    }
+
+    public void preloadColumn(ChunkCoordIntPair pos) {
+        cubeIO.preloadColumn(pos);
+    }
+
+    public void preloadCube(CubePos pos, CubeInitLevel level) {
+        cubeIO.preloadCube(pos, level);
     }
 
     @Override
@@ -207,19 +264,18 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
                     processedLighting = true;
                 }
 
-                saveCube(cube);
+                cubeIO.saveCube(cube.pos, cube.cube);
             }
         }
 
         for (ColumnInfo column : columns) {
             if (column.column != null && column.column.needsSaving(saveAll)) {
-                saveColumn(column);
+                cubeIO.saveColumn(column.pos, column.column);
             }
         }
-
-        ThreadedFileIOBase.threadedIOInstance.queueIO(this);
     }
 
+    @Override
     public void saveColumn(Chunk column) {
         if (column == null) return;
 
@@ -235,27 +291,10 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             return;
         }
 
-        saveColumn(columnInfo);
+        cubeIO.saveColumn(columnInfo.pos, column);
     }
 
-    private void saveColumn(ColumnInfo column) {
-        // NOTE: this function blocks the world thread
-        // make it as fast as possible by offloading processing to the IO thread
-        // except we have to write the NBT in this thread to avoid problems
-        // with concurrent access to world data structures
-
-        // add the column to the save queue
-        NBTTagCompound tag = IONbtWriter.write(column.column);
-
-        this.pendingColumns.put(column.pos, tag);
-        this.columnQueue.add(Pair.of(column.pos, tag));
-
-        column.column.isModified = false;
-
-        // signal the IO thread to process the save queue
-        ThreadedFileIOBase.threadedIOInstance.queueIO(this);
-    }
-
+    @Override
     public void saveCube(Cube cube) {
         if (cube == null || cube instanceof BlankCube) return;
 
@@ -271,22 +310,10 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             return;
         }
 
-        saveCube(cubeInfo);
+        cubeIO.saveCube(cubeInfo.pos, cube);
     }
 
-    private void saveCube(CubeInfo cube) {
-        if (cube.cube == null) return;
-
-        // NOTE: this function blocks the world thread, so make it fast
-
-        NBTTagCompound tag = IONbtWriter.write(cube.cube);
-
-        cube.cube.markSaved();
-
-        this.pendingCubes.put(cube.pos, tag);
-        this.cubeQueue.add(Pair.of(cube.pos, tag));
-    }
-
+    @Override
     public void doGC() {
         var persistentChunks = ForgeChunkManager.getPersistentChunksFor(world);
 
@@ -350,75 +377,53 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         }
     }
 
-    // only used by "/save-all flush" command
     @Override
     public void flush() throws IOException {
-        try {
-            this.drainQueueBlocking();
-
-            this.storage.flush();
-        } catch (InterruptedException e) {
-            CubicChunks.LOGGER.catching(e);
-        }
+        cubeIO.flush();
     }
 
     @Override
     public void close() throws IOException {
-        try {
-            this.drainQueueBlocking();
+        cubeIO.close();
+    }
 
-            this.storage.close();
-        } catch (InterruptedException e) {
-            CubicChunks.LOGGER.catching(e);
+    private void handleSideEffects(GenerationResult<?> result) {
+        for (Chunk column : result.columnSideEffects) {
+            ColumnInfo info = columns.get(column.xPosition, column.zPosition);
+
+            if (info == null) {
+                info = new ColumnInfo(column.xPosition, column.zPosition);
+                columns.put(info);
+            }
+
+            info.source = ObjectSource.GeneratedSideEffect;
+            info.column = column;
+
+            info.onColumnLoaded();
+        }
+
+        for (Cube cube : result.cubeSideEffects) {
+            CubeInfo info = cubes.get(cube.getX(), cube.getY(), cube.getZ());
+
+            if (info == null) {
+                info = new CubeInfo(cube.getX(), cube.getY(), cube.getZ());
+                info.column = columns.get(cube.getX(), cube.getZ());
+                cubes.put(info);
+            }
+
+            info.source = ObjectSource.GeneratedSideEffect;
+            info.cube = cube;
+
+            info.onCubeLoaded();
+            callback.onCubeGenerated(cube, cube.getInitLevel());
         }
     }
 
-    protected void drainQueueBlocking() throws InterruptedException {
-        // This has to submit itself to the I/O thread again, and also run in a loop, in order to avoid a potential race
-        // condition caused by the fact that ThreadedFileIOBase is incredibly stupid.
-        // Don't you think that if you're going to make an ASYNCHRONOUS executor, that you'd ensure that the code is
-        // ACTUALLY thread-safe? well, if you're mojang, apparently you don't.
-
-        do {
-            ThreadedFileIOBase.threadedIOInstance.queueIO(this);
-
-            ThreadedFileIOBase.threadedIOInstance.waitForFinish();
-        } while (!this.pendingColumns.isEmpty() || !this.pendingCubes.isEmpty());
-    }
-
-    @Override
-    public boolean writeNextIO() {
-        try {
-            ArrayList<Pair<ChunkCoordIntPair, NBTTagCompound>> columns = new ArrayList<>();
-            ArrayList<Pair<CubePos, NBTTagCompound>> cubes = new ArrayList<>();
-
-            // Consume all dirty cubes and columns
-            this.columnQueue.drainTo(columns);
-            this.cubeQueue.drainTo(cubes);
-
-            Map<ChunkCoordIntPair, NBTTagCompound> columnMap = new ConcurrentHashMap<>();
-            Map<CubePos, NBTTagCompound> cubeMap = new ConcurrentHashMap<>();
-
-            // Put them back into a map
-            columns.forEach(p -> columnMap.put(p.left(), p.right()));
-            cubes.forEach(p -> cubeMap.put(p.left(), p.right()));
-
-            // Forward all tasks to the storage at once
-            this.storage.writeBatch(
-                new ICubicStorage.NBTBatch(
-                    Collections.unmodifiableMap(columnMap),
-                    Collections.unmodifiableMap(cubeMap)));
-
-            // Remove from queue using remove(key, value) in order to avoid removing entries which have been modified
-            // since each request was queued.
-            columnMap.forEach(this.pendingColumns::remove);
-            cubeMap.forEach(this.pendingCubes::remove);
-        } catch (IOException e) {
-            CubicChunks.LOGGER.error("Could not save chunks", e);
-        }
-
-        // false = ok?
-        return false;
+    private enum ObjectSource {
+        None,
+        Disk,
+        Generated,
+        GeneratedSideEffect
     }
 
     private class ColumnInfo implements XZAddressable {
@@ -427,6 +432,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
         public NBTTagCompound tag;
         public Chunk column;
+        public ObjectSource source;
 
         public final ObjectOpenHashSet<CubeInfo> containedCubes = new ObjectOpenHashSet<>();
 
@@ -455,43 +461,36 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             if (column != null) return true;
             if (effort == Requirement.LOAD) return false;
 
-            Optional<Chunk> generated = generator
-                .tryGenerateColumn(world, pos.chunkXPos, pos.chunkZPos, null, null, true);
+            GenerationResult<Chunk> result = generator.provideColumn(world, pos.chunkXPos, pos.chunkZPos);
 
-            if (!generated.isPresent()) return false;
+            if (result == null) return false;
 
-            column = generated.get();
+            this.column = result.object;
+            source = ObjectSource.Generated;
 
             onColumnLoaded();
 
-            saveColumn(this);
+            cubeIO.saveColumn(pos, column);
+
+            handleSideEffects(result);
 
             return true;
         }
 
-        private boolean loadNBT() throws IOException {
+        private boolean loadNBT() {
             if (tag != null) return true;
 
-            tag = pendingColumns.get(pos);
-
-            if (tag == null) {
-                tag = CubeLoaderServer.this.storage.readColumn(pos);
-            }
+            tag = cubeIO.loadColumn(pos);
 
             if (tag == null) return false;
 
-            Collection<BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>>> asyncCallbacks = CubeGeneratorsRegistry
-                .getColumnAsyncLoadingCallbacks();
+            source = ObjectSource.Disk;
 
-            if (!asyncCallbacks.isEmpty()) {
-                LoadingData<ChunkCoordIntPair> chunkLoadingData = new LoadingData<>(pos, tag);
+            ColumnEvent.LoadNBT event = new ColumnEvent.LoadNBT(world, pos, tag);
 
-                for (BiConsumer<? super World, ? super LoadingData<ChunkCoordIntPair>> cons : asyncCallbacks) {
-                    cons.accept(world, chunkLoadingData);
-                }
+            EVENT_BUS.post(event);
 
-                tag = chunkLoadingData.getNbt();
-            }
+            tag = event.tag;
 
             return true;
         }
@@ -509,9 +508,11 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         }
 
         public void onColumnLoaded() {
+            ((IColumnInternal) column).setColumn(true);
+
             column.onChunkLoad();
 
-            if (!pauseLoadCalls) {
+            if (pauseLoadCalls == 0) {
                 callback.onColumnLoaded(column);
             } else {
                 pendingColumnLoads.add(column);
@@ -520,7 +521,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
         public void onColumnUnloaded() {
             if (column.isModified) {
-                saveColumn(this);
+                cubeIO.saveColumn(pos, column);
             }
 
             column.onChunkUnload();
@@ -537,15 +538,11 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
         public ColumnInfo column;
 
-        private CubeSource source = CubeSource.None;
+        private ObjectSource source = ObjectSource.None;
 
         public boolean generating = false;
 
-        enum CubeSource {
-            None,
-            Disk,
-            Generated
-        }
+        private CubeInitLevel lastKnownLevel = CubeInitLevel.None;
 
         public CubeInfo(int x, int y, int z) {
             this.pos = new CubePos(x, y, z);
@@ -584,7 +581,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             }
 
             // If we loaded the NBT from disk successfully and we don't already have a cube loaded, try to load it
-            if (tag != null && source == CubeSource.None) {
+            if (tag != null && source == ObjectSource.None) {
                 loadCube();
 
                 if (effort == Requirement.LOAD) return cube != null;
@@ -597,33 +594,18 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             return generate(requestedInitLevel);
         }
 
-        private boolean loadNBT() throws IOException {
+        private boolean loadNBT() {
+            if (tag != null) return true;
 
-            tag = pendingCubes.get(pos);
-
-            if (tag == null) {
-                tag = CubeLoaderServer.this.storage.readCube(pos);
-            }
+            tag = cubeIO.loadCube(pos);
 
             if (tag == null) return false;
 
-            Collection<BiConsumer<? super World, ? super LoadingData<CubePos>>> asyncCallbacks = CubeGeneratorsRegistry
-                .getCubeAsyncLoadingCallbacks();
+            CubeEvent.LoadNBT event = new CubeEvent.LoadNBT(world, pos, tag);
 
-            if (!asyncCallbacks.isEmpty()) {
-                LoadingData<CubePos> chunkLoadingData = new LoadingData<>(pos, tag);
+            EVENT_BUS.post(event);
 
-                for (BiConsumer<? super World, ? super LoadingData<CubePos>> cons : asyncCallbacks) {
-                    cons.accept(world, chunkLoadingData);
-                }
-
-                this.tag = chunkLoadingData.getNbt();
-            }
-
-            // TODO PROBABLY DON'T NEED TO DO THIS. WORLDS DON'T CHANGE VERSIONS.
-            // if (nbt != null) { //fix column data
-            // nbt = FMLCommonHandler.instance().getDataFixer().process(FixTypes.CHUNK, nbt);
-            // }
+            tag = event.tag;
 
             return true;
         }
@@ -633,7 +615,7 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
 
             this.cube = IONbtReader.readCube(column.column, getX(), getY(), getZ(), tag);
 
-            source = CubeSource.Disk;
+            source = ObjectSource.Disk;
 
             onCubeLoaded();
 
@@ -657,58 +639,60 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             if (isInitedTo(requestedInitLevel)) return true;
 
             // If this cube hasn't been generated at all (i.e. it was never on the disk), generate it
-            if (source == CubeSource.None) {
+            if (source == ObjectSource.None) {
                 ensureColumn();
+
+                // Column had a side effect that initialized this CubeInfo
+                if (isInitedTo(requestedInitLevel)) return true;
 
                 if (generating) {
                     throw new IllegalStateException(
                         "Cannot recursively generate a cube that is already being generated");
                 }
 
-                Optional<Cube> generated;
-
+                GenerationResult<Cube> result;
                 try {
-                    generating = true;
+                    this.generating = true;
 
-                    generated = generator.tryGenerateCube(column.column, pos.getX(), pos.getY(), pos.getZ(), true);
+                    result = generator.provideCube(column.column, pos.getX(), pos.getY(), pos.getZ());
                 } finally {
-                    generating = false;
+                    this.generating = false;
                 }
 
-                if (!generated.isPresent()) return false;
+                if (result == null) return false;
 
-                cube = generated.get();
-                source = CubeSource.Generated;
+                this.cube = result.object;
+                source = ObjectSource.Generated;
 
                 onCubeLoaded();
 
-                saveCube(this);
+                cubeIO.saveCube(pos, cube);
+
+                handleSideEffects(result);
             }
 
-            boolean generated = cube.getInitLevel() == CubeInitLevel.Generated;
+            boolean generated = isInitedTo(CubeInitLevel.Generated);
 
             // We were only asked to generate it and we did so successfully
             if (requestedInitLevel == CubeInitLevel.Generated) return generated;
+            if (!generated) return false;
 
             // If this cube hasn't been populated at all, generate the required cubes and populate this cube.
-            if (generated) {
-                generator.populate(cube);
-            }
+            generator.populate(cube);
 
-            boolean populated = cube.getInitLevel() == CubeInitLevel.Populated;
+            boolean populated = isInitedTo(CubeInitLevel.Populated);
 
             if (requestedInitLevel == CubeInitLevel.Populated) return populated;
+            if (!populated) return false;
 
-            if (populated) {
-                if (!cube.isInitialLightingDone() || !cube.isSurfaceTracked()) {
-                    ((ICubicWorldInternal) world).getLightingManager()
-                        .doFirstLight(cube);
-                    cube.setInitialLightingDone(true);
-                }
+            if (!cube.isInitialLightingDone() || !cube.isSurfaceTracked()) {
+                ((ICubicWorldInternal) world).getLightingManager()
+                    .doFirstLight(cube);
+                cube.setInitialLightingDone(true);
+            }
 
-                if (!cube.isSurfaceTracked()) {
-                    cube.trackSurface();
-                }
+            if (!cube.isSurfaceTracked()) {
+                cube.trackSurface();
             }
 
             return cube.getInitLevel() == CubeInitLevel.Lit;
@@ -717,21 +701,29 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
         public void onCubeLoaded() {
             ensureColumn();
 
+            updateInitLevel();
+
             ((IColumn) column.column).addCube(cube);
             column.containedCubes.add(this);
 
             cube.onCubeLoad();
 
-            if (!pauseLoadCalls) {
+            if (pauseLoadCalls == 0) {
                 callback.onCubeLoaded(cube);
             } else {
                 pendingCubeLoads.add(cube);
             }
         }
 
+        public boolean updateInitLevel() {
+            CubeInitLevel prev = lastKnownLevel;
+            lastKnownLevel = getInitLevel();
+            return prev != lastKnownLevel;
+        }
+
         public void onCubeUnloaded() {
             if (this.isInitedTo(CubeInitLevel.Generated)) {
-                saveCube(this);
+                cubeIO.saveCube(pos, cube);
             }
 
             ((IColumn) column.column).removeCube(getY());
@@ -749,44 +741,6 @@ public class CubeLoaderServer implements IThreadedFileIO, ICubeLoader {
             if (column == null) {
                 column = getColumnInfo(getX(), getZ(), Requirement.GENERATE);
             }
-        }
-    }
-
-    public enum CubeSource {
-        Unknown,
-        Generated,
-        Loaded
-    }
-
-    public enum CubeInitLevel {
-
-        /**
-         * The cube has been created, but not generated.
-         */
-        None,
-        /**
-         * The cube has been generated (terrain gen).
-         * Corresponds to {@link Requirement#GENERATE}.
-         */
-        Generated,
-        /**
-         * The cube has been populated with structures.
-         * Corresponds to {@link Requirement#POPULATE}.
-         */
-        Populated,
-        /**
-         * The cube's lighting has been calculated.
-         * Corresponds to {@link Requirement#LIGHT}.
-         */
-        Lit;
-
-        public static CubeInitLevel fromRequirement(Requirement effort) {
-            return switch (effort) {
-                case GET_CACHED, NBT, LOAD -> None;
-                case GENERATE -> Generated;
-                case POPULATE -> Populated;
-                case LIGHT -> Lit;
-            };
         }
     }
 }

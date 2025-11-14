@@ -5,18 +5,15 @@ import net.minecraft.init.Blocks;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubicPopulator;
-import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.api.worldgen.decoration.ICubePopulator;
 import com.cardinalstar.cubicchunks.util.XSTR;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.blockview.CubeBlockView;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IMutableBlockView;
 import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public class MapGenCaveFluids implements ICubicPopulator {
+public class MapGenCaveFluids implements ICubePopulator {
 
     private static final ForgeDirection[] BLOCK_MASK = {
         ForgeDirection.NORTH,
@@ -41,17 +38,17 @@ public class MapGenCaveFluids implements ICubicPopulator {
     }
 
     @Override
-    public void generate(World world, CubePos pos) {
-        if (pos.getY() >= 0) return;
+    public void populate(World world, Cube cube) {
+        if (cube.getY() >= 0) return;
 
-        IMutableBlockView cubeView = new CubeBlockView((Cube) ((ICubicWorld) world).getCubeFromCubeCoords(pos));
+        IMutableBlockView cubeView = new CubeBlockView(cube);
 
         long seed = Fnv1a64.initialState();
 
         seed = Fnv1a64.hashStep(seed, world.getSeed());
-        seed = Fnv1a64.hashStep(seed, pos.getX());
-        seed = Fnv1a64.hashStep(seed, pos.getY());
-        seed = Fnv1a64.hashStep(seed, pos.getZ());
+        seed = Fnv1a64.hashStep(seed, cube.getX());
+        seed = Fnv1a64.hashStep(seed, cube.getY());
+        seed = Fnv1a64.hashStep(seed, cube.getZ());
 
         rng.setSeed(seed);
 
@@ -80,9 +77,9 @@ public class MapGenCaveFluids implements ICubicPopulator {
 
             cubeView.setBlock(x, y, z, fluid);
 
-            int globalX = x + pos.getX() * 16;
-            int globalY = y + pos.getY() * 16;
-            int globalZ = z + pos.getZ() * 16;
+            int globalX = x + cube.getX() * 16;
+            int globalY = y + cube.getY() * 16;
+            int globalZ = z + cube.getZ() * 16;
 
             fluid.getBlock().onNeighborBlockChange(world, globalX, globalY, globalZ, Blocks.air);
 

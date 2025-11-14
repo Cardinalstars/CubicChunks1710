@@ -251,7 +251,6 @@ public abstract class MixinChunk_Cubes {
             // Some mods construct chunks with null world, ignore them
             return;
         }
-        this.isColumn = true;
         // this.lightManager = world.getLightingManager();
 
         this.cubeMap = new CubeMap();
@@ -728,8 +727,10 @@ public abstract class MixinChunk_Cubes {
         if (!isColumn) {
             return;
         }
-        getWorldObj().getLightingManager()
-            .onGetLightSubtracted(x, y, z);
+        if (getWorldObj().getLightingManager() != null) {
+            getWorldObj().getLightingManager()
+                .onGetLightSubtracted(x, y, z);
+        }
     }
 
     // ==============================================

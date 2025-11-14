@@ -51,7 +51,6 @@ import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.storage.ISaveHandler;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldInfo;
-import net.minecraftforge.common.DimensionManager;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Implements;
@@ -64,11 +63,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
-import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IntRange;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
@@ -77,16 +76,14 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
+import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
-import com.cardinalstar.cubicchunks.world.WorldSavedCubicChunksData;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.google.common.collect.ImmutableList;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-import com.llamalad7.mixinextras.expression.Definition;
-import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.sugar.Local;
 
 /**
@@ -217,89 +214,49 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     @Shadow
     protected abstract IChunkProvider createChunkProvider();
 
-    @Definition(id = "isInitialized", method = "Lnet/minecraft/world/storage/WorldInfo;isInitialized()Z")
-    @Definition(
-        id = "worldInfo",
-        field = "Lnet/minecraft/world/World;worldInfo:Lnet/minecraft/world/storage/WorldInfo;")
-    @Expression("this.worldInfo.isInitialized()")
+    @Redirect(
+        method = "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;createChunkProvider()Lnet/minecraft/world/chunk/IChunkProvider;"))
+    public IChunkProvider noopCreateProvider(World instance) {
+        // Done below manually
+        return null;
+    }
+
     @Inject(
         method = "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
-        at = @At("MIXINEXTRAS:EXPRESSION"))
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/storage/WorldInfo;isInitialized()Z"))
     public void initWorld(ISaveHandler p_i45369_1_, String p_i45369_2_, WorldSettings p_i45369_3_,
         WorldProvider p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci) {
-        if ((Object) this instanceof WorldServer) {
-            ((ICubicWorldInternal.Server) this).initCubicWorldServer();
-        }
-        WorldSavedCubicChunksData savedData = (WorldSavedCubicChunksData) this.perWorldStorage
-            .loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
-        boolean ccWorldType = this.worldInfo.getTerrainType() instanceof ICubicWorldType;
-        boolean ccGenerator = ccWorldType
-            && ((ICubicWorldType) this.worldInfo.getTerrainType()).hasCubicGeneratorForWorld((World) (Object) this);
-        boolean savedCC = savedData != null && savedData.isCubicChunks;
-        boolean ccWorldInfo = (savedData == null || savedData.isCubicChunks);
-        boolean excludeCC = CubicChunksConfig.isDimensionExcluded(this.provider.dimensionId);
-        boolean forceExclusions = CubicChunksConfig.forceDimensionExcludes;
-        // TODO: simplify this mess of booleans and document where each of them comes from
-        // these espressions are generated using Quine McCluskey algorithm
-        // using the JQM v1.2.0 (Java QuineMcCluskey) program:
-        // IS_CC := CC_GEN OR CC_TYPE AND NOT(EXCLUDED) OR SAVED_CC AND NOT(EXCLUDED) OR SAVED_CC AND NOT(F_EX) OR
-        // CC_NEW AND NOT(EXCLUDED);
-        // ERROR := CC_GEN AND NOT(CC_TYPE);
-        boolean impossible = ccGenerator && !ccWorldType;
-        if (impossible) {
-            throw new Error("Trying to use cubic chunks generator without cubic chunks world type.");
-        }
-        boolean isCC = ccGenerator || (ccWorldType && !excludeCC)
-            || (savedCC && !excludeCC)
-            || (savedCC && !forceExclusions)
-            || (ccWorldInfo && !excludeCC);
-        if ((CubicChunksConfig.forceLoadCubicChunks == CubicChunksConfig.ForceCCMode.LOAD_NOT_EXCLUDED && !excludeCC)
-            || CubicChunksConfig.forceLoadCubicChunks == CubicChunksConfig.ForceCCMode.ALWAYS) {
-            isCC = true;
-        }
 
-        if (savedData == null) {
-            int minY = CubicChunksConfig.defaultMinHeight;
-            int maxY = CubicChunksConfig.defaultMaxHeight;
-            if (this.provider.dimensionId != 0) {
-                WorldSavedCubicChunksData overworld = (WorldSavedCubicChunksData) DimensionManager
-                    .getWorld(0).perWorldStorage.loadData(WorldSavedCubicChunksData.class, "cubicChunksData");
-                if (overworld != null) {
-                    minY = overworld.minHeight;
-                    maxY = overworld.maxHeight;
-                }
-            }
-            savedData = new WorldSavedCubicChunksData("cubicChunksData", isCC, minY, maxY);
-        }
-        savedData.markDirty();
-        this.perWorldStorage.setData("cubicChunksData", savedData);
-        this.perWorldStorage.saveAllData();
+        // Some other world instantiation that we don't care about (fake dummy worlds, for instance)
+        //noinspection ConstantValue
+        if (!((Object) this instanceof WorldServer worldServer)) return;
 
-        if (!isCC) {
-            return;
-        }
+        ((ICubicWorldInternal.Server) this).initCubicWorldServer();
 
-        if (shouldSkipWorld((World) (Object) this)) {
+        if (shouldSkipWorld(worldServer)) {
             CubicChunks.LOGGER.info(
-                "Skipping world " + this
-                    + " with type "
-                    + this.worldInfo.getTerrainType()
-                    + " due to potential "
-                    + "compatibility issues");
+                "Skipping world {} with type {} due to potential compatibility issues",
+                this,
+                this.worldInfo.getTerrainType());
             return;
         }
-        CubicChunks.LOGGER.info("Initializing world " + this + " with type " + this.worldInfo.getTerrainType());
+
+        CubicChunks.LOGGER.info("Initializing world {} with type {}", this, this.worldInfo.getTerrainType());
 
         IntRange generationRange = new IntRange(0, ((ICubicWorldProvider) this.provider).getOriginalActualHeight());
+
         WorldType type = this.worldInfo.getTerrainType();
-        if (type instanceof ICubicWorldType
-            && ((ICubicWorldType) type).hasCubicGeneratorForWorld((World) (Object) this)) {
-            generationRange = ((ICubicWorldType) type).calculateGenerationHeightRange((WorldServer) (Object) this);
+
+        if (type instanceof ICubicWorldType && ((ICubicWorldType) type).hasCubicGeneratorForWorld(worldServer)) {
+            generationRange = ((ICubicWorldType) type).calculateGenerationHeightRange(worldServer);
         }
 
-        int minHeight = savedData.minHeight;
-        int maxHeight = savedData.maxHeight;
-        this.initCubicWorld(new IntRange(minHeight, maxHeight), generationRange);
+        this.chunkProvider = createChunkProvider();
+
+        CubicChunksSavedData savedData = CubicChunksSavedData.get(worldServer);
+
+        this.initCubicWorld(new IntRange(savedData.minHeight, savedData.maxHeight), generationRange);
     }
 
     protected void initCubicWorld(IntRange heightRange, IntRange generationRange) {

@@ -8,16 +8,18 @@ import java.util.Random;
 
 import net.minecraft.world.World;
 
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
-import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubeTerrainGenerator;
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
+import com.cardinalstar.cubicchunks.api.worldgen.decoration.ICubeGenerator;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ObjectPooler;
 import com.cardinalstar.cubicchunks.util.TimedCache;
 import com.cardinalstar.cubicchunks.util.XSTR;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.worldgen.data.FastCubePosMap;
+import com.cardinalstar.cubicchunks.world.worldgen.data.MutableCubePos;
 import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
 
-public abstract class SeedBasedCubicGenerator<TSeed, TGen extends ICubeGenerator> implements ICubeTerrainGenerator<TGen> {
+public abstract class SeedBasedCubicGenerator<TSeed, TGen extends IWorldGenerator> implements ICubeGenerator {
 
     private final XSTR rng = new XSTR(0);
 
@@ -96,7 +98,7 @@ public abstract class SeedBasedCubicGenerator<TSeed, TGen extends ICubeGenerator
     }
 
     @Override
-    public void generate(TGen generator, World world, Cube cube) {
+    public void generate(World world, Cube cube) {
         CubeWorldView worldView = null;
 
         setWorldSeed(world.getSeed());

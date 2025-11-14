@@ -6,29 +6,28 @@ import net.minecraft.world.World;
 
 import org.joml.Vector3ic;
 
-import com.cardinalstar.cubicchunks.api.worldgen.populator.ICubicPopulator;
-import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.api.worldgen.decoration.ICubePopulator;
 import com.cardinalstar.cubicchunks.util.Mods;
-import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.blockview.CubeBlockView;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IMutableBlockView;
 import com.gtnewhorizon.gtnhlib.util.data.LazyBlock;
-
 import ganymedes01.etfuturum.api.DeepslateOreRegistry;
 import ganymedes01.etfuturum.api.mappings.RegistryMapping;
 
-public class DeepslateCubePopulator implements ICubicPopulator {
+public class DeepslateCubePopulator implements ICubePopulator {
 
-    private final LazyBlock DEEPSLATE = new LazyBlock(Mods.EtFuturumRequiem, "deepslate");
+    private static final LazyBlock DEEPSLATE = new LazyBlock(Mods.EtFuturumRequiem, "deepslate");
 
     @Override
-    public void generate(World world, CubePos pos) {
-        IMutableBlockView cube = new CubeBlockView((Cube) ((ICubicWorld) world).getCubeFromCubeCoords(pos));
+    public void populate(World world, Cube cube) {
+        if (cube.getY() >= 0) return;
 
-        for (Vector3ic v : cube.getBounds()) {
-            Block block = cube.getBlock(v.x(), v.y(), v.z());
-            int meta = cube.getBlockMetadata(v.x(), v.y(), v.z());
+        IMutableBlockView blocks = new CubeBlockView(cube);
+
+        for (Vector3ic v : blocks.getBounds()) {
+            Block block = blocks.getBlock(v.x(), v.y(), v.z());
+            int meta = blocks.getBlockMetadata(v.x(), v.y(), v.z());
 
             if (block == Blocks.stone) {
                 block = DEEPSLATE.getBlock();
@@ -42,8 +41,8 @@ public class DeepslateCubePopulator implements ICubicPopulator {
                 }
             }
 
-            cube.setBlock(v.x(), v.y(), v.z(), block);
-            cube.setBlockMetadata(v.x(), v.y(), v.z(), meta);
+            blocks.setBlock(v.x(), v.y(), v.z(), block);
+            blocks.setBlockMetadata(v.x(), v.y(), v.z(), meta);
         }
     }
 }

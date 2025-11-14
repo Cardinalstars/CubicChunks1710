@@ -29,6 +29,10 @@ public class ObjectPooler<T> {
         this.availableInstances = new ObjectArrayList<>();
     }
 
+    public final void clear() {
+        this.availableInstances.clear();
+    }
+
     public final T getInstance() {
         if (this.availableInstances.isEmpty()) {
             return this.instanceSupplier.get();

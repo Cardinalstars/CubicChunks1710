@@ -1,0 +1,214 @@
+package com.cardinalstar.cubicchunks.world.worldgen.vanilla;
+
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+import net.minecraft.world.gen.NoiseGeneratorOctaves;
+
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.async.TaskPool;
+import com.cardinalstar.cubicchunks.async.TaskPool.ITask;
+import com.cardinalstar.cubicchunks.util.ObjectPooler;
+import com.github.bsideup.jabel.Desugar;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
+public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements PrecalculableNoise {
+
+    private boolean initialized = false;
+    private int xspan, yspan, zspan;
+    private double xscale, yscale, zscale;
+    private int misses, misses2, hits;
+    private long lastMessage = System.nanoTime();
+
+    private final ObjectPooler<NoiseData> dataPool = new ObjectPooler<>(NoiseData::new, null, 1024);
+
+    private final Object paramLock = new Object();
+    private final Object cacheLock = new Object();
+
+    private final Cache<TaskKey, NoiseData> cache = CacheBuilder.newBuilder()
+        .expireAfterWrite(5, TimeUnit.MINUTES)
+        .maximumSize(1024)
+        .removalListener(notification -> releaseData((NoiseData) notification.getValue()))
+        .build();
+
+    public PrecalcedVanillaOctaves(Random rng, int octaves) {
+        super(rng, octaves);
+    }
+
+    private static boolean diff(double a, double b) {
+        return Math.abs(a - b) > 0.0001;
+    }
+
+    @Override
+    public double[] generateNoiseOctaves(double[] data, int blockX, int blockY, int blockZ, int sx, int sy, int sz, double scaleX, double scaleY, double scaleZ) {
+        long now = System.nanoTime();
+
+        if ((now - lastMessage) > 5e9) {
+            lastMessage = now;
+            CubicChunks.LOGGER.info("Hits: {} Misses: {}", hits, misses2);
+            hits = 0;
+            misses2 = 0;
+        }
+
+        synchronized (paramLock) {
+            if (!initialized) {
+                initialized = true;
+
+                xspan = sx;
+                yspan = sy;
+                zspan = sz;
+                xscale = scaleX;
+                yscale = scaleY;
+                zscale = scaleZ;
+            }
+
+            // This should never happen because all vanilla noisegens are given constant params, but you never know what mods could do
+            if (sx != xspan || sy != yspan || sz != zspan || diff(scaleX, xscale) || diff(scaleY, yscale) || diff(scaleZ, zscale)) {
+                misses++;
+
+                if (misses > 20) {
+                    CubicChunks.LOGGER.info("Parameters for noisegen changed: resetting");
+                    misses = 0;
+
+                    xspan = sx;
+                    yspan = sy;
+                    zspan = sz;
+                    xscale = scaleX;
+                    yscale = scaleY;
+                    zscale = scaleZ;
+
+                    dataPool.clear();
+                }
+            }
+        }
+
+        if (data == null) data = new double[sx * sy * sz];
+
+        NoiseData cached;
+
+        synchronized (cacheLock) {
+            cached = cache.getIfPresent(new TaskKey(blockX, blockY, blockZ));
+        }
+
+        if (cached != null && cached.matches()) {
+            System.arraycopy(cached.data, 0, data, 0, cached.data.length);
+
+            hits++;
+            return data;
+        }
+
+        misses2++;
+        return super.generateNoiseOctaves(data, blockX, blockY, blockZ, sx, sy, sz, scaleX, scaleY, scaleZ);
+    }
+
+    private NoiseData getData() {
+        synchronized (dataPool) {
+            return dataPool.getInstance();
+        }
+    }
+
+    private void releaseData(NoiseData data) {
+        synchronized (dataPool) {
+            if (!data.matches()) return;
+
+            dataPool.releaseInstance(data);
+        }
+    }
+
+    @Override
+    public void precalculate(int blockX, int blockY, int blockZ) {
+        Task3D task;
+
+        synchronized (paramLock) {
+            if (!initialized) return;
+
+            TaskKey key = new TaskKey(blockX, blockY, blockZ);
+
+            task = new Task3D(key);
+        }
+
+        TaskPool.submit(task);
+    }
+
+    @Desugar
+
+    private record TaskKey(int x, int y, int z) {
+
+    }
+
+    private class Task3D implements ITask<Void> {
+
+        private final TaskKey key;
+
+        private final int xspan, yspan, zspan;
+        private final double xscale, yscale, zscale;
+
+        public Task3D(TaskKey key) {
+            this.key = key;
+            this.xspan = PrecalcedVanillaOctaves.this.xspan;
+            this.yspan = PrecalcedVanillaOctaves.this.yspan;
+            this.zspan = PrecalcedVanillaOctaves.this.zspan;
+            this.xscale = PrecalcedVanillaOctaves.this.xscale;
+            this.yscale = PrecalcedVanillaOctaves.this.yscale;
+            this.zscale = PrecalcedVanillaOctaves.this.zscale;
+        }
+
+        @Override
+        public Void call() {
+            NoiseData data = getData();
+
+            data.xspan = this.xspan;
+            data.yspan = this.yspan;
+            data.zspan = this.zspan;
+            data.xscale = this.xscale;
+            data.yscale = this.yscale;
+            data.zscale = this.zscale;
+
+            PrecalcedVanillaOctaves.super.generateNoiseOctaves(
+                data.data,
+                key.x, key.y, key.z,
+                xspan, yspan, zspan,
+                xscale, yscale, zscale);
+
+            cache.put(key, data);
+
+            return null;
+        }
+    }
+
+    private class NoiseData {
+
+        public final double[] data;
+
+        public int xspan, yspan, zspan;
+        public double xscale, yscale, zscale;
+
+        public NoiseData() {
+            this.data = new double[PrecalcedVanillaOctaves.this.xspan * PrecalcedVanillaOctaves.this.yspan * PrecalcedVanillaOctaves.this.zspan];
+        }
+
+        final boolean matches() {
+            if (this.xspan != PrecalcedVanillaOctaves.this.xspan) return false;
+            if (this.yspan != PrecalcedVanillaOctaves.this.yspan) return false;
+            if (this.zspan != PrecalcedVanillaOctaves.this.zspan) return false;
+            if (diff(this.xscale, PrecalcedVanillaOctaves.this.xscale)) return false;
+            if (diff(this.yscale, PrecalcedVanillaOctaves.this.yscale)) return false;
+            if (diff(this.zscale, PrecalcedVanillaOctaves.this.zscale)) return false;
+
+            return true;
+        }
+
+        final void put(int x, int y, int z, double value) {
+            data[index(x, y, z)] = value;
+        }
+
+        public final double sample(int x, int y, int z) {
+            return data[index(x, y, z)];
+        }
+
+        private int index(int x, int y, int z) {
+            return x + (y * xspan) + (z * xspan * yspan);
+        }
+    }
+}

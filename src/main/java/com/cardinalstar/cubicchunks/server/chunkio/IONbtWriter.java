@@ -46,14 +46,12 @@ import org.apache.logging.log4j.Level;
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
-import com.cardinalstar.cubicchunks.event.events.CubeDataEvent;
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-
 import cpw.mods.fml.common.FMLLog;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
@@ -93,7 +91,6 @@ class IONbtWriter {
         writeScheduledTicks(cube, level);
         writeLightingInfo(cube, level);
         writeBiomes(cube, level);
-        writeModData(cube, cubeNbt);
         return cubeNbt;
     }
 
@@ -138,9 +135,8 @@ class IONbtWriter {
         cubeNbt.setInteger("z", cube.getZ());
 
         // save the worldgen stage and the target stage
-        cubeNbt.setBoolean("populated", cube.isPopulated());
+        cubeNbt.setShort("population", cube.getPopulationStatus());
         cubeNbt.setBoolean("isSurfaceTracked", cube.isSurfaceTracked());
-        cubeNbt.setBoolean("fullyPopulated", cube.isFullyPopulated());
 
         cubeNbt.setBoolean("initLightDone", cube.isInitialLightingDone());
 
@@ -259,10 +255,6 @@ class IONbtWriter {
         NBTTagCompound lightingInfo = new NBTTagCompound();
         cubeNbt.setTag("LightingInfo", lightingInfo);
         lightingManager.writeToNbt(cube, lightingInfo);
-    }
-
-    private static void writeModData(Cube cube, NBTTagCompound level) {
-        EVENT_BUS.post(new CubeDataEvent.Save(cube, level));
     }
 
     private static void writeBiomes(Cube cube, NBTTagCompound nbt) {// biomes

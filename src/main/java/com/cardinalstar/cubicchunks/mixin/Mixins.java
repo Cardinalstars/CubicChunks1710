@@ -68,6 +68,14 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.vanillaclient.MixinS01PacketJoinGame")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_OVERWORLD_GENERATOR(new MixinBuilder("Modify overworld chunk generator")
+        .addCommonMixins("common.worldgen.MixinChunkProviderGenerate")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+    MIXIN_EBS(new MixinBuilder("Add simple cache to ExtendedBlockStorage.getBlockByExtId")
+        .addCommonMixins("common.MixinExtendedBlockStorage")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
 
     // CHUNK
     MIXIN_CHUNK_COLUMN(
@@ -162,6 +170,10 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Fixing mobs walking off into chasms below y = 0").addCommonMixins("common.MixinPathFinder")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
+    MIXIN_ENTITY_BRIGHTNESS(new MixinBuilder("Fix Entity.getBrightness")
+        .addCommonMixins("common.MixinEntity_Brightness")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
 
     // SERVER
     MIXIN_INTEGRATED_SERVER_ACCESSOR(

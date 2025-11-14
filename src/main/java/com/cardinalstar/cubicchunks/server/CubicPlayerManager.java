@@ -58,8 +58,8 @@ import com.cardinalstar.cubicchunks.api.world.CubeWatchEvent;
 import com.cardinalstar.cubicchunks.entity.ICubicEntityTracker;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketEncoderCubes;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderCallback;
-import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList2D;
 import com.cardinalstar.cubicchunks.util.WatchersSortingList3D;
@@ -434,7 +434,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     }
 
     @Override
-    public void onCubeGenerated(Cube cube, CubeLoaderServer.CubeInitLevel newLevel) {
+    public void onCubeGenerated(Cube cube, CubeInitLevel newLevel) {
         CubeWatcher watcher = this.cubeWatchers.get(cube);
 
         if (watcher != null) {
@@ -503,7 +503,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     // CHECKED: 1.10.2-12.18.1.2092
     @Override
     public void markBlockForUpdate(int x, int y, int z) {
-        CubeWatcher cubeWatcher = this.getCubeWatcher(CubePos.fromBlockCoords(x, y, z));
+        CubeWatcher cubeWatcher = this.getCubeWatcher(x >> 4, y >> 4, z >> 4);
 
         if (cubeWatcher != null) {
             int localX = blockToLocal(x);
@@ -596,9 +596,11 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
             toSendUnload.add(columnWatcher);
         });
-        toSendUnload.stream()
-            .filter(watcher -> watcher.containsPlayer(player))
-            .forEach(watcher -> watcher.removePlayer(player));
+        for (ColumnWatcher watcher : toSendUnload) {
+            if (watcher.containsPlayer(player)) {
+                watcher.removePlayer(player);
+            }
+        }
         this.players.remove(player.getEntityId());
         // vanillaNetworkHandler.removePlayer(player);
     }
@@ -882,6 +884,11 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
     public void removeSchedulesSendCubeToPlayer(Cube cube, EntityPlayerMP player) {
         cubesToSend.remove(player, cube);
+    }
+
+    @Nullable
+    public CubeWatcher getCubeWatcher(int x, int y, int z) {
+        return this.cubeWatchers.get(x, y, z);
     }
 
     @Nullable

@@ -39,7 +39,7 @@ import com.cardinalstar.cubicchunks.event.events.CubeUnWatchEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.PacketEncoderCubeBlockChange;
 import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadCube;
-import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
@@ -79,7 +79,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
         Cube loaded = cubeCache.getLoadedCube(cubePos);
 
-        if (loaded != null && loaded.isInitializedToLevel(CubeLoaderServer.CubeInitLevel.Lit)) {
+        if (loaded != null && loaded.isInitializedToLevel(CubeInitLevel.Lit)) {
             onCubeLoaded(loaded);
         } else {
             request = cubeCache
@@ -89,8 +89,8 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
     public void onCubeLoaded(Cube c) {
         if (this.invalid) return;
-        if (c.getInitLevel() != CubeLoaderServer.CubeInitLevel.Lit) {
-            if (request != null && request.isCompleted()) {
+        if (c.getInitLevel() != CubeInitLevel.Lit) {
+            if (request == null || request.isCompleted()) {
                 request = cubeCache.loadCubeEagerly(
                     cubePos.getX(),
                     cubePos.getY(),
@@ -100,9 +100,12 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
             return;
         }
+
         this.cube = c;
         this.cube.getTickets()
             .add(this);
+
+        if (this.request != null) this.request.cancel();
         this.request = null;
     }
 
@@ -188,9 +191,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
     }
 
     public boolean isWaitingForCube() {
-        return this.cube == null || !this.cube.isPopulated()
-            || !this.cube.isInitialLightingDone()
-            || !this.cube.isSurfaceTracked();
+        return this.cube == null || this.cube.getInitLevel() != CubeInitLevel.Lit;
     }
 
     public boolean isWaitingForColumn() {
@@ -273,7 +274,9 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
         if (!this.players.isEmpty()) {
             if (this.dirtyBlocks.size() >= ForgeModContainer.clumpingThreshold) {
                 // send whole cube
-                this.players.forEach(entry -> cubicPlayerManager.scheduleSendCubeToPlayer(cube, entry));
+                for (EntityPlayerMP entry : this.players) {
+                    cubicPlayerManager.scheduleSendCubeToPlayer(cube, entry);
+                }
             } else {
                 // send all the dirty blocks
                 var packet = PacketEncoderCubeBlockChange.createPacket(this.cube, this.dirtyBlocks);

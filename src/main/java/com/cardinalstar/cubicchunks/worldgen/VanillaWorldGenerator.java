@@ -1,0 +1,585 @@
+/*
+ * This file is part of Cubic Chunks Mod, licensed under the MIT License (MIT).
+ * Copyright (c) 2015-2021 OpenCubicChunks
+ * Copyright (c) 2015-2021 contributors
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package com.cardinalstar.cubicchunks.worldgen;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import javax.annotation.Nonnull;
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import net.minecraft.block.Block;
+import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.init.Blocks;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.ChunkPosition;
+import net.minecraft.world.World;
+import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
+
+import org.joml.Vector3i;
+import org.joml.Vector3ic;
+
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.util.Box;
+import com.cardinalstar.cubicchunks.api.world.Precalculable;
+import com.cardinalstar.cubicchunks.api.worldgen.GenerationResult;
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
+import com.cardinalstar.cubicchunks.api.worldgen.decoration.IWorldDecorator;
+import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.mixin.early.common.IGameRegistry;
+import com.cardinalstar.cubicchunks.server.CubeProviderServer;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
+import com.cardinalstar.cubicchunks.server.chunkio.IPreloadFailureDelegate;
+import com.cardinalstar.cubicchunks.util.CompatHandler;
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.ICubicWorld;
+import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
+import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.cardinalstar.cubicchunks.world.cube.blockview.ChunkArrayBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.ChunkBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.IMutableBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.SafeMutableBlockView;
+import com.cardinalstar.cubicchunks.world.cube.blockview.UniformBlockView;
+import com.github.bsideup.jabel.Desugar;
+import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
+import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
+import it.unimi.dsi.fastutil.Pair;
+import it.unimi.dsi.fastutil.ints.Int2IntFunction;
+import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+
+/**
+ * A cube generator that tries to mirror vanilla world generation. Cubes in the normal world range will be copied from a
+ * vanilla chunk generator, cubes above and below that will be filled with the most common block in the
+ * topmost/bottommost layers.
+ */
+@ParametersAreNonnullByDefault
+public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDelegate {
+
+    @Desugar
+    record FillerInfo(ImmutableBlockMeta filler) {}
+
+    @Nonnull
+    private final IChunkProvider vanilla;
+    @Nonnull
+    private final World world;
+    @Nonnull
+    private final IWorldDecorator decorator;
+
+    private final int worldHeightBlocks;
+    private final int worldHeightCubes;
+
+    private FillerInfo bottom, top;
+
+    /**
+     * Create a new VanillaCompatibilityGenerator
+     *
+     * @param vanilla The vanilla generator to mirror
+     * @param world   The world in which cubes are being generated
+     */
+    public VanillaWorldGenerator(IChunkProvider vanilla, World world, IWorldDecorator decorator) {
+        this.vanilla = vanilla;
+        this.world = world;
+        this.decorator = decorator;
+
+        worldHeightBlocks = ((ICubicWorld) this.world).getMaxGenerationHeight();
+        worldHeightCubes = Coords.blockCeilToCube(worldHeightBlocks);
+    }
+
+    private ICubeLoader getCubeLoader() {
+        return getCubeProviderServer().getCubeLoader();
+    }
+
+    private CubeProviderServer getCubeProviderServer() {
+        return ((ICubicWorldInternal.Server) world).getCubeCache();
+    }
+
+    private FillerInfo getBottomFillerInfo() {
+        if (bottom != null) return bottom;
+
+        Chunk chunk = vanilla.provideChunk(0, 0);
+
+        ((IColumnInternal) chunk).setColumn(false);
+
+        bottom = analyzeBottomFiller(new ChunkBlockView(chunk));
+
+        return bottom;
+    }
+
+    private FillerInfo analyzeBottomFiller(IBlockView blockView) {
+        Object2IntOpenHashMap<ImmutableBlockMeta> histogram = new Object2IntOpenHashMap<>();
+
+        // Scan three layers for top and bottom cubes to guard against bedrock walls
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < Cube.SIZE; x++) {
+                for (int z = 0; z < Cube.SIZE; z++) {
+                    histogram.addTo(new BlockMeta(blockView.getBlock(x, y, z), blockView.getBlockMetadata(x, y, z)), 1);
+                }
+            }
+        }
+
+        var bottomBlock = histogram.object2IntEntrySet()
+            .stream()
+            .filter(e -> {
+                if (e.getKey()
+                    .getBlock() == Blocks.bedrock) return false;
+                if (e.getKey()
+                    .getBlock() == Blocks.air) return false;
+                if (!e.getKey()
+                    .getBlock()
+                    .isNormalCube()) return false;
+
+                return true;
+            })
+            .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
+
+        ImmutableBlockMeta filler = bottomBlock.map(Map.Entry::getKey)
+            .orElse(new BlockMeta(Blocks.air, 0));
+
+        return new FillerInfo(filler);
+    }
+
+    private FillerInfo getTopFillerInfo() {
+        if (top != null) return top;
+
+        Chunk chunk = vanilla.provideChunk(0, 0);
+
+        ((IColumnInternal) chunk).setColumn(false);
+
+        top = analyzeTopFiller(new ChunkBlockView(chunk));
+
+        return top;
+    }
+
+    private FillerInfo analyzeTopFiller(IBlockView blockView) {
+        Object2IntOpenHashMap<ImmutableBlockMeta> histogram = new Object2IntOpenHashMap<>();
+
+        int top = blockView.getBounds()
+            .getY2();
+
+        // Scan three layers for top and bottom cubes to guard against bedrock walls
+        for (int y = top - 1; y > top - 4; y--) {
+            for (int x = 0; x < Cube.SIZE; x++) {
+                for (int z = 0; z < Cube.SIZE; z++) {
+                    histogram.addTo(new BlockMeta(blockView.getBlock(x, y, z), blockView.getBlockMetadata(x, y, z)), 1);
+                }
+            }
+        }
+
+        var topBlock = histogram.object2IntEntrySet()
+            .stream()
+            .filter(
+                e -> e.getKey()
+                    .getBlock() != Blocks.bedrock)
+            .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
+
+        ImmutableBlockMeta filler = topBlock.map(Map.Entry::getKey)
+            .orElse(new BlockMeta(Blocks.air, 0));
+
+        return new FillerInfo(filler);
+    }
+
+    @Override
+    public void onColumnPreloadFailed(ChunkCoordIntPair pos) {
+        // Do nothing, columns contain very little currently and don't need to be pre-generated
+    }
+
+    @Override
+    public GenerationResult<Chunk> provideColumn(World world, int columnX, int columnZ) {
+        Pair<Chunk, IBlockView> data = getVanillaChunkView(columnX, columnZ);
+
+        List<Cube> cubes = new ArrayList<>();
+
+        // Ceiling div by 16
+        int heightCubes = (data.right().getBounds().getSizeY() + 15) >> 4;
+
+        for (int y = 0; y < heightCubes; y++) {
+            Cube c = new Cube(data.left(), y, data.right().subView(Box.horizontalChunkSlice(y << 4, 16)));
+
+            try {
+                decorator.generate(world, c);
+            } catch (Throwable t) {
+                CubicChunks.LOGGER
+                    .error("Could not run generation for cube {},{},{}", columnX, y, columnZ, t);
+            }
+
+            cubes.add(c);
+        }
+
+        ((IColumnInternal) data.left()).setColumn(true);
+
+        return new GenerationResult<>(data.left(), null, cubes);
+    }
+
+    @Override
+    public void recreateStructures(Chunk column) {
+        vanilla.recreateStructures(column.xPosition, column.zPosition); // TODO WATCH
+    }
+
+    @Override
+    public GenerationResult<Cube> provideCube(Chunk chunk, int cubeX, int cubeY, int cubeZ) {
+        try {
+            WorldgenHangWatchdog.startWorldGen();
+
+            IBlockView cubeData;
+
+            if (cubeY < 0) {
+                FillerInfo fillerInfo = getBottomFillerInfo();
+
+                cubeData = new UniformBlockView(fillerInfo.filler);
+            } else if (cubeY >= worldHeightCubes) {
+                FillerInfo fillerInfo = getTopFillerInfo();
+
+                cubeData = new UniformBlockView(fillerInfo.filler);
+            } else {
+                Pair<Chunk, IBlockView> data = getVanillaChunkView(cubeX, cubeZ);
+
+                Cube self = null;
+                List<Cube> sideEffects = new ArrayList<>();
+
+                // Ceiling div by 16
+                int heightCubes = (data.right().getBounds().getSizeY() + 15) >> 4;
+
+                for (int y = 0; y < heightCubes; y++) {
+                    Cube c = new Cube(chunk, y, data.right().subView(Box.horizontalChunkSlice(y << 4, 16)));
+
+                    try {
+                        decorator.generate(world, c);
+                    } catch (Throwable t) {
+                        CubicChunks.LOGGER
+                            .error("Could not run generation for cube {},{},{}", cubeX, y, cubeZ, t);
+                    }
+
+                    if (y == cubeY) {
+                        self = c;
+                    } else {
+                        sideEffects.add(c);
+                    }
+                }
+
+                return new GenerationResult<>(self, Collections.singletonList(data.left()), sideEffects);
+            }
+
+            Cube cube = new Cube(chunk, cubeY, cubeData);
+
+            try {
+                decorator.generate(world, cube);
+            } catch (Throwable t) {
+                CubicChunks.LOGGER
+                    .error("Could not run generation for cube {},{},{}", cubeX, cubeY, cubeZ, t);
+            }
+
+            return new GenerationResult<>(cube);
+        } finally {
+            WorldgenHangWatchdog.endWorldGen();
+        }
+    }
+
+    private Pair<Chunk, IBlockView> getVanillaChunkView(int cubeX, int cubeZ) {
+        if (CubicChunksConfig.optimizedCompatibilityGenerator) {
+            try (ICubicWorldInternal.CompatGenerationScope ignored = ((ICubicWorldInternal.Server) world)
+                .doCompatibilityGeneration()) {
+                Chunk chunk = vanilla.provideChunk(cubeX, cubeZ);
+
+                Block[] compatBlocks = ((IColumnInternal) chunk).getCompatGenerationBlockArray();
+                byte[] compatBlockMeta = ((IColumnInternal) chunk).getCompatGenerationByteArray();
+
+                if (compatBlocks == null || compatBlockMeta == null) {
+                    CubicChunks.LOGGER.error("Optimized compatibility generation failed, disabling...");
+                    CubicChunksConfig.optimizedCompatibilityGenerator = false;
+                } else {
+                    int lastChunkHeight = compatBlocks.length >> 8;
+
+                    IMutableBlockView view = new ChunkArrayBlockView(
+                        16,
+                        lastChunkHeight,
+                        16,
+                        wrapBlockArray(compatBlocks),
+                        wrapByteArray(compatBlockMeta));
+
+                    view = new SafeMutableBlockView(Box.horizontalChunkSlice(0, worldHeightBlocks), view);
+
+                    return Pair.of(chunk, view);
+                }
+            }
+        }
+
+        Chunk chunk = vanilla.provideChunk(cubeX, cubeZ);
+
+        return Pair.of(chunk, new SafeMutableBlockView(Box.horizontalChunkSlice(0, 256), new ChunkBlockView(chunk)));
+    }
+
+    private static Int2ObjectFunction<Block> wrapBlockArray(Block[] compatBlocks) {
+        return new Int2ObjectFunction<>() {
+
+            @Override
+            public Block get(int key) {
+                return compatBlocks[key];
+            }
+
+            @Override
+            public Block put(int key, Block value) {
+                compatBlocks[key] = value;
+                return null;
+            }
+
+            @Override
+            public int size() {
+                return compatBlocks.length;
+            }
+        };
+    }
+
+    private static Int2IntFunction wrapByteArray(byte[] compatBlockMeta) {
+        return new Int2IntFunction() {
+
+            @Override
+            public int get(int key) {
+                return compatBlockMeta[key];
+            }
+
+            @Override
+            public int put(int key, int value) {
+                compatBlockMeta[key] = (byte) value;
+                return 0;
+            }
+
+            @Override
+            public int size() {
+                return compatBlockMeta.length;
+            }
+        };
+    }
+
+    @Override
+    public void populate(Cube cube) {
+        ICubeLoader loader = getCubeLoader();
+
+        int cx = cube.getX();
+        int cy = cube.getY();
+        int cz = cube.getZ();
+
+        try {
+            WorldgenHangWatchdog.startWorldGen();
+
+            // Generate all relevant cubes and store them in an array cache
+            loader.cacheCubes(getCubesToGenerate(cx, cy, cz), Requirement.GENERATE);
+
+            if (cy >= 0 && cy < 16) {
+                for (int x = -1; x <= 1; x++) {
+                    for (int z = -1; z <= 1; z++) {
+                        ((IColumnInternal) loader.getColumn(cx + x, cz + z, Requirement.GENERATE)).recalculateStagingHeightmap();
+                    }
+                }
+
+                for (int dx = -1; dx <= 0; dx++) {
+                    for (int dz = -1; dz <= 0; dz++) {
+                        // For some bizarre reason, MC offsets its block positions by +8 when populating. This means that when a chunk
+                        // gets populated, it's actually populating the 16x16 blocks centered on the +x/+z corner. This is how every MC
+                        // populator works for some reason (who decided this???). As a result, we need to generate the 3 columns in the
+                        // negative directions (-x,z, x,-z, -x,-z).
+
+                        populateChunk(loader, cx + dx, cz + dz);
+                    }
+                }
+            }
+
+            for (Vector3ic v : getCubesToPopulate(cx, cy, cz)) {
+                Cube center = loader.getCube(v.x(), v.y(), v.z(), Requirement.GENERATE);
+
+                decorator.populate(world, center);
+
+                center.markPopulated(Cube.POP_000);
+            }
+
+            for (Vector3ic v : getFullyPopulatedCubes(cx, cy, cz)) {
+                Cube center = loader.getCube(v.x(), v.y(), v.z(), Requirement.GENERATE);
+
+                center.markPopulated(Cube.POP_ALL);
+            }
+
+            for (Vector3ic v : getCubesToGenerate(cx, cy, cz)) {
+                loader.onCubeGenerated(v.x(), v.y(), v.z());
+            }
+
+            if (!cube.isFullyPopulated()) {
+                for (Vector3ic v : AFFECTED_CUBES) {
+                    Cube adj = loader.getCube(cx + v.x(), cy + v.y(), cz + v.z(), Requirement.GENERATE);
+
+                    if (!adj.isPopulated()) {
+                        CubicChunks.LOGGER.error(
+                            "Failed to populate cube {},{},{}: requires cube: {},{},{}",
+                            cx,
+                            cy,
+                            cz,
+                            cx + v.x(),
+                            cy + v.y(),
+                            cz + v.z());
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            CubicChunks.LOGGER.error(
+                "Could not run non-vanilla population for cube {},{},{}",
+                cx,
+                cy,
+                cz,
+                t);
+        } finally {
+            WorldgenHangWatchdog.endWorldGen();
+            loader.uncacheCubes();
+        }
+    }
+
+    private static final Vector3ic[] AFFECTED_CUBES = {
+        new Vector3i(1, 0, 0),
+        new Vector3i(0, 1, 0),
+        new Vector3i(1, 1, 0),
+        new Vector3i(0, 0, 1),
+        new Vector3i(1, 0, 1),
+        new Vector3i(0, 1, 1),
+        new Vector3i(1, 1, 1),
+    };
+
+    private static final short[] CUBE_FLAGS = {
+        Cube.POP_100,
+        Cube.POP_010,
+        Cube.POP_110,
+        Cube.POP_001,
+        Cube.POP_101,
+        Cube.POP_011,
+        Cube.POP_111,
+    };
+
+    private Box getCubesToGenerate(int x, int y, int z) {
+        if (y >= 0 && y < 16) {
+            return new Box(x - 1, -1, x - 1, x + 1, 16, z + 1);
+        } else {
+            return new Box(x - 1, y - 1, x - 1, x + 1, y + 1, z + 1);
+        }
+    }
+
+    private Box getCubesToPopulate(int x, int y, int z) {
+        if (y >= 0 && y < 16) {
+            return new Box(x - 1, -1, x - 1, x, 15, z);
+        } else {
+            return new Box(x - 1, y - 1, x - 1, x, y, z);
+        }
+    }
+
+    private Box getFullyPopulatedCubes(int x, int y, int z) {
+        if (y >= 0 && y < 16) {
+            return new Box(x, 0, z, x, 15, z);
+        } else {
+            return new Box(x, y, z, x, y, z);
+        }
+    }
+
+    private void populateChunk(ICubeLoader loader, int columnX, int columnZ) {
+        Chunk column = loader.getColumn(columnX, columnZ, Requirement.GENERATE);
+
+        if (column.isTerrainPopulated) return;
+
+        column.isTerrainPopulated = true;
+        column.isModified = true;
+
+        try {
+            CompatHandler.beforePopulate(world, vanilla);
+
+            vanilla.populate(vanilla, columnX, columnZ);
+
+            applyModGenerators(columnX, columnZ, world, vanilla, world.getChunkProvider());
+        } catch (Throwable t) {
+            CubicChunks.LOGGER.error("Could not populate column {},{}", columnX, columnZ, t);
+        } finally {
+            CompatHandler.afterPopulate(world);
+        }
+    }
+
+    // First provider is the ChunkProviderGenerate/Hell/End/Flat second is the serverChunkProvider
+    private void applyModGenerators(int x, int z, World world, IChunkProvider vanillaGen, IChunkProvider provider) {
+        List<cpw.mods.fml.common.IWorldGenerator> generators = IGameRegistry.getSortedGeneratorList();
+        if (generators == null) {
+            IGameRegistry.computeGenerators();
+            generators = IGameRegistry.getSortedGeneratorList();
+            assert generators != null;
+        }
+        long worldSeed = world.getSeed();
+        Random fmlRandom = new Random(worldSeed);
+        long xSeed = fmlRandom.nextLong() >> 2 + 1L;
+        long zSeed = fmlRandom.nextLong() >> 2 + 1L;
+        long chunkSeed = (xSeed * x + zSeed * z) ^ worldSeed;
+
+        for (cpw.mods.fml.common.IWorldGenerator generator : generators) {
+            fmlRandom.setSeed(chunkSeed);
+            try {
+                CompatHandler.beforeGenerate(world, generator);
+                generator.generate(fmlRandom, x, z, world, vanillaGen, provider);
+            } finally {
+                CompatHandler.afterGenerate(world);
+            }
+        }
+    }
+
+    @Override
+    public void onCubePreloadFailed(CubePos pos, CubeInitLevel actual, CubeInitLevel wanted) {
+        boolean generate = actual.ordinal() < CubeInitLevel.Generated.ordinal() && wanted.ordinal() >= CubeInitLevel.Generated.ordinal();
+        boolean populate = actual.ordinal() < CubeInitLevel.Populated.ordinal() && wanted.ordinal() >= CubeInitLevel.Populated.ordinal();
+
+        if (generate) {
+            if (vanilla instanceof Precalculable precalc) {
+                precalc.precalculate(pos.getX(), pos.getY(), pos.getZ());
+            }
+
+            decorator.pregenerate(world, pos);
+        }
+
+        if (populate) {
+            decorator.prepopulate(world, pos);
+        }
+    }
+
+    @Override
+    public void recreateStructures(ICube cube) {}
+
+    @Override
+    public List<BiomeGenBase.SpawnListEntry> getPossibleCreatures(EnumCreatureType creatureType, int x, int y, int z) {
+        return vanilla.getPossibleCreatures(creatureType, x, y, z);
+    }
+
+    @Override
+    public ChunkPosition getNearestStructure(String name, int x, int y, int z) {
+        return vanilla.func_147416_a(world, name, x, y, z);
+    }
+}

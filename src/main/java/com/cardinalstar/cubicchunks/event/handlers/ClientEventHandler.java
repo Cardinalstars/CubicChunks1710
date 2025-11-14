@@ -20,32 +20,21 @@
  */
 package com.cardinalstar.cubicchunks.event.handlers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiCreateWorld;
 import net.minecraft.client.gui.GuiOptionsRowList;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.MathHelper;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.WorldType;
-import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent.InitGuiEvent;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.compat.CubicChunksVideoSettings;
-import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
-import com.cardinalstar.cubicchunks.api.worldgen.VanillaCompatibilityGeneratorProviderBase;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.mixin.early.client.IGuiCreateWorld;
 import com.cardinalstar.cubicchunks.mixin.early.client.IGuiOptionsRowList;
 import com.cardinalstar.cubicchunks.mixin.early.client.IGuiVideoSettings;
 import com.cardinalstar.cubicchunks.modcompat.angelica.AngelicaInterop;
@@ -203,116 +192,6 @@ public class ClientEventHandler {
         @Override
         public void mouseReleased(int mouseX, int mouseY) {
             this.dragging = false;
-        }
-    }
-
-    public static class WorldSelectionCubicChunks {
-
-        private static final int MAP_TYPE_ID = 5;
-        private static final int ALLOW_CHEATS_ID = 6;
-        private static final int CUSTOMIZE_ID = 8;
-        private static final int MORE_WORLD_OPTIONS = 3;
-
-        private static final int CC_ENABLE_BUTTON_ID = 11;
-        private static final List<ResourceLocation> LIST_OF_GEN_OPTIONS = new ArrayList<ResourceLocation>();
-        private static int CURRENT_GEN_OPTION = 0;
-
-        @SubscribeEvent
-        public static void guiInit(InitGuiEvent.Post event) {
-            GuiScreen gui = event.gui;
-            if (isCreateWorldGui(gui)) {
-                init((GuiCreateWorld) gui, event.buttonList);
-            }
-        }
-
-        private static void init(GuiCreateWorld gui, List<GuiButton> buttons) {
-            if (getButton(buttons, CC_ENABLE_BUTTON_ID).isPresent()) {
-                return;
-            }
-            GuiButton enableCC = new GuiButton(CC_ENABLE_BUTTON_ID, 0, 0, 20, 20, "enable");
-            enableCC.visible = false;
-            buttons.add(enableCC);
-            Optional<GuiButton> customizeButton = getButton(buttons, CUSTOMIZE_ID);
-            Optional<GuiButton> allowCheats = getButton(buttons, ALLOW_CHEATS_ID);
-            customizeButton.ifPresent(b -> allowCheats.ifPresent(c -> {
-                b.yPosition = c.yPosition - 21;
-                GuiButton mapTypeButton = getButton(buttons, MAP_TYPE_ID).get();
-                enableCC.xPosition = c.xPosition;
-                enableCC.yPosition = b.yPosition;
-                enableCC.width = c.width;
-                enableCC.height = c.height;
-                enableCC.visible = mapTypeButton.visible;
-
-                refreshText(gui, enableCC);
-            }));
-            for (VanillaCompatibilityGeneratorProviderBase base : VanillaCompatibilityGeneratorProviderBase.REGISTRY
-                .getAll()) {
-                LIST_OF_GEN_OPTIONS.add(base.registryName);
-            }
-            CURRENT_GEN_OPTION = LIST_OF_GEN_OPTIONS
-                .indexOf(new ResourceLocation(CubicChunksConfig.compatibilityGeneratorType));
-        }
-
-        private static void refreshText(GuiCreateWorld gui, GuiButton enableBtn) {
-            String txt;
-            if (CubicChunksConfig.forceLoadCubicChunks == CubicChunksConfig.ForceCCMode.NONE) {
-                txt = "cubicchunks.gui.worldmenu.cc_disable";
-            } else {
-                VanillaCompatibilityGeneratorProviderBase provider = VanillaCompatibilityGeneratorProviderBase.REGISTRY
-                    .get(new ResourceLocation(CubicChunksConfig.compatibilityGeneratorType));
-                txt = provider.getUnlocalizedName();
-            }
-            enableBtn.displayString = I18n.format(txt);
-        }
-
-        @SubscribeEvent
-        public static void actionPerformed(GuiScreenEvent.ActionPerformedEvent.Post event) {
-            GuiScreen gui = event.gui;
-            GuiButton button = event.button;
-            if (isCreateWorldGui(gui)) {
-                switch (button.id) {
-                    case MORE_WORLD_OPTIONS: {
-                        init((GuiCreateWorld) gui, event.buttonList);
-                        // fall through
-                    }
-                    case MAP_TYPE_ID: {
-                        GuiButton enableCC = null, mapType = null;
-                        for (GuiButton b : (List<GuiButton>) event.buttonList) {
-                            if (b.id == CC_ENABLE_BUTTON_ID) {
-                                enableCC = b;
-                            } else if (b.id == MAP_TYPE_ID) {
-                                mapType = b;
-                            }
-                        }
-                        assert enableCC != null;
-                        boolean isCubicChunksType = WorldType.worldTypes[((IGuiCreateWorld) gui)
-                            .getSelectedIndex()] instanceof ICubicWorldType;
-                        enableCC.visible = mapType != null && !isCubicChunksType && mapType.visible;
-                        break;
-                    }
-                    case CC_ENABLE_BUTTON_ID: {
-                        CURRENT_GEN_OPTION++;
-                        if (CURRENT_GEN_OPTION >= LIST_OF_GEN_OPTIONS.size()) {
-                            CubicChunksConfig.disableCubicChunks();
-                            CURRENT_GEN_OPTION = -1;
-                        } else {
-                            CubicChunksConfig.setGenerator(LIST_OF_GEN_OPTIONS.get(CURRENT_GEN_OPTION));
-                        }
-                        refreshText((GuiCreateWorld) gui, button);
-                        break;
-                    }
-                }
-            }
-        }
-
-        private static boolean isCreateWorldGui(GuiScreen gui) {
-            return gui instanceof GuiCreateWorld;
-        }
-
-        private static Optional<GuiButton> getButton(List<GuiButton> buttons, int id) {
-            return buttons.stream()
-                .filter(b -> b.id == id)
-                .findFirst();
         }
     }
 }

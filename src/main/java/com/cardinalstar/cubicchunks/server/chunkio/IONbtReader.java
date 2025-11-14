@@ -46,6 +46,7 @@ import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 
@@ -63,6 +64,7 @@ public class IONbtReader {
         readOpacityIndex(level, column);
 
         column.isModified = false; // its exactly the same as on disk so its not modified
+        ((IColumnInternal)column).setColumn(true);
         return column; // TODO: use Chunk, not IColumn, whenever possible
     }
 
@@ -106,6 +108,20 @@ public class IONbtReader {
     private static void readOpacityIndex(NBTTagCompound nbt, Chunk chunk) {// biomes
         IHeightMap hmap = ((IColumn) chunk).getOpacityIndex();
         ((ServerHeightMap) hmap).readData(nbt.getByteArray("OpacityIndex"));
+    }
+
+    static CubeInitLevel getCubeInitLevel(NBTTagCompound nbt) {
+        NBTTagCompound level = nbt.getCompoundTag("Level");
+
+        boolean isSurfaceTracked = level.getBoolean("isSurfaceTracked");
+        short population = level.getShort("population");
+        boolean initLightDone = level.getBoolean("initLightDone");
+
+        if (population != Cube.POP_ALL) return CubeInitLevel.Generated;
+
+        if (!isSurfaceTracked && !initLightDone) return CubeInitLevel.Populated;
+
+        return CubeInitLevel.Lit;
     }
 
     static Cube readCube(Chunk column, final int cubeX, final int cubeY, final int cubeZ, NBTTagCompound nbt)
@@ -152,11 +168,10 @@ public class IONbtReader {
         final Cube cube = new Cube(column, cubeY);
 
         // set the worldgen stage
-        cube.setPopulated(level.getBoolean("populated"));
+        cube.setPopulationStatus(level.getShort("population"));
 
         // previous versions will get their surface tracking redone. This is intended
         cube.setSurfaceTracked(level.getBoolean("isSurfaceTracked"));
-        cube.setFullyPopulated(level.getBoolean("fullyPopulated"));
 
         // this status will get unset again in readLightingInfo() if the lighting engine is changed (LightingInfoType).
         cube.setInitialLightingDone(level.getBoolean("initLightDone"));

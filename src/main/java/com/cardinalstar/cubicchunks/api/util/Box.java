@@ -33,6 +33,8 @@ import com.google.common.collect.AbstractIterator;
 @ParametersAreNonnullByDefault
 public class Box implements Iterable<Vector3ic> {
 
+    public static final Box CUBE = new Box(0, 0, 0, 15, 15, 15);
+
     protected int x1, y1, z1;
     protected int x2, y2, z2;
 
@@ -67,6 +69,18 @@ public class Box implements Iterable<Vector3ic> {
 
     public int getZ2() {
         return z2;
+    }
+
+    public int getSizeX() {
+        return x2 - x1;
+    }
+
+    public int getSizeY() {
+        return y2 - y1;
+    }
+
+    public int getSizeZ() {
+        return z2 - z1;
     }
 
     public boolean contains(Box other) {
@@ -241,6 +255,6 @@ public class Box implements Iterable<Vector3ic> {
     }
 
     public static Box horizontalChunkSlice(int startY, int heightY) {
-        return new Box(0, startY, 0, 16, startY + heightY, 16);
+        return new Box(0, startY, 0, 15, startY + heightY, 15);
     }
 }

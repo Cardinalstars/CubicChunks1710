@@ -84,7 +84,7 @@ public class XSTR extends Random {
      *
      * @return the current seed
      */
-    public synchronized long getSeed() {
+    public long getSeed() {
         return seed;
     }
 
@@ -95,7 +95,7 @@ public class XSTR extends Random {
      * @param seed the new seed
      */
     @Override
-    public synchronized void setSeed(long seed) {
+    public void setSeed(long seed) {
         this.seed = seed;
     }
 
@@ -130,7 +130,7 @@ public class XSTR extends Random {
     double nextNextGaussian = 0;
 
     @Override
-    public synchronized double nextGaussian() {
+    public double nextGaussian() {
         // See Knuth, ACP, Section 3.4.1 Algorithm C.
         if (haveNextNextGaussian) {
             haveNextNextGaussian = false;

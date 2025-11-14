@@ -57,11 +57,12 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.event.world.ChunkEvent;
 
+import org.intellij.lang.annotations.MagicConstant;
+
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
 import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.server.CubeWatcher;
@@ -100,15 +101,17 @@ public class Cube implements ICube {
      */
     private boolean isModified = false;
 
-    /**
-     * Has the cube generator's populate() method been called for this cube?
-     */
-    private boolean isPopulated = false;
-    /**
-     * Has the cube generator's populate() method been called for every cube potentially writing to this cube during
-     * population?
-     */
-    private boolean isFullyPopulated = false;
+    public static final short POP_000 = 0b1;
+    // public static final short POP_100 = 0b10;
+    // public static final short POP_010 = 0b100;
+    // public static final short POP_110 = 0b1000;
+    // public static final short POP_001 = 0b10000;
+    // public static final short POP_101 = 0b100000;
+    // public static final short POP_011 = 0b1000000;
+    // public static final short POP_111 = 0b10000000;
+    public static final short POP_ALL = 0b11111111;
+    private short populationStatus = 0;
+
     /**
      * Has the initial light map been calculated?
      */
@@ -307,13 +310,6 @@ public class Cube implements ICube {
     // ========Chunk vanilla methods=========
     // ======================================
 
-    /**
-     * Returns the ExtendedBlockStorage array for this Chunk.
-     */
-    public ExtendedBlockStorage getBlockStorageArray() {
-        return this.storage;
-    }
-
     @Override
     public int getSavedLightValue(EnumSkyBlock lightType, int x, int y, int z) {
         ((ICubicWorldInternal) world).getLightingManager()
@@ -472,7 +468,7 @@ public class Cube implements ICube {
      * @param rand            - World specific Random
      */
     public void tickCubeServer(BooleanSupplier tryToTickFaster, Random rand) {
-        if (!isFullyPopulated) {
+        if (!isFullyPopulated()) {
             return;
         }
 
@@ -669,7 +665,7 @@ public class Cube implements ICube {
         ((ICubicWorldInternal) world).getLightingManager()
             .onCubeLoad(this);
         CompatHandler.onCubeLoad(new ChunkEvent.Load(getColumn()));
-        EVENT_BUS.post(new CubeEvent.Load(this));
+        EVENT_BUS.post(new CubeEvent.Load(world, coords, this));
     }
 
     @SuppressWarnings("deprecation")
@@ -698,6 +694,7 @@ public class Cube implements ICube {
      * Mark this cube as no longer part of this world
      */
     public void onCubeUnload() {
+        EVENT_BUS.post(new CubeEvent.Unload(this.world, this.coords, this));
         ((ICubicWorldInternal) this.world).getLightingManager()
             .onCubeUnload(this);
 
@@ -725,7 +722,6 @@ public class Cube implements ICube {
             this.world.func_147457_a(tileEntity);
         }
         ((IColumnInternal) getColumn()).removeFromStagingHeightmap(this);
-        EVENT_BUS.post(new CubeEvent.Unload(this));
     }
 
     @Override
@@ -783,44 +779,33 @@ public class Cube implements ICube {
      * server
      */
     public void setClientCube() {
-        this.isPopulated = true;
-        this.isFullyPopulated = true;
+        this.populationStatus = POP_ALL;
         this.isInitialLightingDone = true;
         this.isSurfaceTracked = true;
         this.ticked = true;
     }
 
-    @Override
-    public boolean isPopulated() {
-        return isPopulated;
+    public short getPopulationStatus() {
+        return populationStatus;
     }
 
-    /**
-     * Mark this cube as populated. This means that this cube was passed as argument to
-     * {@link ICubeGenerator#populate(Cube)}. Check there for more information regarding population.
-     *
-     * @param populated whether this cube was populated
-     */
-    public void setPopulated(boolean populated) {
-        this.isPopulated = populated;
+    public void setPopulationStatus(short populationStatus) {
+        this.populationStatus = populationStatus;
+    }
+
+    public void markPopulated(@MagicConstant(flagsFromClass = Cube.class) short flag) {
+        this.populationStatus |= flag;
         this.isModified = true;
+    }
+
+    @Override
+    public boolean isPopulated() {
+        return (populationStatus & POP_000) != 0;
     }
 
     @Override
     public boolean isFullyPopulated() {
-        return this.isFullyPopulated;
-    }
-
-    /**
-     * Mark this cube as fully populated. This means that any cube potentially writing to this cube was passed as an
-     * argument to {@link ICubeGenerator#populate(Cube)}. Check there for more information regarding
-     * population.
-     *
-     * @param populated whether this cube was fully populated
-     */
-    public void setFullyPopulated(boolean populated) {
-        this.isFullyPopulated = populated;
-        this.isModified = true;
+        return (populationStatus & POP_ALL) == POP_ALL;
     }
 
     /**
