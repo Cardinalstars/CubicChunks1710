@@ -87,27 +87,27 @@ public class MixinEntityRenderer {
 
         return 1000f;
         // Temporarily disable this - it breaks angelica
-//        float farPlaneDistance = original.call(instance);
-//
-//        if (!this.mc.theWorld.provider.getWorldHasVoidParticles()) {
-//            return farPlaneDistance;
-//        }
-//
-//        EntityLivingBase player = this.mc.renderViewEntity;
-//
-//        int skylight = (player.getBrightnessForRender(partialTicks) & 0xf00000) >> 20;
-//        double playerY = player.lastTickPosY + (player.posY - player.lastTickPosY) * (double) partialTicks;
-//
-//        double fogStrength = skylight / 16.0D + Math.max(playerY / 32.0D, 0.25);
-//
-//        if (fogStrength < 1.0D) {
-//            if (fogStrength < 0.0D) {
-//                fogStrength = 0.0D;
-//            }
-//
-//            farPlaneDistance *= (float) (fogStrength * fogStrength);
-//        }
-//
-//        return farPlaneDistance;
+        // float farPlaneDistance = original.call(instance);
+        //
+        // if (!this.mc.theWorld.provider.getWorldHasVoidParticles()) {
+        // return farPlaneDistance;
+        // }
+        //
+        // EntityLivingBase player = this.mc.renderViewEntity;
+        //
+        // int skylight = (player.getBrightnessForRender(partialTicks) & 0xf00000) >> 20;
+        // double playerY = player.lastTickPosY + (player.posY - player.lastTickPosY) * (double) partialTicks;
+        //
+        // double fogStrength = skylight / 16.0D + Math.max(playerY / 32.0D, 0.25);
+        //
+        // if (fogStrength < 1.0D) {
+        // if (fogStrength < 0.0D) {
+        // fogStrength = 0.0D;
+        // }
+        //
+        // farPlaneDistance *= (float) (fogStrength * fogStrength);
+        // }
+        //
+        // return farPlaneDistance;
     }
 }

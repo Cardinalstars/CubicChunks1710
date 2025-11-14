@@ -13,14 +13,18 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 public interface ICubeIO extends Flushable, Closeable {
 
     boolean columnExists(ChunkCoordIntPair pos);
+
     boolean cubeExists(CubePos pos);
 
     void saveColumn(ChunkCoordIntPair pos, Chunk column);
+
     void saveCube(CubePos pos, Cube cube);
 
     NBTTagCompound loadColumn(ChunkCoordIntPair pos) throws LoadFailureException;
+
     NBTTagCompound loadCube(CubePos pos) throws LoadFailureException;
 
     void preloadColumn(ChunkCoordIntPair pos);
+
     void preloadCube(CubePos pos, CubeInitLevel level);
 }

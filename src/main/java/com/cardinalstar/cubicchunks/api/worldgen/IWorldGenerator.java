@@ -105,7 +105,7 @@ public interface IWorldGenerator {
      * Gets the closest structure with name {@code name}. This is primarily used when an eye of ender is trying to find
      * a stronghold.
      *
-     * @param name           the name of the structure
+     * @param name the name of the structure
      *
      * @return the position of the structure, or {@code null} if none could be found
      */

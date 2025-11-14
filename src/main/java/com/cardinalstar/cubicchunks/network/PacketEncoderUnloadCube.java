@@ -74,7 +74,8 @@ public class PacketEncoderUnloadCube extends CCPacketEncoder<PacketEncoderUnload
         cubeCache.unloadCube(packet.pos);
 
         if (AngelicaInterop.hasDelegate()) {
-            AngelicaInterop.getDelegate().onCubeUnloaded(packet.pos.getX(), packet.pos.getY(), packet.pos.getZ());
+            AngelicaInterop.getDelegate()
+                .onCubeUnloaded(packet.pos.getX(), packet.pos.getY(), packet.pos.getZ());
         }
     }
 }

@@ -25,18 +25,24 @@ public interface ICubeLoader extends Flushable, Closeable {
 
     boolean cubeExists(int x, int y, int z);
 
-
     Cube getCube(int x, int y, int z, Requirement effort);
+
     /// Notifies this loader that a cube was generated further, either by a populator or something else.
     void onCubeGenerated(int x, int y, int z);
 
     void cacheCubes(int x, int y, int z, int spanx, int spany, int spanz, Requirement effort);
+
     default void cacheCubes(Box box, Requirement effort) {
         cacheCubes(
-            box.getX1(), box.getY1(), box.getZ1(),
-            box.getX2() - box.getX1(), box.getY2() - box.getY1(), box.getZ2() - box.getZ1(),
+            box.getX1(),
+            box.getY1(),
+            box.getZ1(),
+            box.getX2() - box.getX1(),
+            box.getY2() - box.getY1(),
+            box.getZ2() - box.getZ1(),
             effort);
     }
+
     void uncacheCubes();
 
     void unloadCube(int x, int y, int z);

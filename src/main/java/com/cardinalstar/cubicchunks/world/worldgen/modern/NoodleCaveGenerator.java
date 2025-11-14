@@ -24,18 +24,21 @@ public class NoodleCaveGenerator implements ICubeGenerator {
 
     private enum Layers implements SamplerFactory {
         Chooser {
+
             @Override
             public NoiseSampler createSampler(Random rng) {
                 return WorldGenerators.caveChooser(rng);
             }
         },
         A {
+
             @Override
             public NoiseSampler createSampler(Random rng) {
                 return new ScaledNoise(new OctavesSampler(rng, 1), SCALE);
             }
         },
         B {
+
             @Override
             public NoiseSampler createSampler(Random rng) {
                 return new ScaledNoise(new OctavesSampler(rng, 2), SCALE);

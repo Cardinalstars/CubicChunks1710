@@ -1,6 +1,5 @@
 package com.cardinalstar.cubicchunks.async;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -37,15 +36,17 @@ public class TaskPool {
     private static final ThreadPoolExecutor POOL = new ThreadPoolExecutor(
         1,
         CubicChunksConfig.optimizations.backgroundThreads,
-        60, TimeUnit.SECONDS,
+        60,
+        TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(1024),
         THREAD_FACTORY,
         new DiscardPolicy());
 
-    private static final ScheduledExecutorService SCHEDULED = Executors.newSingleThreadScheduledExecutor(THREAD_FACTORY);
+    private static final ScheduledExecutorService SCHEDULED = Executors
+        .newSingleThreadScheduledExecutor(THREAD_FACTORY);
 
     // static {
-    //     SCHEDULED.scheduleAtFixedRate(TaskPool::flushLastTask, 1, 1, TimeUnit.MILLISECONDS);
+    // SCHEDULED.scheduleAtFixedRate(TaskPool::flushLastTask, 1, 1, TimeUnit.MILLISECONDS);
     // }
 
     // private static final Object lock = new Object();
@@ -61,33 +62,33 @@ public class TaskPool {
         long now = System.nanoTime();
 
         synchronized (lock) {
-//            if (lastTask != null) {
-//                Task<T> merged;
-//
-//                if (lastTask.submitTime + TASK_BATCHING_PERIOD < now) {
-//                    POOL.submit(lastTask);
-//                    lastTask = null;
-//                } else if ((merged = lastTask.tryMerge(task, now, callback)) != null) {
-//                    return merged;
-//                }
-//            }
+            // if (lastTask != null) {
+            // Task<T> merged;
+            //
+            // if (lastTask.submitTime + TASK_BATCHING_PERIOD < now) {
+            // POOL.submit(lastTask);
+            // lastTask = null;
+            // } else if ((merged = lastTask.tryMerge(task, now, callback)) != null) {
+            // return merged;
+            // }
+            // }
 
             Task<T> future = new Task<>(task, now, callback);
-//            lastTask = future;
+            // lastTask = future;
             POOL.submit(future);
             return future;
         }
     }
 
     // private static void flushLastTask() {
-    //     synchronized (lock) {
-    //         if (lastTask != null) {
-    //             if (lastTask.submitTime + TASK_BATCHING_PERIOD < System.nanoTime()) {
-    //                 POOL.submit(lastTask);
-    //                 lastTask = null;
-    //             }
-    //         }
-    //     }
+    // synchronized (lock) {
+    // if (lastTask != null) {
+    // if (lastTask.submitTime + TASK_BATCHING_PERIOD < System.nanoTime()) {
+    // POOL.submit(lastTask);
+    // lastTask = null;
+    // }
+    // }
+    // }
     // }
 
     public interface ITask<T> extends Callable<T> {
@@ -106,7 +107,9 @@ public class TaskPool {
     public interface ITaskFuture<T> {
 
         ITask<T> getTask();
+
         void finish(T value);
+
         void fail(Exception ex);
     }
 
@@ -145,7 +148,7 @@ public class TaskPool {
         public synchronized void run() {
             try {
                 if (merged != null) {
-                    //noinspection unchecked
+                    // noinspection unchecked
                     finish(task.callMerged((List<ITaskFuture<?>>) (List<?>) merged));
                 } else {
                     finish(task.call());

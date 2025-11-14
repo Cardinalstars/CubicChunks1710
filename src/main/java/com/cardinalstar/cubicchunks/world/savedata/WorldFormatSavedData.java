@@ -6,6 +6,7 @@ import net.minecraft.world.WorldSavedData;
 
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.world.storage.StorageFormatFactory;
+
 import cpw.mods.fml.common.registry.GameRegistry.UniqueIdentifier;
 
 public class WorldFormatSavedData extends WorldSavedData {
@@ -25,7 +26,8 @@ public class WorldFormatSavedData extends WorldSavedData {
         format = StorageFormatFactory.REGISTRY.get(new UniqueIdentifier(tag.getString("format")));
 
         if (format == null) {
-            throw new IllegalStateException("Could not load world: save format was not registered: " + tag.getString("format"));
+            throw new IllegalStateException(
+                "Could not load world: save format was not registered: " + tag.getString("format"));
         }
     }
 
@@ -35,9 +37,8 @@ public class WorldFormatSavedData extends WorldSavedData {
     }
 
     public static WorldFormatSavedData get(World world) {
-        WorldFormatSavedData data = (WorldFormatSavedData) world.mapStorage.loadData(
-            WorldFormatSavedData.class,
-            "cubicchunks.world_format");
+        WorldFormatSavedData data = (WorldFormatSavedData) world.mapStorage
+            .loadData(WorldFormatSavedData.class, "cubicchunks.world_format");
 
         if (data == null) {
             data = new WorldFormatSavedData("cubicchunks.world_format");

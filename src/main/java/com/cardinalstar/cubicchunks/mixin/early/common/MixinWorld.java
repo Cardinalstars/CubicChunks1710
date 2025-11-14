@@ -216,7 +216,9 @@ public abstract class MixinWorld implements ICubicWorldInternal {
 
     @Redirect(
         method = "<init>(Lnet/minecraft/world/storage/ISaveHandler;Ljava/lang/String;Lnet/minecraft/world/WorldSettings;Lnet/minecraft/world/WorldProvider;Lnet/minecraft/profiler/Profiler;)V",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;createChunkProvider()Lnet/minecraft/world/chunk/IChunkProvider;"))
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/World;createChunkProvider()Lnet/minecraft/world/chunk/IChunkProvider;"))
     public IChunkProvider noopCreateProvider(World instance) {
         // Done below manually
         return null;
@@ -229,7 +231,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         WorldProvider p_i45369_4_, Profiler p_i45369_5_, CallbackInfo ci) {
 
         // Some other world instantiation that we don't care about (fake dummy worlds, for instance)
-        //noinspection ConstantValue
+        // noinspection ConstantValue
         if (!((Object) this instanceof WorldServer worldServer)) return;
 
         ((ICubicWorldInternal.Server) this).initCubicWorldServer();

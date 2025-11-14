@@ -52,7 +52,10 @@ public class VanillaCubicWorldType extends WorldType implements ICubicWorldType 
 
     @Override
     public @NotNull IWorldGenerator createCubeGenerator(World world) {
-        return new VanillaWorldGenerator(world.provider.createChunkGenerator(), world, BuiltinWorldDecorators.CUBIC_VANILLA);
+        return new VanillaWorldGenerator(
+            world.provider.createChunkGenerator(),
+            world,
+            BuiltinWorldDecorators.CUBIC_VANILLA);
     }
 
     @Override

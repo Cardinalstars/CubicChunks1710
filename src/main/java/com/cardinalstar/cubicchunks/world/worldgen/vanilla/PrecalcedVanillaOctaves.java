@@ -41,7 +41,8 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
     }
 
     @Override
-    public double[] generateNoiseOctaves(double[] data, int blockX, int blockY, int blockZ, int sx, int sy, int sz, double scaleX, double scaleY, double scaleZ) {
+    public double[] generateNoiseOctaves(double[] data, int blockX, int blockY, int blockZ, int sx, int sy, int sz,
+        double scaleX, double scaleY, double scaleZ) {
         long now = System.nanoTime();
 
         if ((now - lastMessage) > 5e9) {
@@ -63,8 +64,13 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
                 zscale = scaleZ;
             }
 
-            // This should never happen because all vanilla noisegens are given constant params, but you never know what mods could do
-            if (sx != xspan || sy != yspan || sz != zspan || diff(scaleX, xscale) || diff(scaleY, yscale) || diff(scaleZ, zscale)) {
+            // This should never happen because all vanilla noisegens are given constant params, but you never know what
+            // mods could do
+            if (sx != xspan || sy != yspan
+                || sz != zspan
+                || diff(scaleX, xscale)
+                || diff(scaleY, yscale)
+                || diff(scaleZ, zscale)) {
                 misses++;
 
                 if (misses > 20) {
@@ -167,9 +173,15 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
 
             PrecalcedVanillaOctaves.super.generateNoiseOctaves(
                 data.data,
-                key.x, key.y, key.z,
-                xspan, yspan, zspan,
-                xscale, yscale, zscale);
+                key.x,
+                key.y,
+                key.z,
+                xspan,
+                yspan,
+                zspan,
+                xscale,
+                yscale,
+                zscale);
 
             cache.put(key, data);
 
@@ -185,7 +197,8 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
         public double xscale, yscale, zscale;
 
         public NoiseData() {
-            this.data = new double[PrecalcedVanillaOctaves.this.xspan * PrecalcedVanillaOctaves.this.yspan * PrecalcedVanillaOctaves.this.zspan];
+            this.data = new double[PrecalcedVanillaOctaves.this.xspan * PrecalcedVanillaOctaves.this.yspan
+                * PrecalcedVanillaOctaves.this.zspan];
         }
 
         final boolean matches() {

@@ -15,12 +15,8 @@ import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 
 public class MapGenCaveFluids implements ICubePopulator {
 
-    private static final ForgeDirection[] BLOCK_MASK = {
-        ForgeDirection.NORTH,
-        ForgeDirection.SOUTH,
-        ForgeDirection.EAST,
-        ForgeDirection.WEST
-    };
+    private static final ForgeDirection[] BLOCK_MASK = { ForgeDirection.NORTH, ForgeDirection.SOUTH,
+        ForgeDirection.EAST, ForgeDirection.WEST };
 
     private final XSTR rng = new XSTR();
 
@@ -81,10 +77,12 @@ public class MapGenCaveFluids implements ICubePopulator {
             int globalY = y + cube.getY() * 16;
             int globalZ = z + cube.getZ() * 16;
 
-            fluid.getBlock().onNeighborBlockChange(world, globalX, globalY, globalZ, Blocks.air);
+            fluid.getBlock()
+                .onNeighborBlockChange(world, globalX, globalY, globalZ, Blocks.air);
 
             world.scheduledUpdatesAreImmediate = true;
-            fluid.getBlock().updateTick(world, globalX, globalY, globalZ, world.rand);
+            fluid.getBlock()
+                .updateTick(world, globalX, globalY, globalZ, world.rand);
             world.scheduledUpdatesAreImmediate = false;
 
             break;

@@ -163,7 +163,8 @@ public class Coords {
 
     private static long pack(long k, int shift) {
         if (k < ~MASK || k > MASK) {
-            throw new IllegalArgumentException("Can only pack numbers between " + (~MASK) + ".." + MASK + " (inclusive): got " + k);
+            throw new IllegalArgumentException(
+                "Can only pack numbers between " + (~MASK) + ".." + MASK + " (inclusive): got " + k);
         }
 
         // Trim off the upper bits, preserving the sign

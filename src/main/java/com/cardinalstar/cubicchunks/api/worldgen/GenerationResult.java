@@ -21,7 +21,8 @@ public class GenerationResult<T> {
 
     public GenerationResult(T object, List<Chunk> columnSideEffects, List<Cube> cubeSideEffects) {
         this.object = object;
-        this.columnSideEffects = columnSideEffects == null ? ImmutableList.of() : ImmutableList.copyOf(columnSideEffects);
+        this.columnSideEffects = columnSideEffects == null ? ImmutableList.of()
+            : ImmutableList.copyOf(columnSideEffects);
         this.cubeSideEffects = cubeSideEffects == null ? ImmutableList.of() : ImmutableList.copyOf(cubeSideEffects);
     }
 }

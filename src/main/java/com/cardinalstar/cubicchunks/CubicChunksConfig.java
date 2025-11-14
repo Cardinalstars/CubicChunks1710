@@ -52,6 +52,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.TreeRangeSet;
 import com.gtnewhorizon.gtnhlib.config.Config;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
+
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -71,10 +72,10 @@ public class CubicChunksConfig {
 
     @Config.LangKey("cubicchunks.config.force_cc")
     @Config.Comment("""
-            Determines when a cubic chunks world should be created for non-cubic-chunks world types.
-            DEFAULT - only when cubic chunks world type
-            LOAD_NOT_EXCLUDED - load all worlds as cubic chunks, except excluded dimensions
-            ALWAYS - load everything as cubic chunks. Overrides forceDimensionExcludes""")
+        Determines when a cubic chunks world should be created for non-cubic-chunks world types.
+        DEFAULT - only when cubic chunks world type
+        LOAD_NOT_EXCLUDED - load all worlds as cubic chunks, except excluded dimensions
+        ALWAYS - load everything as cubic chunks. Overrides forceDimensionExcludes""")
     public static ForceCCMode forceLoadCubicChunks = ForceCCMode.DEFAULT;
 
     @Config.LangKey("cubicchunks.config.cubegen_per_tick")
@@ -231,7 +232,8 @@ public class CubicChunksConfig {
 
         @Config.LangKey("cubicchunks.config.optimizations.background_threads")
         @Config.Comment("Maximum number of threads to use for background tasks (world I/O, noise generation, etc).")
-        public int backgroundThreads = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors() / 2;
+        public int backgroundThreads = ManagementFactory.getOperatingSystemMXBean()
+            .getAvailableProcessors() / 2;
 
     }
 

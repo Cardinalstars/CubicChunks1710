@@ -18,5 +18,6 @@ public interface IRegistryEntry<V> {
     UniqueIdentifier getRegistryName();
 
     String getLocalizedName();
+
     String getUnlocalizedName();
 }

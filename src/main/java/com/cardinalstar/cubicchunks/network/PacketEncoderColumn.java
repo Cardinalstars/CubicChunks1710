@@ -86,7 +86,8 @@ public class PacketEncoderColumn extends CCPacketEncoder<PacketEncoderColumn.Pac
         });
 
         if (AngelicaInterop.hasDelegate()) {
-            AngelicaInterop.getDelegate().onColumnLoaded(packet.chunkX, packet.chunkZ);
+            AngelicaInterop.getDelegate()
+                .onColumnLoaded(packet.chunkX, packet.chunkZ);
         }
     }
 }

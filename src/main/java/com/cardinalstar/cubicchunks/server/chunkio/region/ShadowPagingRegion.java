@@ -223,7 +223,8 @@ public class ShadowPagingRegion<K extends IKey<K>> implements IRegion<K> {
         List<ByteBuffer> tempBuffers = new ArrayList<>();
         ByteBuffer lengthPrefixBuffer = ByteBuffer.allocate(Integer.BYTES);
 
-        for (Iterator<Map.Entry<K, ByteBuffer>> itr = entries.entrySet().iterator(); itr.hasNext();) {
+        for (Iterator<Map.Entry<K, ByteBuffer>> itr = entries.entrySet()
+            .iterator(); itr.hasNext();) {
             Map.Entry<K, ByteBuffer> entry = itr.next();
 
             K key = entry.getKey();

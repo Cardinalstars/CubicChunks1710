@@ -75,7 +75,6 @@ public class CubeEvent extends WorldEvent {
         }
     }
 
-
     public static class SaveNBT extends CubeEvent {
 
         public NBTTagCompound tag;

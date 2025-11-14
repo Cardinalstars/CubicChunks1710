@@ -64,7 +64,7 @@ public class IONbtReader {
         readOpacityIndex(level, column);
 
         column.isModified = false; // its exactly the same as on disk so its not modified
-        ((IColumnInternal)column).setColumn(true);
+        ((IColumnInternal) column).setColumn(true);
         return column; // TODO: use Chunk, not IColumn, whenever possible
     }
 

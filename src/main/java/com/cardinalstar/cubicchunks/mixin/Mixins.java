@@ -170,10 +170,10 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Fixing mobs walking off into chasms below y = 0").addCommonMixins("common.MixinPathFinder")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
-    MIXIN_ENTITY_BRIGHTNESS(new MixinBuilder("Fix Entity.getBrightness")
-        .addCommonMixins("common.MixinEntity_Brightness")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_ENTITY_BRIGHTNESS(
+        new MixinBuilder("Fix Entity.getBrightness").addCommonMixins("common.MixinEntity_Brightness")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
 
     // SERVER
     MIXIN_INTEGRATED_SERVER_ACCESSOR(

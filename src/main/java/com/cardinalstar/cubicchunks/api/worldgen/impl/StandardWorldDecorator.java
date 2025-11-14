@@ -3,10 +3,10 @@ package com.cardinalstar.cubicchunks.api.worldgen.impl;
 import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.api.worldgen.DependencyRegistry;
-import com.cardinalstar.cubicchunks.api.worldgen.decoration.IWorldDecorator;
 import com.cardinalstar.cubicchunks.api.worldgen.WorldgenRegistry;
 import com.cardinalstar.cubicchunks.api.worldgen.decoration.ICubeGenerator;
 import com.cardinalstar.cubicchunks.api.worldgen.decoration.ICubePopulator;
+import com.cardinalstar.cubicchunks.api.worldgen.decoration.IWorldDecorator;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 

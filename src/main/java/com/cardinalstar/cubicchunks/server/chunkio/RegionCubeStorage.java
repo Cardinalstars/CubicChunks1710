@@ -42,6 +42,7 @@ import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
 import com.cardinalstar.cubicchunks.server.chunkio.region.ShadowPagingRegion;
 import com.cardinalstar.cubicchunks.util.CubePos;
+
 import cubicchunks.regionlib.impl.EntryLocation2D;
 import cubicchunks.regionlib.impl.EntryLocation3D;
 import cubicchunks.regionlib.impl.SaveCubeColumns;
@@ -82,13 +83,20 @@ public class RegionCubeStorage implements ICubicStorage {
                             .setKeyProvider(keyProv)
                             .setSectorSize(512)
                             .build(),
-                        (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName())))),
+                        (dir, key) -> Files.exists(
+                            dir.resolve(
+                                key.getRegionKey()
+                                    .getName())))),
                 new SharedCachedRegionProvider<>(
                     new SimpleRegionProvider<>(
                         new EntryLocation2D.Provider(),
                         part2d,
-                        (keyProvider, regionKey) -> new ExtRegion<>(part2d, Collections.emptyList(), keyProvider, regionKey),
-                        (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName() + ".ext")))));
+                        (keyProvider,
+                            regionKey) -> new ExtRegion<>(part2d, Collections.emptyList(), keyProvider, regionKey),
+                        (dir, key) -> Files.exists(
+                            dir.resolve(
+                                key.getRegionKey()
+                                    .getName() + ".ext")))));
             @SuppressWarnings("unchecked")
             SaveSection3D section3d = new SaveSection3D(
                 new SharedCachedRegionProvider<>(
@@ -101,14 +109,20 @@ public class RegionCubeStorage implements ICubicStorage {
                             .setKeyProvider(keyProv)
                             .setSectorSize(512)
                             .build(),
-                        (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName())))),
+                        (dir, key) -> Files.exists(
+                            dir.resolve(
+                                key.getRegionKey()
+                                    .getName())))),
                 new SharedCachedRegionProvider<>(
                     new SimpleRegionProvider<>(
                         new EntryLocation3D.Provider(),
                         part3d,
                         (keyProvider,
                             regionKey) -> new ExtRegion<>(part3d, Collections.emptyList(), keyProvider, regionKey),
-                        (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName() + ".ext")))));
+                        (dir, key) -> Files.exists(
+                            dir.resolve(
+                                key.getRegionKey()
+                                    .getName() + ".ext")))));
 
             return new SaveCubeColumns(section2d, section3d);
         } else {

@@ -23,12 +23,14 @@ public class SpaghettiCaveGenerator implements ICubeGenerator {
 
     private enum Layers implements SamplerFactory {
         A {
+
             @Override
             public NoiseSampler createSampler(Random rng) {
                 return new ScaledNoise(new OctavesSampler(rng, 3), SCALE);
             }
         },
         B {
+
             @Override
             public NoiseSampler createSampler(Random rng) {
                 return new ScaledNoise(new OctavesSampler(rng, 3), SCALE);

@@ -69,6 +69,7 @@ import com.cardinalstar.cubicchunks.world.savedata.WorldFormatSavedData;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
+
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 /**
@@ -139,7 +140,8 @@ public class CubeProviderServer extends ChunkProviderServer
 
             this.cubeLoader = new CubeLoaderServer(
                 worldServer,
-                format.getFormat().provideStorage(worldServer, path),
+                format.getFormat()
+                    .provideStorage(worldServer, path),
                 worldGenerator,
                 new LoadingCallbacks());
         } catch (IOException e) {
@@ -336,8 +338,7 @@ public class CubeProviderServer extends ChunkProviderServer
 
             cubeLoader.unpauseLoadCalls();
 
-            CubeInitLevel actual = cube == null ? CubeInitLevel.None
-                : cube.getInitLevel();
+            CubeInitLevel actual = cube == null ? CubeInitLevel.None : cube.getInitLevel();
             CubeInitLevel wanted = CubeInitLevel.fromRequirement(request.effort);
 
             if (actual.ordinal() < wanted.ordinal()) {

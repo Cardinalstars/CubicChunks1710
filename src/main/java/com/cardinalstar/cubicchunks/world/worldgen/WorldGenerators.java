@@ -12,6 +12,7 @@ import com.cardinalstar.cubicchunks.world.worldgen.compat.DeepslateCubePopulator
 import com.cardinalstar.cubicchunks.world.worldgen.noise.OctavesSampler;
 import com.cardinalstar.cubicchunks.world.worldgen.noise.ScaledNoise;
 import com.gtnewhorizon.gtnhlib.util.data.LazyBlock;
+
 import cpw.mods.fml.common.Optional;
 
 public class WorldGenerators {
@@ -28,36 +29,36 @@ public class WorldGenerators {
     }
 
     private static void initVanilla() {
-//        CUBIC_VANILLA.terrain().register(
-//            "noodle-caves",
-//            new NoodleCaveGenerator(),
-//            "required-by:caves-all");
-//
-//        CUBIC_VANILLA.terrain().register(
-//            "spaghetti-caves",
-//            new SpaghettiCaveGenerator(),
-//            "required-by:caves-all");
+        // CUBIC_VANILLA.terrain().register(
+        // "noodle-caves",
+        // new NoodleCaveGenerator(),
+        // "required-by:caves-all");
+        //
+        // CUBIC_VANILLA.terrain().register(
+        // "spaghetti-caves",
+        // new SpaghettiCaveGenerator(),
+        // "required-by:caves-all");
 
-        CUBIC_VANILLA.terrain().registerTarget("caves-all");
+        CUBIC_VANILLA.terrain()
+            .registerTarget("caves-all");
 
         // TODO: block carver
         // TODO: pillar caves
         // TODO: aquifers
 
-//        CubeGeneratorsRegistry.registerVanillaPopulator(
-//            "water-spouts",
-//            new MapGenCaveFluids(WATER_STILL));
-//
-//        CubeGeneratorsRegistry.registerVanillaPopulator(
-//            "lava-spouts",
-//            new MapGenCaveFluids(LAVA_STILL));
+        // CubeGeneratorsRegistry.registerVanillaPopulator(
+        // "water-spouts",
+        // new MapGenCaveFluids(WATER_STILL));
+        //
+        // CubeGeneratorsRegistry.registerVanillaPopulator(
+        // "lava-spouts",
+        // new MapGenCaveFluids(LAVA_STILL));
     }
 
     @Optional.Method(modid = Mods.ModIDs.ET_FUTURUM_REQUIEM)
     private static void initEFR() {
-        CUBIC_VANILLA.population().register(
-            "low-deepslate",
-            new DeepslateCubePopulator());
+        CUBIC_VANILLA.population()
+            .register("low-deepslate", new DeepslateCubePopulator());
     }
 
     private static final double CHOOSER_SCALE = 0.01;

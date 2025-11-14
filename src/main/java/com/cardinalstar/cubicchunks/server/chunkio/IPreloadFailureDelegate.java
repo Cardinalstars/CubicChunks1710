@@ -9,6 +9,7 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 public interface IPreloadFailureDelegate {
 
     void onColumnPreloadFailed(ChunkCoordIntPair pos);
+
     void onCubePreloadFailed(CubePos pos, CubeInitLevel actual, CubeInitLevel wanted);
 
 }

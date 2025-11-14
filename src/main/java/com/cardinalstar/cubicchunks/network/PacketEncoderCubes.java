@@ -37,6 +37,7 @@ import com.cardinalstar.cubicchunks.modcompat.angelica.AngelicaInterop;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -149,7 +150,8 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
                 cube.markForRenderUpdate();
 
                 if (AngelicaInterop.hasDelegate()) {
-                    AngelicaInterop.getDelegate().onCubeLoaded(cube.getX(), cube.getY(), cube.getZ());
+                    AngelicaInterop.getDelegate()
+                        .onCubeLoaded(cube.getX(), cube.getY(), cube.getZ());
                 }
             }
         }

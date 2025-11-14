@@ -30,6 +30,7 @@ import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 public class CubeLoaderServer implements ICubeLoader {
@@ -161,7 +162,10 @@ public class CubeLoaderServer implements ICubeLoader {
         if (cache != null) {
             Cube cube = cache.get(x, y, z);
 
-            if (cube != null && cube.getInitLevel().ordinal() >= CubeInitLevel.fromRequirement(effort).ordinal()) {
+            if (cube != null && cube.getInitLevel()
+                .ordinal()
+                >= CubeInitLevel.fromRequirement(effort)
+                    .ordinal()) {
                 return cube;
             }
         }

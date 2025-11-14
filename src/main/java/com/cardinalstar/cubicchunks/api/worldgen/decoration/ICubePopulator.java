@@ -22,7 +22,6 @@ package com.cardinalstar.cubicchunks.api.worldgen.decoration;
 
 import net.minecraft.world.World;
 
-import com.cardinalstar.cubicchunks.api.worldgen.BuiltinWorldDecorators;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 

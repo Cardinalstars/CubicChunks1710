@@ -71,7 +71,8 @@ public class PacketEncoderUnloadColumn extends CCPacketEncoder<PacketEncoderUnlo
         cubeCache.unloadChunk(packet.chunkX, packet.chunkZ);
 
         if (AngelicaInterop.hasDelegate()) {
-            AngelicaInterop.getDelegate().onColumnUnloaded(packet.chunkX, packet.chunkZ);
+            AngelicaInterop.getDelegate()
+                .onColumnUnloaded(packet.chunkX, packet.chunkZ);
         }
     }
 }

@@ -15,7 +15,6 @@ import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.util.XSTR;
 import com.cardinalstar.cubicchunks.worldgen.VanillaWorldGenerator;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
-
 import com.gtnewhorizon.gtnhlib.util.data.LazyBlock;
 
 public class MapGenCavesCubic extends FeatureCubicGenerator<MapGenCavesCubic.CaveSeed, VanillaWorldGenerator> {
@@ -91,7 +90,14 @@ public class MapGenCavesCubic extends FeatureCubicGenerator<MapGenCavesCubic.Cav
     protected boolean shouldGenerate(WorldView worldView, WorldgenFeature<CaveSeed> feature) {
         Box box = worldView.getBounds();
 
-        return !scanOuterBoxForWater(worldView, box.getX1(), box.getX2(), box.getY1(), box.getY2(), box.getZ1(), box.getZ2());
+        return !scanOuterBoxForWater(
+            worldView,
+            box.getX1(),
+            box.getX2(),
+            box.getY1(),
+            box.getY2(),
+            box.getZ1(),
+            box.getZ2());
     }
 
     private static boolean scanOuterBoxForWater(WorldView worldView, int xmin, int xmax, int zmin, int zmax, int ymax,
@@ -134,7 +140,8 @@ public class MapGenCavesCubic extends FeatureCubicGenerator<MapGenCavesCubic.Cav
     }
 
     @Override
-    protected void place(WorldView worldView, WorldgenFeature<CaveSeed> feature, int x, int y, int z, ImmutableBlockMeta bm) {
+    protected void place(WorldView worldView, WorldgenFeature<CaveSeed> feature, int x, int y, int z,
+        ImmutableBlockMeta bm) {
         BiomeGenBase biome = worldView.getBiomeGenForBlock(x, y, z);
         Block block = worldView.getBlock(x, y, z);
 

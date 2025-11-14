@@ -96,7 +96,8 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
     @Nullable
     @Override
     public IWorldGenerator createCubeGenerator() {
-        WorldType terrainType = worldObj.getWorldInfo().getTerrainType();
+        WorldType terrainType = worldObj.getWorldInfo()
+            .getTerrainType();
 
         if (terrainType instanceof ICubicWorldType ccWorldType && ccWorldType.hasCubicGeneratorForWorld(worldObj)) {
             return ccWorldType.createCubeGenerator(worldObj);

@@ -11,7 +11,8 @@ import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 
-public abstract class FeatureCubicGenerator<TSeed, TGen extends IWorldGenerator> extends SeedBasedCubicGenerator<WorldgenFeature<TSeed>, TGen> {
+public abstract class FeatureCubicGenerator<TSeed, TGen extends IWorldGenerator>
+    extends SeedBasedCubicGenerator<WorldgenFeature<TSeed>, TGen> {
 
     protected FeatureCubicGenerator(int range) {
         super(range);
@@ -50,6 +51,7 @@ public abstract class FeatureCubicGenerator<TSeed, TGen extends IWorldGenerator>
     /**
      * Checks if the given cube has any features, and adds them to the list. The seed is stored in a timed cache, so
      * they must be immutable.
+     * 
      * @param rng An RNG that is seeded to a deterministic value for this cube.
      */
     protected abstract void getSeedsImpl(Random rng, int cubeX, int cubeY, int cubeZ, List<TSeed> seeds);
@@ -67,9 +69,12 @@ public abstract class FeatureCubicGenerator<TSeed, TGen extends IWorldGenerator>
 
         if (feature.affects(pos.getX(), pos.getY(), pos.getZ()) && shouldGenerate(worldView, feature)) {
             for (var p : feature.getOperations(pos.getX(), pos.getY(), pos.getZ())) {
-                int x = p.left().x() + box.getX1();
-                int y = p.left().y() + box.getY1();
-                int z = p.left().z() + box.getZ1();
+                int x = p.left()
+                    .x() + box.getX1();
+                int y = p.left()
+                    .y() + box.getY1();
+                int z = p.left()
+                    .z() + box.getZ1();
 
                 place(worldView, feature, x, y, z, p.right());
             }
@@ -84,12 +89,15 @@ public abstract class FeatureCubicGenerator<TSeed, TGen extends IWorldGenerator>
         return true;
     }
 
-    protected void place(WorldView worldView, WorldgenFeature<TSeed> feature, int blockX, int blockY, int blockZ, ImmutableBlockMeta bm) {
+    protected void place(WorldView worldView, WorldgenFeature<TSeed> feature, int blockX, int blockY, int blockZ,
+        ImmutableBlockMeta bm) {
         worldView.setBlock(blockX, blockY, blockZ, bm);
     }
 
     protected abstract int getSeedX(TSeed seed);
+
     protected abstract int getSeedY(TSeed seed);
+
     protected abstract int getSeedZ(TSeed seed);
 
     /** Gets a seeds recursions/branches, if any. */

@@ -17,6 +17,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
@@ -28,7 +29,7 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
         .maximumSize(1024)
         .removalListener(notification -> {
             if (notification.getCause() != RemovalCause.EXPLICIT) {
-                //noinspection unchecked
+                // noinspection unchecked
                 releaseData((NoiseData) notification.getValue());
             }
         })
@@ -97,7 +98,8 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
     public NoiseData takeSampler(World world, int cubeX, int cubeY, int cubeZ) {
         TaskKey key = new TaskKey(world.provider.dimensionId, cubeX, cubeY, cubeZ);
 
-        NoiseData data = cache.asMap().remove(key);
+        NoiseData data = cache.asMap()
+            .remove(key);
 
         if (data == null) {
             data = getData();

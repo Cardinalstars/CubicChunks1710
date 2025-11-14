@@ -13,7 +13,6 @@ import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.storage.IThreadedFileIO;
 import net.minecraft.world.storage.ThreadedFileIOBase;
-
 import net.minecraftforge.common.MinecraftForge;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
@@ -25,6 +24,7 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+
 import it.unimi.dsi.fastutil.Pair;
 
 public class CubeIO implements ICubeIO, IThreadedFileIO {
@@ -39,20 +39,20 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
     private final Map<CubePos, NBTTagCompound> pendingCubes = new ConcurrentHashMap<>();
 
     @SuppressWarnings("unchecked")
-    private final Cache<ChunkCoordIntPair, NBTTagCompound> columnCache = ((CacheBuilder<ChunkCoordIntPair, NBTTagCompound>) (Object) CacheBuilder.newBuilder())
-        .expireAfterAccess(60, TimeUnit.SECONDS)
-        .softValues()
-        .initialCapacity(512)
-        .maximumSize(4096)
-        .build();
+    private final Cache<ChunkCoordIntPair, NBTTagCompound> columnCache = ((CacheBuilder<ChunkCoordIntPair, NBTTagCompound>) (Object) CacheBuilder
+        .newBuilder()).expireAfterAccess(60, TimeUnit.SECONDS)
+            .softValues()
+            .initialCapacity(512)
+            .maximumSize(4096)
+            .build();
 
     @SuppressWarnings("unchecked")
-    private final Cache<CubePos, NBTTagCompound> cubeCache = ((CacheBuilder<CubePos, NBTTagCompound>) (Object) CacheBuilder.newBuilder())
-        .expireAfterAccess(60, TimeUnit.SECONDS)
-        .softValues()
-        .initialCapacity(1024)
-        .maximumSize(8192)
-        .build();
+    private final Cache<CubePos, NBTTagCompound> cubeCache = ((CacheBuilder<CubePos, NBTTagCompound>) (Object) CacheBuilder
+        .newBuilder()).expireAfterAccess(60, TimeUnit.SECONDS)
+            .softValues()
+            .initialCapacity(1024)
+            .maximumSize(8192)
+            .build();
 
     public CubeIO(ICubicStorage storage, IPreloadFailureDelegate preloadFailures) {
         this.storage = storage;
@@ -62,7 +62,8 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
     @Override
     public boolean columnExists(ChunkCoordIntPair pos) {
         if (pendingColumns.containsKey(pos)) return true;
-        if (columnCache.asMap().containsKey(pos)) return true;
+        if (columnCache.asMap()
+            .containsKey(pos)) return true;
 
         try {
             if (storage.columnExists(pos)) return true;
@@ -76,7 +77,8 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
     @Override
     public boolean cubeExists(CubePos pos) {
         if (pendingCubes.containsKey(pos)) return true;
-        if (cubeCache.asMap().containsKey(pos)) return true;
+        if (cubeCache.asMap()
+            .containsKey(pos)) return true;
 
         try {
             if (storage.cubeExists(pos)) return true;

@@ -54,6 +54,7 @@ import com.cardinalstar.cubicchunks.world.worldgen.WorldGenerators;
 import com.cardinalstar.cubicchunks.worldgen.WorldgenHangWatchdog;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
+
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.ICrashCallable;
 import cpw.mods.fml.common.Loader;
@@ -196,9 +197,7 @@ public class CubicChunks {
     }
 
     public static void registerAnvil3dStorageFormatProvider() {
-        StorageFormatFactory.REGISTRY.register(
-            StorageFormatFactory.DEFAULT,
-            new DefaultStorageFormatFactory());
+        StorageFormatFactory.REGISTRY.register(StorageFormatFactory.DEFAULT, new DefaultStorageFormatFactory());
     }
 
     @NetworkCheckHandler

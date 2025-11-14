@@ -172,8 +172,11 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         if (this.theChunkProviderServer == null) {
             WorldFormatSavedData format = WorldFormatSavedData.get((WorldServer) (Object) this);
 
-            //noinspection DataFlowIssue
-            cir.setReturnValue(format.getFormat().getWorldSaveDirectory(this.saveHandler, (WorldServer) (Object) this).toFile());
+            // noinspection DataFlowIssue
+            cir.setReturnValue(
+                format.getFormat()
+                    .getWorldSaveDirectory(this.saveHandler, (WorldServer) (Object) this)
+                    .toFile());
         }
     }
 
@@ -439,7 +442,9 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
     /// Immediate block updates rarely work well in CC. Vanilla expects there to be a hard limit to the number of steps
     /// something can take, but CC removes many of those limits so it's better to just disable the feature for now.
-    @Redirect(method = "scheduleBlockUpdateWithPriority", at = @At(value = "FIELD", target = "Lnet/minecraft/world/WorldServer;scheduledUpdatesAreImmediate:Z"))
+    @Redirect(
+        method = "scheduleBlockUpdateWithPriority",
+        at = @At(value = "FIELD", target = "Lnet/minecraft/world/WorldServer;scheduledUpdatesAreImmediate:Z"))
     private boolean disableImmediateBlockUpdates(WorldServer instance) {
         return false;
     }

@@ -16,6 +16,7 @@ import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.gtnewhorizon.gtnhlib.util.CoordinatePacker;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
+
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
@@ -50,16 +51,15 @@ public class WorldgenFeature<TSeed> {
     public void setBlock(int blockX, int blockY, int blockZ, ImmutableBlockMeta bm) {
         aabb.expand(Coords.blockToLocal(blockX), Coords.blockToLocal(blockY), Coords.blockToLocal(blockZ));
 
-        BlockOperationSet ops = pendingOps.get(
-            Coords.blockToCube(blockX),
-            Coords.blockToCube(blockY),
-            Coords.blockToCube(blockZ));
+        BlockOperationSet ops = pendingOps
+            .get(Coords.blockToCube(blockX), Coords.blockToCube(blockY), Coords.blockToCube(blockZ));
 
         if (ops == null) {
-            pendingOps.put(ops = new BlockOperationSet(
-                Coords.blockToCube(blockX),
-                Coords.blockToCube(blockY),
-                Coords.blockToCube(blockZ)));
+            pendingOps.put(
+                ops = new BlockOperationSet(
+                    Coords.blockToCube(blockX),
+                    Coords.blockToCube(blockY),
+                    Coords.blockToCube(blockZ)));
         }
 
         ops.setBlock(Coords.blockToLocal(blockX), Coords.blockToLocal(blockY), Coords.blockToLocal(blockZ), bm);
@@ -118,7 +118,8 @@ public class WorldgenFeature<TSeed> {
                 private final ObjectIterator<ImmutableBlockMeta> blockIter = blocks.iterator();
 
                 private final Vector3i v = new Vector3i();
-                private final ObjectObjectMutablePair<Vector3ic, ImmutableBlockMeta> pair = ObjectObjectMutablePair.of(v, null);
+                private final ObjectObjectMutablePair<Vector3ic, ImmutableBlockMeta> pair = ObjectObjectMutablePair
+                    .of(v, null);
 
                 @Override
                 public boolean hasNext() {

@@ -17,7 +17,9 @@ public class MixinExtendedBlockStorage {
     @Unique
     private int prevId = 0;
 
-    @Redirect(method = "getBlockByExtId", at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;getBlockById(I)Lnet/minecraft/block/Block;"))
+    @Redirect(
+        method = "getBlockByExtId",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;getBlockById(I)Lnet/minecraft/block/Block;"))
     public Block optimizeGetBlock(int id) {
         if (id == prevId) return prevBlock;
 
