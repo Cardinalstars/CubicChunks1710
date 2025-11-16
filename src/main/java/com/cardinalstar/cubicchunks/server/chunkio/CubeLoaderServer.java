@@ -11,6 +11,7 @@ import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.ForgeChunkManager;
+import net.minecraftforge.event.world.ChunkDataEvent;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
@@ -24,13 +25,13 @@ import com.cardinalstar.cubicchunks.event.events.ColumnEvent;
 import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Array3D;
+import com.cardinalstar.cubicchunks.util.BlockPosMap;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.XZAddressable;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 public class CubeLoaderServer implements ICubeLoader {
@@ -343,13 +344,6 @@ public class CubeLoaderServer implements ICubeLoader {
             unloadCube(pos.getX(), pos.getY(), pos.getZ());
         }
 
-        if (!pendingCubeUnloads.isEmpty()) {
-            CubicChunks.LOGGER.info(
-                "Garbage collected {} cubes (now have {} cubes loaded)",
-                pendingCubeUnloads.size(),
-                cubes.getSize());
-        }
-
         List<ColumnInfo> pendingColumnUnloads = new ArrayList<>();
 
         for (ColumnInfo columnInfo : columns) {
@@ -372,13 +366,6 @@ public class CubeLoaderServer implements ICubeLoader {
         for (ColumnInfo column : pendingColumnUnloads) {
             unloadColumn(column);
         }
-
-        if (!pendingColumnUnloads.isEmpty()) {
-            CubicChunks.LOGGER.info(
-                "Garbage collected {} columns (now have {} columns loaded)",
-                pendingColumnUnloads.size(),
-                columns.getSize());
-        }
     }
 
     @Override
@@ -395,6 +382,10 @@ public class CubeLoaderServer implements ICubeLoader {
         for (Chunk column : result.columnSideEffects) {
             ColumnInfo info = columns.get(column.xPosition, column.zPosition);
 
+            if (info != null && info.column != null) {
+                CubicChunks.LOGGER.warn("Worldgen side-effect replaced column at {},{}!", column.xPosition, column.zPosition);
+            }
+
             if (info == null) {
                 info = new ColumnInfo(column.xPosition, column.zPosition);
                 columns.put(info);
@@ -408,6 +399,10 @@ public class CubeLoaderServer implements ICubeLoader {
 
         for (Cube cube : result.cubeSideEffects) {
             CubeInfo info = cubes.get(cube.getX(), cube.getY(), cube.getZ());
+
+            if (info != null && info.cube != null) {
+                CubicChunks.LOGGER.warn("Worldgen side-effect replaced cube at {},{},{}!", cube.getX(), cube.getY(), cube.getZ());
+            }
 
             if (info == null) {
                 info = new CubeInfo(cube.getX(), cube.getY(), cube.getZ());
@@ -504,6 +499,8 @@ public class CubeLoaderServer implements ICubeLoader {
 
             if (column == null) return false;
 
+            EVENT_BUS.post(new ChunkDataEvent.Load(column, tag));
+
             onColumnLoaded();
 
             this.tag = null;
@@ -512,9 +509,13 @@ public class CubeLoaderServer implements ICubeLoader {
         }
 
         public void onColumnLoaded() {
+            column.lastSaveTime = world.getTotalWorldTime();
+
             ((IColumnInternal) column).setColumn(true);
 
             column.onChunkLoad();
+
+            CubeLoaderServer.this.generator.recreateStructures(column);
 
             if (pauseLoadCalls == 0) {
                 callback.onColumnLoaded(column);

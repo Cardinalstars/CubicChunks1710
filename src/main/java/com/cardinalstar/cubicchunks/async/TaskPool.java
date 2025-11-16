@@ -1,16 +1,11 @@
 package com.cardinalstar.cubicchunks.async;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor.DiscardPolicy;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -20,7 +15,7 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.google.common.util.concurrent.AbstractFuture;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({ "unused", "UnusedReturnValue" })
 public class TaskPool {
 
     private static final AtomicInteger THREAD_COUNTER = new AtomicInteger(0);
@@ -33,145 +28,166 @@ public class TaskPool {
         return thread;
     };
 
-    private static final ThreadPoolExecutor POOL = new ThreadPoolExecutor(
-        1,
-        CubicChunksConfig.optimizations.backgroundThreads,
-        60,
-        TimeUnit.SECONDS,
-        new ArrayBlockingQueue<>(1024),
-        THREAD_FACTORY,
-        new DiscardPolicy());
+    private static final Object QUEUE_LOCK = new Object();
+    private static final ArrayDeque<TaskContainer<?, ?>> TASK_QUEUE = new ArrayDeque<>(1024);
 
-    private static final ScheduledExecutorService SCHEDULED = Executors
-        .newSingleThreadScheduledExecutor(THREAD_FACTORY);
+    private static final List<Thread> THREADS = new ArrayList<>();
 
-    // static {
-    // SCHEDULED.scheduleAtFixedRate(TaskPool::flushLastTask, 1, 1, TimeUnit.MILLISECONDS);
-    // }
+    public static void init() {
+        THREADS.clear();
 
-    // private static final Object lock = new Object();
-    // private static Task<?> lastTask;
+        int count = CubicChunksConfig.optimizations.backgroundThreads;
 
-    // private static final long TASK_BATCHING_PERIOD = Duration.ofMillis(1).toNanos();
-
-    public static <T> Future<T> submit(ITask<T> task) {
-        return submit(task, null);
+        for (int i = 0; i < count; i++) {
+            Thread worker = new WorkerThread();
+            THREADS.add(worker);
+            worker.start();
+        }
     }
 
-    public static <T> Future<T> submit(ITask<T> task, @Nullable Consumer<T> callback) {
-        long now = System.nanoTime();
+    private static class WorkerThread extends Thread {
 
-        synchronized (lock) {
-            // if (lastTask != null) {
-            // Task<T> merged;
-            //
-            // if (lastTask.submitTime + TASK_BATCHING_PERIOD < now) {
-            // POOL.submit(lastTask);
-            // lastTask = null;
-            // } else if ((merged = lastTask.tryMerge(task, now, callback)) != null) {
-            // return merged;
-            // }
-            // }
+        private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
-            Task<T> future = new Task<>(task, now, callback);
-            // lastTask = future;
-            POOL.submit(future);
+        public WorkerThread() {
+            super(String.format("CC BG Thread %d", THREAD_COUNTER.incrementAndGet()));
+
+            setDaemon(true);
+        }
+
+        @Override
+        public void run() {
+            while (!cancelled.get()) {
+                TaskContainer<?, ?> task;
+
+                synchronized (QUEUE_LOCK) {
+                    if (TASK_QUEUE.isEmpty()) {
+                        try {
+                            QUEUE_LOCK.wait();
+                        } catch (InterruptedException e) {
+                            continue;
+                        }
+                    }
+
+                    task = TASK_QUEUE.poll();
+                }
+
+                if (task == null) continue;
+
+                task.run();
+            }
+        }
+    }
+
+    public static final ITaskExecutor<Runnable, Void> RUNNABLE_EXECUTOR = tasks -> {
+        for (var task : tasks) {
+            task.getTask().run();
+            task.finish(null);
+        }
+    };
+
+    public static Future<Void> submit(Runnable task) {
+        return submit(RUNNABLE_EXECUTOR, task, null);
+    }
+
+    public static <TTask, TResult> Future<TResult> submit(ITaskExecutor<TTask, TResult> executor, TTask task) {
+        return submit(executor, task, null);
+    }
+
+    public static <TTask, TResult> Future<TResult> submit(ITaskExecutor<TTask, TResult> executor, TTask task, @Nullable Consumer<TResult> callback) {
+        TaskFuture<TTask, TResult> future = new TaskFuture<>(task, callback);
+
+        synchronized (QUEUE_LOCK) {
+            if (!TASK_QUEUE.isEmpty()) {
+                TaskContainer<?, ?> end = TASK_QUEUE.peekLast();
+
+                if (end.executor == executor) {
+                    @SuppressWarnings("unchecked")
+                    TaskContainer<TTask, TResult> end2 = (TaskContainer<TTask, TResult>) end;
+
+                    //noinspection unchecked
+                    if (end2.executor.canMerge((List<ITaskFuture<TTask,TResult>>) (List<?>) end2.tasks, task)) {
+                        end2.tasks.add(future);
+                        QUEUE_LOCK.notify();
+                        return future;
+                    }
+                }
+            }
+
+            TaskContainer<TTask, TResult> container = new TaskContainer<>(executor);
+            container.tasks.add(future);
+
+            TASK_QUEUE.addLast(container);
+            QUEUE_LOCK.notify();
             return future;
         }
     }
 
-    // private static void flushLastTask() {
-    // synchronized (lock) {
-    // if (lastTask != null) {
-    // if (lastTask.submitTime + TASK_BATCHING_PERIOD < System.nanoTime()) {
-    // POOL.submit(lastTask);
-    // lastTask = null;
-    // }
-    // }
-    // }
-    // }
+    public interface ITaskExecutor<TTask, TResult> {
 
-    public interface ITask<T> extends Callable<T> {
+        void execute(List<ITaskFuture<TTask, TResult>> tasks);
 
-        /// Merges another task into this one to batch their work, if possible
-        default boolean canMerge(ITask<?> other) {
-            return false;
-        }
-
-        /// Executes all merged tasks
-        default T callMerged(List<ITaskFuture<?>> mergedTasks) throws Exception {
-            throw new UnsupportedOperationException();
+        default boolean canMerge(List<ITaskFuture<TTask, TResult>> tasks, TTask task) {
+            return tasks.size() < 128;
         }
     }
 
-    public interface ITaskFuture<T> {
+    public interface ITaskFuture<TTask, TResult> {
 
-        ITask<T> getTask();
+        TTask getTask();
 
-        void finish(T value);
+        void finish(TResult value);
 
-        void fail(Exception ex);
+        void fail(Throwable t);
     }
 
-    private static class Task<T> extends AbstractFuture<T> implements Runnable, ITaskFuture<T> {
+    private static class TaskFuture<TTask, TResult> extends AbstractFuture<TResult> implements ITaskFuture<TTask, TResult> {
 
-        private final ITask<T> task;
-        public final long submitTime;
+        public final TTask task;
         @Nullable
-        private final Consumer<T> callback;
+        private final Consumer<TResult> callback;
 
-        private List<Task<?>> merged = null;
-
-        public Task(ITask<T> task, long submitTime, @Nullable Consumer<T> callback) {
+        public TaskFuture(TTask task, @Nullable Consumer<TResult> callback) {
             this.task = task;
-            this.submitTime = submitTime;
             this.callback = callback;
         }
 
-        public synchronized <T2> Task<T2> tryMerge(ITask<T2> other, long now, @Nullable Consumer<T2> callback) {
-            if (this.isDone()) return null;
-
-            if (task.canMerge(other)) {
-                if (merged == null) merged = new ArrayList<>(1);
-
-                Task<T2> otherTask = new Task<>(other, now, callback);
-
-                merged.add(otherTask);
-
-                return otherTask;
-            }
-
-            return null;
-        }
-
         @Override
-        public synchronized void run() {
-            try {
-                if (merged != null) {
-                    // noinspection unchecked
-                    finish(task.callMerged((List<ITaskFuture<?>>) (List<?>) merged));
-                } else {
-                    finish(task.call());
-                }
-            } catch (Exception e) {
-                CubicChunks.LOGGER.error("Could not run background task", e);
-            }
-        }
-
-        @Override
-        public ITask<T> getTask() {
+        public TTask getTask() {
             return task;
         }
 
         @Override
-        public void finish(T value) {
+        public void finish(TResult value) {
             set(value);
             if (callback != null) callback.accept(value);
         }
 
         @Override
-        public void fail(Exception ex) {
-            setException(ex);
+        public void fail(Throwable t) {
+            setException(t);
+        }
+    }
+
+    private static class TaskContainer<TTask, TResult> implements Runnable {
+
+        private final ITaskExecutor<TTask, TResult> executor;
+        private final List<TaskFuture<TTask, TResult>> tasks = new ArrayList<>(1);
+
+        public TaskContainer(ITaskExecutor<TTask, TResult> executor) {
+            this.executor = executor;
+        }
+
+        @Override
+        public void run() {
+            try {
+                tasks.removeIf(TaskFuture::isCancelled);
+
+                //noinspection unchecked
+                executor.execute((List<ITaskFuture<TTask,TResult>>) (List<?>) tasks);
+            } catch (Exception e) {
+                CubicChunks.LOGGER.error("Could not run background task", e);
+            }
         }
     }
 }

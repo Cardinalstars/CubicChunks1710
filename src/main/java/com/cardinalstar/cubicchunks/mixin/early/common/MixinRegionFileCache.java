@@ -31,8 +31,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import cubicchunks.regionlib.lib.provider.SharedCachedRegionProvider;
-
 // a hook for flush()
 // many mods already assume AnvilSaveHandler is always used, so we assume the same and hope for the best
 @ParametersAreNonnullByDefault
@@ -41,6 +39,6 @@ public class MixinRegionFileCache {
 
     @Inject(method = "clearRegionFileReferences", at = @At("HEAD"))
     private static void onClearRefs(CallbackInfo cbi) throws IOException {
-        SharedCachedRegionProvider.clearRegions();
+//        SharedCachedRegionProvider.clearRegions();
     }
 }

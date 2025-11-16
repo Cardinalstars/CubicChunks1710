@@ -1,5 +1,7 @@
 package com.cardinalstar.cubicchunks.mixin.early.common.worldgen;
 
+import java.util.Random;
+
 import net.minecraft.block.Block;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
@@ -15,10 +17,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import com.cardinalstar.cubicchunks.api.world.Precalculable;
+import com.cardinalstar.cubicchunks.world.worldgen.vanilla.PrecalcedVanillaOctaves;
 import com.cardinalstar.cubicchunks.world.worldgen.vanilla.PrecalculableNoise;
 import com.llamalad7.mixinextras.expression.Definition;
 import com.llamalad7.mixinextras.expression.Expression;
-
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
@@ -37,11 +41,12 @@ public class MixinChunkProviderGenerate implements Precalculable {
     @Shadow
     public NoiseGeneratorOctaves noiseGen6;
 
-    // @Redirect(method = "<init>", at = @At(value = "NEW", target =
-    // "(Ljava/util/Random;I)Lnet/minecraft/world/gen/NoiseGeneratorOctaves;"))
-    // public NoiseGeneratorOctaves usePregenerateNoise(Random random, int octaves) {
-    // return new PrecalcedVanillaOctaves(random, octaves);
-    // }
+    @WrapOperation(
+        method = "<init>", at = @At(
+        value = "NEW", target = "(Ljava/util/Random;I)Lnet/minecraft/world/gen/NoiseGeneratorOctaves;"))
+    public NoiseGeneratorOctaves usePregenerateNoise(Random random, int octaves, Operation<NoiseGeneratorOctaves> original) {
+        return new PrecalcedVanillaOctaves(original.call(random, octaves));
+    }
 
     @Definition(
         id = "caveGenerator",
@@ -72,6 +77,8 @@ public class MixinChunkProviderGenerate implements Precalculable {
                     long chunk = chunkGenFIFO.dequeueLong();
                     chunkGenDebounce.remove(chunk);
                 }
+            } else {
+                return;
             }
         }
 

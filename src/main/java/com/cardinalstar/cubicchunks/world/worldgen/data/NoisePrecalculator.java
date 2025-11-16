@@ -1,6 +1,7 @@
 package com.cardinalstar.cubicchunks.world.worldgen.data;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import net.minecraft.world.World;
@@ -8,17 +9,18 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 
 import com.cardinalstar.cubicchunks.async.TaskPool;
-import com.cardinalstar.cubicchunks.async.TaskPool.ITask;
+import com.cardinalstar.cubicchunks.async.TaskPool.ITaskExecutor;
+import com.cardinalstar.cubicchunks.async.TaskPool.ITaskFuture;
 import com.cardinalstar.cubicchunks.util.ObjectPooler;
 import com.cardinalstar.cubicchunks.util.XSTR;
 import com.cardinalstar.cubicchunks.world.worldgen.noise.NoiseSampler;
-import com.github.bsideup.jabel.Desugar;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
-
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
 
@@ -39,11 +41,35 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
     private final Class<TLayer> layers;
     private final int layerCount;
     private final int seed;
+    private final ITaskExecutor<TaskKey, NoiseData> noiseTaskExecutor;
 
     public NoisePrecalculator(Class<TLayer> layers, int seed) {
         this.layers = layers;
         this.layerCount = layers.getEnumConstants().length;
         this.seed = seed;
+
+        noiseTaskExecutor = new ITaskExecutor<>() {
+
+            @Override
+            public void execute(List<ITaskFuture<TaskKey, NoiseData>> tasks) {
+                for (var future : tasks) {
+                    TaskKey task = future.getTask();
+
+                    NoiseData data = getData();
+
+                    compute3d(task.samplers, task.x << 4, task.y << 4, task.z << 4, data);
+
+                    cache.put(task, data);
+
+                    future.finish(data);
+                }
+            }
+
+            @Override
+            public boolean canMerge(List<ITaskFuture<TaskKey, NoiseData>> tasks, TaskKey taskKey) {
+                return tasks.size() < 32;
+            }
+        };
     }
 
     private EnumMap<TLayer, NoiseSampler> createSamplers(long seed, String dimName) {
@@ -88,15 +114,13 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
     }
 
     public void submitPrecalculate(World world, int cubeX, int cubeY, int cubeZ) {
-        EnumMap<TLayer, NoiseSampler> samplers = getSamplers(world);
+        TaskKey task = new TaskKey(getSamplers(world), world.provider.dimensionId, cubeX, cubeY, cubeZ);
 
-        TaskKey key = new TaskKey(world.provider.dimensionId, cubeX, cubeY, cubeZ);
-
-        TaskPool.submit(new Task3D(samplers, key));
+        TaskPool.submit(this.noiseTaskExecutor, task);
     }
 
     public NoiseData takeSampler(World world, int cubeX, int cubeY, int cubeZ) {
-        TaskKey key = new TaskKey(world.provider.dimensionId, cubeX, cubeY, cubeZ);
+        TaskKey key = new TaskKey(null, world.provider.dimensionId, cubeX, cubeY, cubeZ);
 
         NoiseData data = cache.asMap()
             .remove(key);
@@ -124,31 +148,15 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
         });
     }
 
-    private class Task3D implements ITask<Void> {
+    @Data
+    private class TaskKey {
 
+        @EqualsAndHashCode.Exclude
         private final EnumMap<TLayer, NoiseSampler> samplers;
-        private final TaskKey key;
-
-        public Task3D(EnumMap<TLayer, NoiseSampler> samplers, TaskKey key) {
-            this.samplers = samplers;
-            this.key = key;
-        }
-
-        @Override
-        public Void call() {
-            NoiseData data = getData();
-
-            compute3d(samplers, key.x() << 4, key.y() << 4, key.z() << 4, data);
-
-            cache.put(key, data);
-
-            return null;
-        }
-    }
-
-    @Desugar
-    private record TaskKey(int worldId, int x, int y, int z) {
-
+        private final int worldId;
+        private final int x;
+        private final int y;
+        private final int z;
     }
 
     public class NoiseData {

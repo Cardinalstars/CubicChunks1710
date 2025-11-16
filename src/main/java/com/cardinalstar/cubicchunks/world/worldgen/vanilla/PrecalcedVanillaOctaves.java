@@ -1,13 +1,14 @@
 package com.cardinalstar.cubicchunks.world.worldgen.vanilla;
 
-import java.util.Random;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import net.minecraft.world.gen.NoiseGeneratorOctaves;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.async.TaskPool;
-import com.cardinalstar.cubicchunks.async.TaskPool.ITask;
+import com.cardinalstar.cubicchunks.async.TaskPool.ITaskExecutor;
+import com.cardinalstar.cubicchunks.async.TaskPool.ITaskFuture;
 import com.cardinalstar.cubicchunks.util.ObjectPooler;
 import com.github.bsideup.jabel.Desugar;
 import com.google.common.cache.Cache;
@@ -15,6 +16,7 @@ import com.google.common.cache.CacheBuilder;
 
 public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements PrecalculableNoise {
 
+    private final NoiseGeneratorOctaves base;
     private boolean initialized = false;
     private int xspan, yspan, zspan;
     private double xscale, yscale, zscale;
@@ -28,12 +30,36 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
 
     private final Cache<TaskKey, NoiseData> cache = CacheBuilder.newBuilder()
         .expireAfterWrite(5, TimeUnit.MINUTES)
-        .maximumSize(1024)
+        .maximumSize(8192)
         .removalListener(notification -> releaseData((NoiseData) notification.getValue()))
         .build();
 
-    public PrecalcedVanillaOctaves(Random rng, int octaves) {
-        super(rng, octaves);
+    private final ITaskExecutor<Task3D, NoiseData> noiseTaskExecutor;
+
+    public PrecalcedVanillaOctaves(NoiseGeneratorOctaves base) {
+        super(null, 0);
+        this.base = base;
+
+        noiseTaskExecutor = new ITaskExecutor<>() {
+
+            @Override
+            public void execute(List<ITaskFuture<Task3D, NoiseData>> tasks) {
+                for (var future : tasks) {
+                    Task3D task = future.getTask();
+
+                    NoiseData data = task.run();
+
+                    cache.put(task.key, data);
+
+                    future.finish(data);
+                }
+            }
+
+            @Override
+            public boolean canMerge(List<ITaskFuture<Task3D, NoiseData>> tasks, Task3D task3D) {
+                return tasks.size() < 32;
+            }
+        };
     }
 
     private static boolean diff(double a, double b) {
@@ -105,7 +131,7 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
         }
 
         misses2++;
-        return super.generateNoiseOctaves(data, blockX, blockY, blockZ, sx, sy, sz, scaleX, scaleY, scaleZ);
+        return base.generateNoiseOctaves(data, blockX, blockY, blockZ, sx, sy, sz, scaleX, scaleY, scaleZ);
     }
 
     private NoiseData getData() {
@@ -134,7 +160,7 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
             task = new Task3D(key);
         }
 
-        TaskPool.submit(task);
+        TaskPool.submit(noiseTaskExecutor, task);
     }
 
     @Desugar
@@ -143,7 +169,7 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
 
     }
 
-    private class Task3D implements ITask<Void> {
+    private class Task3D {
 
         private final TaskKey key;
 
@@ -160,8 +186,7 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
             this.zscale = PrecalcedVanillaOctaves.this.zscale;
         }
 
-        @Override
-        public Void call() {
+        public NoiseData run() {
             NoiseData data = getData();
 
             data.xspan = this.xspan;
@@ -171,7 +196,7 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
             data.yscale = this.yscale;
             data.zscale = this.zscale;
 
-            PrecalcedVanillaOctaves.super.generateNoiseOctaves(
+            base.generateNoiseOctaves(
                 data.data,
                 key.x,
                 key.y,
@@ -183,9 +208,7 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
                 yscale,
                 zscale);
 
-            cache.put(key, data);
-
-            return null;
+            return data;
         }
     }
 

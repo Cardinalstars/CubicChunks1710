@@ -20,7 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.server.chunkio;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -38,23 +37,26 @@ import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.ChunkCoordIntPair;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
 import com.cardinalstar.cubicchunks.server.chunkio.region.ShadowPagingRegion;
 import com.cardinalstar.cubicchunks.util.CubePos;
-
+import com.cardinalstar.cubicchunks.util.DataUtils;
 import cubicchunks.regionlib.impl.EntryLocation2D;
 import cubicchunks.regionlib.impl.EntryLocation3D;
 import cubicchunks.regionlib.impl.SaveCubeColumns;
 import cubicchunks.regionlib.impl.save.SaveSection2D;
 import cubicchunks.regionlib.impl.save.SaveSection3D;
 import cubicchunks.regionlib.lib.ExtRegion;
+import cubicchunks.regionlib.lib.factory.SimpleRegionFactory;
 import cubicchunks.regionlib.lib.provider.SharedCachedRegionProvider;
-import cubicchunks.regionlib.lib.provider.SimpleRegionProvider;
 import cubicchunks.regionlib.util.Utils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import it.unimi.dsi.fastutil.Pair;
 
 /**
  * Implementation of {@link ICubicStorage} for the Cubic Chunks' standard Anvil3d storage format.
@@ -74,7 +76,7 @@ public class RegionCubeStorage implements ICubicStorage {
             @SuppressWarnings("unchecked")
             SaveSection2D section2d = new SaveSection2D(
                 new SharedCachedRegionProvider<>(
-                    new SimpleRegionProvider<>(
+                    new SimpleRegionFactory<>(
                         new EntryLocation2D.Provider(),
                         part2d,
                         (keyProv, r) -> ShadowPagingRegion.<EntryLocation2D>builder()
@@ -84,23 +86,21 @@ public class RegionCubeStorage implements ICubicStorage {
                             .setSectorSize(512)
                             .build(),
                         (dir, key) -> Files.exists(
-                            dir.resolve(
-                                key.getRegionKey()
-                                    .getName())))),
+                            part2d.resolve(
+                                key.getName())))),
                 new SharedCachedRegionProvider<>(
-                    new SimpleRegionProvider<>(
+                    new SimpleRegionFactory<>(
                         new EntryLocation2D.Provider(),
                         part2d,
                         (keyProvider,
                             regionKey) -> new ExtRegion<>(part2d, Collections.emptyList(), keyProvider, regionKey),
                         (dir, key) -> Files.exists(
-                            dir.resolve(
-                                key.getRegionKey()
-                                    .getName() + ".ext")))));
+                            part2d.resolve(
+                                key.getName() + ".ext")))));
             @SuppressWarnings("unchecked")
             SaveSection3D section3d = new SaveSection3D(
                 new SharedCachedRegionProvider<>(
-                    new SimpleRegionProvider<>(
+                    new SimpleRegionFactory<>(
                         new EntryLocation3D.Provider(),
                         part3d,
                         (keyProv, r) -> ShadowPagingRegion.<EntryLocation3D>builder()
@@ -110,19 +110,17 @@ public class RegionCubeStorage implements ICubicStorage {
                             .setSectorSize(512)
                             .build(),
                         (dir, key) -> Files.exists(
-                            dir.resolve(
-                                key.getRegionKey()
-                                    .getName())))),
+                            part3d.resolve(
+                                key.getName())))),
                 new SharedCachedRegionProvider<>(
-                    new SimpleRegionProvider<>(
+                    new SimpleRegionFactory<>(
                         new EntryLocation3D.Provider(),
                         part3d,
                         (keyProvider,
                             regionKey) -> new ExtRegion<>(part3d, Collections.emptyList(), keyProvider, regionKey),
                         (dir, key) -> Files.exists(
-                            dir.resolve(
-                                key.getRegionKey()
-                                    .getName() + ".ext")))));
+                            part3d.resolve(
+                                key.getName() + ".ext")))));
 
             return new SaveCubeColumns(section2d, section3d);
         } else {
@@ -156,22 +154,52 @@ public class RegionCubeStorage implements ICubicStorage {
         // Files.exists() check for every cube/column (which
         // is really expensive on windows)
         Optional<ByteBuffer> data = this.save.load(new EntryLocation2D(pos.chunkXPos, pos.chunkZPos), true);
-        return data.isPresent() ? CompressedStreamTools.readCompressed(
-            new ByteArrayInputStream(
-                data.get()
-                    .array())) // decompress and parse NBT
-            : null; // column doesn't exist
+        if (!data.isPresent()) return null;
+
+        return CCNBTUtils.loadTag(data.get().array());
     }
 
     @Override
     public NBTTagCompound readCube(CubePos pos) throws IOException {
         // see comment in readColumn
         Optional<ByteBuffer> data = this.save.load(new EntryLocation3D(pos.getX(), pos.getY(), pos.getZ()), true);
-        return data.isPresent() ? CompressedStreamTools.readCompressed(
-            new ByteArrayInputStream(
-                data.get()
-                    .array())) // decompress and parse NBT
-            : null; // cube doesn't exist
+        if (!data.isPresent()) return null;
+
+        return CCNBTUtils.loadTag(data.get().array());
+    }
+
+    @Override
+    public @NotNull NBTBatch readBatch(PosBatch positions) throws IOException {
+        var columns = this.save.load2D(DataUtils.mapToList(positions.columns, c -> new EntryLocation2D(c.chunkXPos, c.chunkZPos)), false);
+        var cubes = this.save.load3D(DataUtils.mapToList(positions.cubes, c -> new EntryLocation3D(c.getX(), c.getY(), c.getZ())), false);
+
+        var columnTags = columns.read.entrySet()
+            .parallelStream()
+            .map(e -> {
+                try {
+                    return Pair.of(
+                        new ChunkCoordIntPair(e.getKey().getEntryX(), e.getKey().getEntryZ()),
+                        CCNBTUtils.loadTag(e.getValue().array()));
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+            })
+            .collect(Collectors.toMap(Pair::left, Pair::right));
+
+        var cubeTags = cubes.read.entrySet()
+            .parallelStream()
+            .map(e -> {
+                try {
+                    return Pair.of(
+                        new CubePos(e.getKey().getEntryX(), e.getKey().getEntryY(), e.getKey().getEntryZ()),
+                        CCNBTUtils.loadTag(e.getValue().array()));
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+            })
+            .collect(Collectors.toMap(Pair::left, Pair::right));
+
+        return new NBTBatch(columnTags, cubeTags);
     }
 
     @Override
@@ -204,45 +232,36 @@ public class RegionCubeStorage implements ICubicStorage {
 
     @Override
     public void writeBatch(NBTBatch batch) throws IOException {
-        Map<EntryLocation2D, ByteBuf> compressedColumns = Collections.emptyMap();
-        Map<EntryLocation3D, ByteBuf> compressedCubes = Collections.emptyMap();
-        try {
-            // compress NBT data
-            compressedColumns = this
-                .compressNBTForBatchWrite(batch.columns, pos -> new EntryLocation2D(pos.chunkXPos, pos.chunkZPos));
-            compressedCubes = this
-                .compressNBTForBatchWrite(batch.cubes, pos -> new EntryLocation3D(pos.getX(), pos.getY(), pos.getZ()));
+        Map<EntryLocation2D, byte[]> compressedColumns = Collections.emptyMap();
+        Map<EntryLocation3D, byte[]> compressedCubes = Collections.emptyMap();
+        // compress NBT data
+        compressedColumns = this
+            .compressNBTForBatchWrite(batch.columns, pos -> new EntryLocation2D(pos.chunkXPos, pos.chunkZPos));
+        compressedCubes = this
+            .compressNBTForBatchWrite(batch.cubes, pos -> new EntryLocation3D(pos.getX(), pos.getY(), pos.getZ()));
 
-            // write compressed data to disk
-            if (!compressedColumns.isEmpty()) {
-                this.save.save2d(
-                    compressedColumns.entrySet()
-                        .stream()
-                        .collect(
-                            Collectors.toMap(
-                                Map.Entry::getKey,
-                                entry -> entry.getValue()
-                                    .nioBuffer())));
-            }
-            if (!compressedCubes.isEmpty()) {
-                this.save.save3d(
-                    compressedCubes.entrySet()
-                        .stream()
-                        .collect(
-                            Collectors.toMap(
-                                Map.Entry::getKey,
-                                entry -> entry.getValue()
-                                    .nioBuffer())));
-            }
-        } finally {
-            compressedColumns.values()
-                .forEach(ByteBuf::release);
-            compressedCubes.values()
-                .forEach(ByteBuf::release);
+        // write compressed data to disk
+        if (!compressedColumns.isEmpty()) {
+            this.save.save2d(
+                compressedColumns.entrySet()
+                    .stream()
+                    .collect(
+                        Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> ByteBuffer.wrap(entry.getValue()))));
+        }
+        if (!compressedCubes.isEmpty()) {
+            this.save.save3d(
+                compressedCubes.entrySet()
+                    .stream()
+                    .collect(
+                        Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> ByteBuffer.wrap(entry.getValue()))));
         }
     }
 
-    private <KI, KO> Map<KO, ByteBuf> compressNBTForBatchWrite(Map<KI, NBTTagCompound> nbt,
+    private <KI, KO> Map<KO, byte[]> compressNBTForBatchWrite(Map<KI, NBTTagCompound> nbt,
         Function<KI, KO> keyMappingFunction) throws IOException {
         if (nbt.isEmpty()) { // avoid somewhat expensive stream creation if there are no entries
             return Collections.emptyMap();
@@ -256,17 +275,11 @@ public class RegionCubeStorage implements ICubicStorage {
             return nbt.entrySet()
                 .parallelStream()
                 .collect(Collectors.toMap(entry -> keyMappingFunction.apply(entry.getKey()), entry -> {
-                    ByteBuf compressedBuf = UnpooledByteBufAllocator.DEFAULT.ioBuffer();
                     try {
-                        // encode and compress nbt data
-                        CompressedStreamTools.writeCompressed(entry.getValue(), new ByteBufOutputStream(compressedBuf));
-
-                        return compressedBuf.retain();
+                        return CCNBTUtils.saveTag(entry.getValue(), false);
                     } catch (IOException e) {
                         // wrap exception so that we can throw it from inside the lambda
                         throw new UncheckedIOException(e);
-                    } finally {
-                        compressedBuf.release();
                     }
                 }));
         } catch (UncheckedIOException e) {

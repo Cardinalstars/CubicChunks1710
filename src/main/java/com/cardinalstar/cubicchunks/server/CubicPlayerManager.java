@@ -70,9 +70,7 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
-
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
@@ -94,7 +92,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     /**
      * Mapping if entityId to PlayerCubeMap.PlayerWrapper objects.
      */
-    private final TIntObjectMap<PlayerWrapper> players = new TIntObjectHashMap<>();
+    private final Int2ObjectOpenHashMap<PlayerWrapper> players = new Int2ObjectOpenHashMap<>();
 
     /**
      * Mapping of Cube positions to CubeWatchers (Cube equivalent of PlayerManager.PlayerInstance).
@@ -126,7 +124,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
      */
     private final WatchersSortingList3D<CubeWatcher> watchersToAddPlayersTo = new WatchersSortingList3D<>(
         0,
-        () -> players.valueCollection()
+        () -> players.values()
             .stream()
             .map(p -> p.playerEntity)
             .collect(Collectors.toList()));
@@ -140,7 +138,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
      */
     private final WatchersSortingList3D<CubeWatcher> cubesToSendToClients = new WatchersSortingList3D<>(
         1,
-        () -> players.valueCollection()
+        () -> players.values()
             .stream()
             .map(p -> p.playerEntity)
             .collect(Collectors.toList()));
@@ -154,14 +152,14 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
      */
     private final WatchersSortingList2D<ColumnWatcher> columnsToSendToClients = new WatchersSortingList2D<>(
         3,
-        () -> players.valueCollection()
+        () -> players.values()
             .stream()
             .map(p -> p.playerEntity)
             .collect(Collectors.toList()));
 
     private final WatchersSortingList3D<CubeWatcher> tickableCubeTracker = new WatchersSortingList3D<>(
         5,
-        () -> players.valueCollection()
+        () -> players.values()
             .stream()
             .map(p -> p.playerEntity)
             .collect(Collectors.toList()));
@@ -776,7 +774,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             return;
         }
 
-        for (PlayerWrapper playerWrapper : this.players.valueCollection()) {
+        for (PlayerWrapper playerWrapper : this.players.values()) {
 
             EntityPlayerMP player = playerWrapper.playerEntity;
             CubePos playerPos = playerWrapper.getManagedCubePos();

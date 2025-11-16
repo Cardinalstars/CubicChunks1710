@@ -42,6 +42,7 @@ import org.apache.logging.log4j.Logger;
 import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
 import com.cardinalstar.cubicchunks.api.world.storage.StorageFormatFactory;
 import com.cardinalstar.cubicchunks.api.worldtype.VanillaCubicWorldType;
+import com.cardinalstar.cubicchunks.async.TaskPool;
 import com.cardinalstar.cubicchunks.event.handlers.ClientEventHandler;
 import com.cardinalstar.cubicchunks.event.handlers.CommonEventHandler;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
@@ -155,6 +156,7 @@ public class CubicChunks {
                     .activeModContainer());
         holder.testVanillaAcceptance();
         WorldGenerators.init();
+        TaskPool.init();
     }
 
     @Mod.EventHandler

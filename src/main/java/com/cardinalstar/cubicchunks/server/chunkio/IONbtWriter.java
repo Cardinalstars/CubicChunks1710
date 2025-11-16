@@ -22,8 +22,6 @@ package com.cardinalstar.cubicchunks.server.chunkio;
 
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +29,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
@@ -52,18 +49,11 @@ import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-
 import cpw.mods.fml.common.FMLLog;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 @ParametersAreNonnullByDefault
 class IONbtWriter {
-
-    static byte[] writeNbtBytes(NBTTagCompound nbt) throws IOException {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        CompressedStreamTools.writeCompressed(nbt, buf);
-        return buf.toByteArray();
-    }
 
     static NBTTagCompound write(Chunk column) {
         NBTTagCompound columnNbt = new NBTTagCompound();

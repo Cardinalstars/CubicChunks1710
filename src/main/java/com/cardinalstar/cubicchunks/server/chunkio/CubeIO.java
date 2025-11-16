@@ -17,20 +17,24 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
+import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage.PosBatch;
 import com.cardinalstar.cubicchunks.async.TaskPool;
-import com.cardinalstar.cubicchunks.async.TaskPool.ITask;
+import com.cardinalstar.cubicchunks.async.TaskPool.ITaskExecutor;
+import com.cardinalstar.cubicchunks.async.TaskPool.ITaskFuture;
 import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.DataUtils;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-
 import it.unimi.dsi.fastutil.Pair;
 
 public class CubeIO implements ICubeIO, IThreadedFileIO {
 
     private final ICubicStorage storage;
     private final IPreloadFailureDelegate preloadFailures;
+    private final ITaskExecutor<ChunkCoordIntPair, NBTTagCompound> columnLoadExecutor;
+    private final ITaskExecutor<CubePos, NBTTagCompound> cubeLoadExecutor;
 
     private final LinkedTransferQueue<Pair<ChunkCoordIntPair, NBTTagCompound>> columnQueue = new LinkedTransferQueue<>();
     private final LinkedTransferQueue<Pair<CubePos, NBTTagCompound>> cubeQueue = new LinkedTransferQueue<>();
@@ -57,6 +61,44 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
     public CubeIO(ICubicStorage storage, IPreloadFailureDelegate preloadFailures) {
         this.storage = storage;
         this.preloadFailures = preloadFailures;
+
+        columnLoadExecutor = tasks -> {
+            try {
+                var result = storage.readBatch(
+                    new PosBatch(
+                        DataUtils.mapToList(tasks, ITaskFuture::getTask),
+                        Collections.emptyList()));
+
+                for (var task : tasks) {
+                    NBTTagCompound tag = result.columns.get(task.getTask());
+
+                    task.finish(tag);
+                }
+            } catch (IOException e) {
+                for (var task : tasks) {
+                    task.fail(e);
+                }
+            }
+        };
+
+        cubeLoadExecutor = tasks -> {
+            try {
+                var result = storage.readBatch(
+                    new PosBatch(
+                        Collections.emptyList(),
+                        DataUtils.mapToList(tasks, ITaskFuture::getTask)));
+
+                for (var task : tasks) {
+                    NBTTagCompound tag = result.cubes.get(task.getTask());
+
+                    task.finish(tag);
+                }
+            } catch (IOException e) {
+                for (var task : tasks) {
+                    task.fail(e);
+                }
+            }
+        };
     }
 
     @Override
@@ -104,8 +146,6 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
 
             if (tag == null) return null;
 
-            columnCache.put(pos, (NBTTagCompound) tag.copy());
-
             return tag;
         } catch (IOException e) {
             CubicChunks.LOGGER.error("Could not read column {}", pos, e);
@@ -127,8 +167,6 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
             tag = storage.readCube(pos);
 
             if (tag == null) return null;
-
-            cubeCache.put(pos, (NBTTagCompound) tag.copy());
 
             return tag;
         } catch (IOException e) {
@@ -244,7 +282,7 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
 
     @Override
     public void preloadColumn(ChunkCoordIntPair pos) {
-        TaskPool.submit(new LoadColumnTask(storage, pos), tag -> {
+        TaskPool.submit(columnLoadExecutor, pos, tag -> {
             if (tag == null) {
                 if (preloadFailures != null) preloadFailures.onColumnPreloadFailed(pos);
             } else {
@@ -255,7 +293,7 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
 
     @Override
     public void preloadCube(CubePos pos, CubeInitLevel wanted) {
-        TaskPool.submit(new LoadCubeTask(storage, pos), tag -> {
+        TaskPool.submit(cubeLoadExecutor, pos, tag -> {
             CubeInitLevel actual = tag == null ? CubeInitLevel.None : IONbtReader.getCubeInitLevel(tag);
 
             if (tag == null || actual.ordinal() < wanted.ordinal()) {
@@ -268,37 +306,5 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
                 cubeCache.put(pos, tag);
             }
         });
-    }
-
-    private static class LoadColumnTask implements ITask<NBTTagCompound> {
-
-        private final ICubicStorage storage;
-        private final ChunkCoordIntPair pos;
-
-        public LoadColumnTask(ICubicStorage storage, ChunkCoordIntPair pos) {
-            this.storage = storage;
-            this.pos = pos;
-        }
-
-        @Override
-        public NBTTagCompound call() throws Exception {
-            return storage.readColumn(pos);
-        }
-    }
-
-    private static class LoadCubeTask implements ITask<NBTTagCompound> {
-
-        private final ICubicStorage storage;
-        private final CubePos pos;
-
-        public LoadCubeTask(ICubicStorage storage, CubePos pos) {
-            this.storage = storage;
-            this.pos = pos;
-        }
-
-        @Override
-        public NBTTagCompound call() throws Exception {
-            return storage.readCube(pos);
-        }
     }
 }

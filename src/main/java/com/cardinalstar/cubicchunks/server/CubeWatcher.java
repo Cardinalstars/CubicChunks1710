@@ -101,9 +101,13 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
             return;
         }
 
-        this.cube = c;
-        this.cube.getTickets()
-            .add(this);
+        if (this.cube != c) {
+            if (this.cube != null) this.cube.getTickets().remove(this);
+
+            this.cube = c;
+            this.cube.getTickets()
+                .add(this);
+        }
 
         if (this.request != null) this.request.cancel();
         this.request = null;
@@ -176,6 +180,7 @@ public class CubeWatcher implements ITicket, ICubeWatcher, BucketSorterEntry {
 
         if (this.players.isEmpty()) {
             cubicPlayerManager.removeEntry(this);
+            if (this.request != null) this.request.cancel();
         }
     }
 

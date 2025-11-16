@@ -73,7 +73,6 @@ import com.cardinalstar.cubicchunks.world.cube.blockview.UniformBlockView;
 import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
-
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
@@ -213,7 +212,13 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
 
     @Override
     public void onColumnPreloadFailed(ChunkCoordIntPair pos) {
-        // Do nothing, columns contain very little currently and don't need to be pre-generated
+        if (vanilla instanceof Precalculable precalc) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    precalc.precalculate(pos.chunkXPos + dx, 0, pos.chunkZPos + dz);
+                }
+            }
+        }
     }
 
     @Override
@@ -475,8 +480,8 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
         new Vector3i(1, 1, 0), new Vector3i(0, 0, 1), new Vector3i(1, 0, 1), new Vector3i(0, 1, 1),
         new Vector3i(1, 1, 1), };
 
-    private static final short[] CUBE_FLAGS = { Cube.POP_100, Cube.POP_010, Cube.POP_110, Cube.POP_001, Cube.POP_101,
-        Cube.POP_011, Cube.POP_111, };
+//    private static final short[] CUBE_FLAGS = { Cube.POP_100, Cube.POP_010, Cube.POP_110, Cube.POP_001, Cube.POP_101,
+//        Cube.POP_011, Cube.POP_111, };
 
     private Box getCubesToGenerate(int x, int y, int z) {
         if (y >= 0 && y < 16) {
@@ -557,7 +562,11 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
 
         if (generate) {
             if (vanilla instanceof Precalculable precalc) {
-                precalc.precalculate(pos.getX(), pos.getY(), pos.getZ());
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dz = -1; dz <= 1; dz++) {
+                        precalc.precalculate(pos.getX() + dx, 0, pos.getZ() + dz);
+                    }
+                }
             }
 
             decorator.pregenerate(world, pos);
