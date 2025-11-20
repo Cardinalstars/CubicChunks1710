@@ -18,8 +18,9 @@ public class CCNBTUtils {
 
     public static NBTTagCompound loadTag(byte[] data) throws IOException {
         if (data[0] == (byte) 0x1f && data[1] == (byte) 0x8b) {
-            GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(data));
-            data = IOUtils.toByteArray(gzip);
+            try (GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(data));) {
+                data = IOUtils.toByteArray(gzip);
+            }
         }
 
         return CompressedStreamTools.func_152456_a(new DataInputStream(new ByteArrayInputStream(data)), NBTSizeTracker.field_152451_a);

@@ -15,6 +15,7 @@ import net.minecraftforge.event.world.ChunkDataEvent;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
+import com.cardinalstar.cubicchunks.api.MetaKey;
 import com.cardinalstar.cubicchunks.api.XYZAddressable;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.XZMap;
@@ -24,8 +25,8 @@ import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
 import com.cardinalstar.cubicchunks.event.events.ColumnEvent;
 import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
 import com.cardinalstar.cubicchunks.util.Array3D;
-import com.cardinalstar.cubicchunks.util.BlockPosMap;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.XZAddressable;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
@@ -33,8 +34,11 @@ import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import lombok.Setter;
 
 public class CubeLoaderServer implements ICubeLoader {
+
+    private static final MetaKey<CubeInfo> CUBE_INFO = new MetaKey<>() { };
 
     private final WorldServer world;
     private final ICubeIO cubeIO;
@@ -49,6 +53,8 @@ public class CubeLoaderServer implements ICubeLoader {
     private final List<Chunk> pendingColumnLoads = new ArrayList<>();
 
     private Array3D<Cube> cache;
+    @Setter
+    private long now;
 
     public CubeLoaderServer(WorldServer world, ICubicStorage storage, IWorldGenerator generator,
         CubeLoaderCallback callback) {
@@ -140,13 +146,17 @@ public class CubeLoaderServer implements ICubeLoader {
             }
         }
 
-        CubeInfo cube = cubes.get(x, y, z);
+        CubeInfo info = cubes.get(x, y, z);
+
+        Cube cube = info == null ? null : info.cube;
 
         if (cache == null) {
-            lastCube = cube == null ? null : cube.cube;
+            lastCube = cube;
+        } else {
+            cache.set(x, y, z, cube);
         }
 
-        return cube == null ? null : cube.cube;
+        return cube;
     }
 
     @Override
@@ -208,12 +218,16 @@ public class CubeLoaderServer implements ICubeLoader {
             cache.set(x, y, z, cubeInfo.cube);
         }
 
+        if (success) {
+            cubeInfo.lastAccess = now;
+        }
+
         return success ? cubeInfo.cube : null;
     }
 
     @Override
-    public void onCubeGenerated(int x, int y, int z) {
-        CubeInfo cubeInfo = cubes.get(x, y, z);
+    public void onCubeGenerated(Cube cube) {
+        CubeInfo cubeInfo = cube.getMeta(CUBE_INFO);
 
         if (cubeInfo == null) return;
 
@@ -223,16 +237,8 @@ public class CubeLoaderServer implements ICubeLoader {
     }
 
     @Override
-    public void cacheCubes(int x, int y, int z, int spanx, int spany, int spanz, Requirement effort) {
+    public void cacheCubes(int x, int y, int z, int spanx, int spany, int spanz) {
         cache = new Array3D<>(spanx, spany, spanz, x, y, z, new Cube[spanx * spany * spanz]);
-
-        for (int x2 = 0; x2 < spanx; x2++) {
-            for (int y2 = 0; y2 < spany; y2++) {
-                for (int z2 = 0; z2 < spanz; z2++) {
-                    cache.set(x + x2, y + y2, z + z2, getCube(x + x2, y + y2, z + z2, effort));
-                }
-            }
-        }
     }
 
     @Override
@@ -318,21 +324,31 @@ public class CubeLoaderServer implements ICubeLoader {
         cubeIO.saveCube(cubeInfo.pos, cube);
     }
 
+    private static final int CUBE_GC_EXPIRY = 20 * 5;
+
     @Override
     public void doGC() {
         var persistentChunks = ForgeChunkManager.getPersistentChunksFor(world);
+        CubicPlayerManager playerManager = (CubicPlayerManager) world.getPlayerManager();
 
         List<CubePos> pendingCubeUnloads = new ArrayList<>();
+
+        int startCubes = cubes.getSize();
+        int startCols = columns.getSize();
+
+        final long expiry = now - CUBE_GC_EXPIRY;
 
         for (CubeInfo cubeInfo : cubes) {
             Cube cube = cubeInfo.cube;
 
-            if (cube == null) continue;
+            if (cube == null || cubeInfo.lastAccess > expiry) continue;
 
             if (persistentChunks.containsKey(
                 cube.getColumn()
                     .getChunkCoordIntPair()))
                 continue;
+
+            if (playerManager.isCubeWatched(cube.getX(), cube.getY(), cube.getZ())) continue;
 
             if (cube.getTickets()
                 .canUnload()) {
@@ -343,6 +359,8 @@ public class CubeLoaderServer implements ICubeLoader {
         for (CubePos pos : pendingCubeUnloads) {
             unloadCube(pos.getX(), pos.getY(), pos.getZ());
         }
+
+        int autoCols = columns.getSize();
 
         List<ColumnInfo> pendingColumnUnloads = new ArrayList<>();
 
@@ -357,8 +375,7 @@ public class CubeLoaderServer implements ICubeLoader {
             if (!columnInfo.containedCubes.isEmpty()) continue;;
 
             // PlayerChunkMap may contain reference to a column that for a while doesn't yet have any cubes generated
-            if (world.getPlayerManager()
-                .func_152621_a(column.xPosition, column.zPosition)) continue;
+            if (playerManager.func_152621_a(column.xPosition, column.zPosition)) continue;
 
             pendingColumnUnloads.add(columnInfo);
         }
@@ -366,6 +383,11 @@ public class CubeLoaderServer implements ICubeLoader {
         for (ColumnInfo column : pendingColumnUnloads) {
             unloadColumn(column);
         }
+
+        CubicChunks.LOGGER.info("Garbage collected {} columns ({} -> {}) and {} cubes ({} -> {}). Removed {} columns automatically because they were empty.",
+            pendingColumnUnloads.size(), startCols, columns.getSize(),
+            pendingCubeUnloads.size(), startCubes, cubes.getSize(),
+            startCols - autoCols);
     }
 
     @Override
@@ -412,6 +434,7 @@ public class CubeLoaderServer implements ICubeLoader {
 
             info.source = ObjectSource.GeneratedSideEffect;
             info.cube = cube;
+            cube.setMeta(CUBE_INFO, info);
 
             info.onCubeLoaded();
             callback.onCubeGenerated(cube, cube.getInitLevel());
@@ -449,7 +472,7 @@ public class CubeLoaderServer implements ICubeLoader {
             return pos.chunkZPos;
         }
 
-        public boolean initialize(Requirement effort) throws IOException {
+        public boolean initialize(Requirement effort) {
             if (column != null) return true;
             if (effort == Requirement.GET_CACHED) return false;
 
@@ -546,6 +569,7 @@ public class CubeLoaderServer implements ICubeLoader {
         private ObjectSource source = ObjectSource.None;
 
         public boolean generating = false;
+        public long lastAccess = 0;
 
         private CubeInitLevel lastKnownLevel = CubeInitLevel.None;
 
@@ -619,6 +643,7 @@ public class CubeLoaderServer implements ICubeLoader {
             ensureColumn();
 
             this.cube = IONbtReader.readCube(column.column, getX(), getY(), getZ(), tag);
+            cube.setMeta(CUBE_INFO, this);
 
             source = ObjectSource.Disk;
 
@@ -667,11 +692,11 @@ public class CubeLoaderServer implements ICubeLoader {
                 if (result == null) return false;
 
                 this.cube = result.object;
+                cube.setMeta(CUBE_INFO, this);
+
                 source = ObjectSource.Generated;
 
                 onCubeLoaded();
-
-                cubeIO.saveCube(pos, cube);
 
                 handleSideEffects(result);
             }

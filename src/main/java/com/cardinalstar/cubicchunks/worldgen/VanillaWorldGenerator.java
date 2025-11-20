@@ -213,8 +213,8 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
     @Override
     public void onColumnPreloadFailed(ChunkCoordIntPair pos) {
         if (vanilla instanceof Precalculable precalc) {
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dz = -2; dz <= 2; dz++) {
                     precalc.precalculate(pos.chunkXPos + dx, 0, pos.chunkZPos + dz);
                 }
             }
@@ -446,10 +446,7 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                 Cube center = loader.getCube(v.x(), v.y(), v.z(), Requirement.GENERATE);
 
                 center.markPopulated(Cube.POP_ALL);
-            }
-
-            for (Vector3ic v : getCubesToGenerate(cx, cy, cz)) {
-                loader.onCubeGenerated(v.x(), v.y(), v.z());
+                loader.onCubeGenerated(center);
             }
 
             if (!cube.isFullyPopulated()) {
@@ -562,8 +559,8 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
 
         if (generate) {
             if (vanilla instanceof Precalculable precalc) {
-                for (int dx = -1; dx <= 1; dx++) {
-                    for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -2; dx <= 2; dx++) {
+                    for (int dz = -2; dz <= 2; dz++) {
                         precalc.precalculate(pos.getX() + dx, 0, pos.getZ() + dz);
                     }
                 }

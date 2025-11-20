@@ -54,12 +54,12 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
         return get(xyz.getX(), xyz.getY(), xyz.getZ());
     }
 
-    public final void put(T item) {
-        items.put(Coords.key(item.getX(), item.getY(), item.getZ()), item);
+    public final T put(T item) {
+        return items.put(Coords.key(item.getX(), item.getY(), item.getZ()), item);
     }
 
-    public final void remove(T item) {
-        remove(item.getX(), item.getY(), item.getZ());
+    public final <T2 extends XYZAddressable> T remove(T2 key) {
+        return remove(key.getX(), key.getY(), key.getZ());
     }
 
     @Override

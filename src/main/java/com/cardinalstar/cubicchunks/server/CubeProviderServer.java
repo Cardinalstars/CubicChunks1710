@@ -26,8 +26,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.BooleanSupplier;
 
@@ -37,7 +39,7 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.entity.EnumCreatureType;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.util.IProgressUpdate;
 import net.minecraft.world.ChunkCoordIntPair;
@@ -46,7 +48,6 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.IChunkLoader;
 import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraftforge.common.ForgeChunkManager;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
@@ -57,20 +58,22 @@ import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderCallback;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
-import com.cardinalstar.cubicchunks.util.BucketSorterEntry;
 import com.cardinalstar.cubicchunks.util.CubePos;
-import com.cardinalstar.cubicchunks.util.WatchersSortingList3D;
+import com.cardinalstar.cubicchunks.util.XZAddressable;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer;
 import com.cardinalstar.cubicchunks.world.column.EmptyColumn;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.cardinalstar.cubicchunks.world.savedata.WorldFormatSavedData;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
-
+import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+import it.unimi.dsi.fastutil.ints.IntComparator;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This is CubicChunks equivalent of ChunkProviderServer, it loads and unloads Cubes and Columns.
@@ -101,9 +104,8 @@ public class CubeProviderServer extends ChunkProviderServer
     @Nonnull
     private final Profiler profiler;
 
-    private final WatchersSortingList3D<EagerCubeLoadRequest> eagerCubeLoads = new WatchersSortingList3D<>(
-        0,
-        this::getPlayers);
+    private final Map<ChunkCoordIntPair, EagerCubeLoadContainer> eagerLoads = new Object2ObjectOpenHashMap<>();
+    private final List<ChunkCoordIntPair> eagerLoadOrder = new ArrayList<>();
 
     private int columnsLoadedThisTick = 0;
     private int cubesLoadedThisTick = 0;
@@ -199,13 +201,32 @@ public class CubeProviderServer extends ChunkProviderServer
         }
     }
 
-    private List<EntityPlayer> getPlayers() {
+    private int getChunkDistanceSquared(ChunkCoordIntPair coord) {
+        int min = Integer.MAX_VALUE;
+
+        List<EntityPlayerMP> players = getPlayers();
+
+        for (int i = 0, playersSize = players.size(); i < playersSize; i++) {
+            EntityPlayerMP player = players.get(i);
+            final int dX = player.chunkCoordX - coord.chunkXPos;
+            final int dZ = player.chunkCoordZ - coord.chunkZPos;
+
+            final int dist2 = dX * dX + dZ * dZ;
+
+            if (dist2 < min) min = dist2;
+        }
+
+        return min;
+    }
+
+    private List<EntityPlayerMP> getPlayers() {
         // worldServer == null when this provider is being constructed because the field isn't set before the sorting
         // lists call this method.
         // noinspection ConstantValue
         if (worldServer == null) return Collections.emptyList();
 
-        return worldServer.playerEntities;
+        //noinspection unchecked
+        return (List<EntityPlayerMP>) (List<?>) worldServer.playerEntities;
     }
 
     @Override
@@ -296,19 +317,15 @@ public class CubeProviderServer extends ChunkProviderServer
         Random rand = this.worldObj.rand;
         BooleanSupplier tickFaster = () -> System.currentTimeMillis() - start > 40;
 
-        profiler.startSection("Tick force loaded cubes");
+        profiler.startSection("Tick cubes");
 
-        for (Cube cube : getForceLoadedCubes()) {
-            cube.tickCubeServer(tickFaster, rand);
-        }
-
-        profiler.endStartSection("Tick watched cubes");
-
-        for (Cube cube : ((CubicPlayerManager) worldServer.getPlayerManager()).getWatchedCubes()) {
+        for (Cube cube : getTickableCubes()) {
             cube.tickCubeServer(tickFaster, rand);
         }
 
         profiler.endSection();
+
+        getCubeLoader().setNow(worldObj.getTotalWorldTime());
 
         doEagerLoading();
 
@@ -319,36 +336,67 @@ public class CubeProviderServer extends ChunkProviderServer
     private void doEagerLoading() {
         profiler.startSection("Eager object sorting");
 
-        eagerCubeLoads.tick();
+        // TODO: make this faster
+        eagerLoadOrder.sort(Comparator.comparingInt(this::getChunkDistanceSquared).reversed());
 
         profiler.endStartSection("Eager object loading");
 
         long start = System.nanoTime();
 
-        Iterator<EagerCubeLoadRequest> cubeIter = eagerCubeLoads.iterator();
+        while ((System.nanoTime() - start) < MAX_NS_SPENT_LOADING && !eagerLoadOrder.isEmpty()) {
+            ChunkCoordIntPair coord = eagerLoadOrder.get(eagerLoadOrder.size() - 1);
 
-        while ((System.nanoTime() - start) < MAX_NS_SPENT_LOADING && cubeIter.hasNext()) {
-            EagerCubeLoadRequest request = cubeIter.next();
-            cubeIter.remove();
-            request.completed = true;
+            EagerCubeLoadContainer container = eagerLoads.get(coord);
 
-            cubeLoader.pauseLoadCalls();
+            if (container == null) {
+                eagerLoads.remove(coord);
+                eagerLoadOrder.remove(eagerLoadOrder.size() - 1);
+                continue;
+            }
 
-            Cube cube = cubeLoader.getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
+            Iterator<EagerCubeLoadRequest> cubeIter = container.cubes.values().iterator();
 
-            cubeLoader.unpauseLoadCalls();
+            while ((System.nanoTime() - start) < MAX_NS_SPENT_LOADING && cubeIter.hasNext()) {
+                EagerCubeLoadRequest request = cubeIter.next();
 
-            CubeInitLevel actual = cube == null ? CubeInitLevel.None : cube.getInitLevel();
-            CubeInitLevel wanted = CubeInitLevel.fromRequirement(request.effort);
+                cubeIter.remove();
+                request.completed = true;
 
-            if (actual.ordinal() < wanted.ordinal()) {
-                CubicChunks.LOGGER.error(
-                    "Could not init cube {},{},{} for eager request (wanted {}, returned {})",
-                    request.pos.getX(),
-                    request.pos.getY(),
-                    request.pos.getZ(),
-                    wanted,
-                    actual);
+                if (request.isCancelled()) continue;
+
+                cubeLoader.preloadCube(request.pos, CubeInitLevel.fromRequirement(request.effort));
+
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                cubeLoader.pauseLoadCalls();
+
+                Cube cube = cubeLoader.getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
+
+                cubeLoader.unpauseLoadCalls();
+
+                CubeInitLevel actual = cube == null ? CubeInitLevel.None : cube.getInitLevel();
+                CubeInitLevel wanted = CubeInitLevel.fromRequirement(request.effort);
+
+                if (actual.ordinal() < wanted.ordinal()) {
+                    CubicChunks.LOGGER.error(
+                        "Could not init cube {},{},{} for eager request (wanted {}, returned {})",
+                        request.pos.getX(),
+                        request.pos.getY(),
+                        request.pos.getZ(),
+                        wanted,
+                        actual);
+                }
+            }
+
+            if (container.cubes.isEmpty()) {
+                eagerLoads.remove(coord);
+                eagerLoadOrder.remove(eagerLoadOrder.size() - 1);
+            } else {
+                break;
             }
         }
 
@@ -361,31 +409,8 @@ public class CubeProviderServer extends ChunkProviderServer
         profiler.endSection();
     }
 
-    private List<Cube> getForceLoadedCubes() {
-        ImmutableSetMultimap<ChunkCoordIntPair, ForgeChunkManager.Ticket> persistentChunks = ForgeChunkManager
-            .getPersistentChunksFor(worldServer);
-
-        worldServer.theProfiler.startSection("forcedChunkLoading");
-
-        ArrayList<Cube> loadedCubes = new ArrayList<>();
-
-        for (ChunkCoordIntPair pos : persistentChunks.keySet()) {
-            @SuppressWarnings("unchecked")
-            Collection<Cube> cubes = (Collection<Cube>) ((IColumn) worldServer
-                .getChunkFromChunkCoords(pos.chunkXPos, pos.chunkZPos)).getLoadedCubes();
-
-            for (Cube cube : cubes) {
-                if (cube == null) continue;
-                if (cube.isEmpty()) continue;
-                if (!cube.isPopulated()) continue;
-
-                loadedCubes.add(cube);
-            }
-        }
-
-        worldServer.theProfiler.endSection();
-
-        return loadedCubes;
+    public Collection<Cube> getTickableCubes() {
+        return ((CubicPlayerManager) worldServer.getPlayerManager()).getCubes();
     }
 
     @Override
@@ -431,32 +456,48 @@ public class CubeProviderServer extends ChunkProviderServer
         return getLoadedCube(coords.getX(), coords.getY(), coords.getZ());
     }
 
+    public static class EagerCubeLoadContainer implements XZAddressable {
+
+        public final ChunkCoordIntPair pos;
+
+        public final Int2ObjectRBTreeMap<EagerCubeLoadRequest> cubes = new Int2ObjectRBTreeMap<>(IntComparator.comparingInt(i -> -i));
+
+        public EagerCubeLoadContainer(ChunkCoordIntPair pos) {
+            this.pos = pos;
+        }
+
+        public void add(EagerCubeLoadRequest request) {
+            cubes.put(request.getY(), request);
+        }
+
+        @Override
+        public int getX() {
+            return pos.chunkXPos;
+        }
+
+        @Override
+        public int getZ() {
+            return pos.chunkZPos;
+        }
+    }
+
     @SuppressWarnings("unused")
-    public class EagerCubeLoadRequest implements XYZAddressable, BucketSorterEntry {
+    public static class EagerCubeLoadRequest implements XYZAddressable {
 
         public final CubePos pos;
+        @Setter
+        @Getter
         private Requirement effort;
-        private boolean completed;
+        @Getter
+        private boolean completed, cancelled;
 
         public EagerCubeLoadRequest(CubePos pos, Requirement effort) {
             this.pos = pos;
             this.effort = effort;
         }
 
-        public Requirement getEffort() {
-            return effort;
-        }
-
-        public void setEffort(Requirement effort) {
-            this.effort = effort;
-        }
-
-        public boolean isCompleted() {
-            return completed;
-        }
-
         public void cancel() {
-            CubeProviderServer.this.eagerCubeLoads.remove(this);
+            this.cancelled = true;
         }
 
         @Override
@@ -474,18 +515,6 @@ public class CubeProviderServer extends ChunkProviderServer
         @Override
         public String toString() {
             return "EagerCubeLoadRequest{" + "pos=" + pos + '}';
-        }
-
-        private long[] bucketDataEntry = null;
-
-        @Override
-        public long[] getBucketEntryData() {
-            return bucketDataEntry;
-        }
-
-        @Override
-        public void setBucketEntryData(long[] data) {
-            bucketDataEntry = data;
         }
 
         @Override
@@ -507,9 +536,19 @@ public class CubeProviderServer extends ChunkProviderServer
     public EagerCubeLoadRequest loadCubeEagerly(int x, int y, int z, Requirement effort) {
         CubePos pos = new CubePos(x, y, z);
 
+        ChunkCoordIntPair coord = new ChunkCoordIntPair(x, z);
+
+        EagerCubeLoadContainer container = eagerLoads.get(coord);
+
+        if (container == null) {
+            container = new EagerCubeLoadContainer(coord);
+            eagerLoads.put(coord, container);
+            eagerLoadOrder.add(coord);
+        }
+
         EagerCubeLoadRequest request = new EagerCubeLoadRequest(pos, effort);
 
-        eagerCubeLoads.add(request);
+        container.add(request);
 
         cubeLoader.preloadCube(pos, CubeInitLevel.fromRequirement(effort));
 

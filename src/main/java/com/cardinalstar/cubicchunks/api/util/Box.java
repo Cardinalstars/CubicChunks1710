@@ -47,6 +47,10 @@ public class Box implements Iterable<Vector3ic> {
         this.z2 = Math.max(z1, z2);
     }
 
+    public Box(int x, int y, int z, int radius) {
+        this(x - radius, y - radius, z - radius, x + radius, y + radius, z + radius);
+    }
+
     public int getX1() {
         return x1;
     }

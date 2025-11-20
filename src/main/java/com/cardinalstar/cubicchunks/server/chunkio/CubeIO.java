@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
@@ -33,8 +34,8 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
 
     private final ICubicStorage storage;
     private final IPreloadFailureDelegate preloadFailures;
-    private final ITaskExecutor<ChunkCoordIntPair, NBTTagCompound> columnLoadExecutor;
-    private final ITaskExecutor<CubePos, NBTTagCompound> cubeLoadExecutor;
+    private final ITaskExecutor<ChunkCoordIntPair, Optional<NBTTagCompound>> columnLoadExecutor;
+    private final ITaskExecutor<CubePos, Optional<NBTTagCompound>> cubeLoadExecutor;
 
     private final LinkedTransferQueue<Pair<ChunkCoordIntPair, NBTTagCompound>> columnQueue = new LinkedTransferQueue<>();
     private final LinkedTransferQueue<Pair<CubePos, NBTTagCompound>> cubeQueue = new LinkedTransferQueue<>();
@@ -43,7 +44,7 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
     private final Map<CubePos, NBTTagCompound> pendingCubes = new ConcurrentHashMap<>();
 
     @SuppressWarnings("unchecked")
-    private final Cache<ChunkCoordIntPair, NBTTagCompound> columnCache = ((CacheBuilder<ChunkCoordIntPair, NBTTagCompound>) (Object) CacheBuilder
+    private final Cache<ChunkCoordIntPair, Optional<NBTTagCompound>> columnCache = ((CacheBuilder<ChunkCoordIntPair, Optional<NBTTagCompound>>) (Object) CacheBuilder
         .newBuilder()).expireAfterAccess(60, TimeUnit.SECONDS)
             .softValues()
             .initialCapacity(512)
@@ -51,7 +52,7 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
             .build();
 
     @SuppressWarnings("unchecked")
-    private final Cache<CubePos, NBTTagCompound> cubeCache = ((CacheBuilder<CubePos, NBTTagCompound>) (Object) CacheBuilder
+    private final Cache<CubePos, Optional<NBTTagCompound>> cubeCache = ((CacheBuilder<CubePos, Optional<NBTTagCompound>>) (Object) CacheBuilder
         .newBuilder()).expireAfterAccess(60, TimeUnit.SECONDS)
             .softValues()
             .initialCapacity(1024)
@@ -72,7 +73,7 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
                 for (var task : tasks) {
                     NBTTagCompound tag = result.columns.get(task.getTask());
 
-                    task.finish(tag);
+                    task.finish(Optional.ofNullable(tag));
                 }
             } catch (IOException e) {
                 for (var task : tasks) {
@@ -91,7 +92,7 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
                 for (var task : tasks) {
                     NBTTagCompound tag = result.cubes.get(task.getTask());
 
-                    task.finish(tag);
+                    task.finish(Optional.ofNullable(tag));
                 }
             } catch (IOException e) {
                 for (var task : tasks) {
@@ -137,14 +138,22 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
 
         if (tag != null) return (NBTTagCompound) tag.copy();
 
-        tag = columnCache.getIfPresent(pos);
+        Optional<NBTTagCompound> cached = columnCache.getIfPresent(pos);
 
-        if (tag != null) return (NBTTagCompound) tag.copy();
+        if (cached != null) {
+            columnCache.invalidate(pos);
+
+            if (cached.isPresent()) {
+                return (NBTTagCompound) cached.get().copy();
+            } else {
+                return null;
+            }
+        }
 
         try {
             tag = storage.readColumn(pos);
 
-            if (tag == null) return null;
+            if (tag == null) columnCache.put(pos, Optional.empty());
 
             return tag;
         } catch (IOException e) {
@@ -159,14 +168,22 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
 
         if (tag != null) return (NBTTagCompound) tag.copy();
 
-        tag = cubeCache.getIfPresent(pos);
+        Optional<NBTTagCompound> cached = cubeCache.getIfPresent(pos);
 
-        if (tag != null) return (NBTTagCompound) tag.copy();
+        if (cached != null) {
+            cubeCache.invalidate(pos);
+
+            if (cached.isPresent()) {
+                return (NBTTagCompound) cached.get().copy();
+            } else {
+                return null;
+            }
+        }
 
         try {
             tag = storage.readCube(pos);
 
-            if (tag == null) return null;
+            if (tag == null) cubeCache.put(pos, Optional.empty());
 
             return tag;
         } catch (IOException e) {
@@ -293,18 +310,14 @@ public class CubeIO implements ICubeIO, IThreadedFileIO {
 
     @Override
     public void preloadCube(CubePos pos, CubeInitLevel wanted) {
+        if (preloadFailures != null) {
+            preloadFailures.onCubePreloadFailed(pos, CubeInitLevel.None, wanted);
+        }
+
         TaskPool.submit(cubeLoadExecutor, pos, tag -> {
-            CubeInitLevel actual = tag == null ? CubeInitLevel.None : IONbtReader.getCubeInitLevel(tag);
+            CubeInitLevel actual = !tag.isPresent() ? CubeInitLevel.None : IONbtReader.getCubeInitLevel(tag.get());
 
-            if (tag == null || actual.ordinal() < wanted.ordinal()) {
-                if (preloadFailures != null) {
-                    preloadFailures.onCubePreloadFailed(pos, actual, wanted);
-                }
-            }
-
-            if (tag != null) {
-                cubeCache.put(pos, tag);
-            }
+            cubeCache.put(pos, tag);
         });
     }
 }

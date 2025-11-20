@@ -45,7 +45,7 @@ import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 @ParametersAreNonnullByDefault
-public interface ICube extends XYZAddressable {
+public interface ICube extends XYZAddressable, MetaContainer {
 
     /**
      * Side length of a cube

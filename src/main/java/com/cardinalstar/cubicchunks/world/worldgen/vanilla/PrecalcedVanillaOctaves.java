@@ -1,7 +1,7 @@
 package com.cardinalstar.cubicchunks.world.worldgen.vanilla;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.minecraft.world.gen.NoiseGeneratorOctaves;
 
@@ -9,10 +9,10 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.async.TaskPool;
 import com.cardinalstar.cubicchunks.async.TaskPool.ITaskExecutor;
 import com.cardinalstar.cubicchunks.async.TaskPool.ITaskFuture;
+import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.ObjectPooler;
 import com.github.bsideup.jabel.Desugar;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 
 public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements PrecalculableNoise {
 
@@ -21,18 +21,21 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
     private int xspan, yspan, zspan;
     private double xscale, yscale, zscale;
     private int misses, misses2, hits;
+    private AtomicInteger pres = new AtomicInteger();
+    private long elapsed;
     private long lastMessage = System.nanoTime();
 
     private final ObjectPooler<NoiseData> dataPool = new ObjectPooler<>(NoiseData::new, null, 1024);
 
     private final Object paramLock = new Object();
-    private final Object cacheLock = new Object();
 
-    private final Cache<TaskKey, NoiseData> cache = CacheBuilder.newBuilder()
-        .expireAfterWrite(5, TimeUnit.MINUTES)
-        .maximumSize(8192)
-        .removalListener(notification -> releaseData((NoiseData) notification.getValue()))
-        .build();
+//    private final Cache<TaskKey, NoiseData> cache = CacheBuilder.newBuilder()
+//        .expireAfterWrite(5, TimeUnit.MINUTES)
+//        .maximumSize(8192)
+//        .removalListener(notification -> releaseData((NoiseData) notification.getValue()))
+//        .build();
+
+    private final Long2ObjectLinkedOpenHashMap<NoiseData> cache = new Long2ObjectLinkedOpenHashMap<>();
 
     private final ITaskExecutor<Task3D, NoiseData> noiseTaskExecutor;
 
@@ -49,7 +52,13 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
 
                     NoiseData data = task.run();
 
-                    cache.put(task.key, data);
+                    synchronized (cache) {
+                        cache.putAndMoveToFirst(Coords.key(task.key.x, task.key.y, task.key.z), data);
+
+                        while (cache.size() > 8192) cache.removeLast();
+                    }
+
+                    pres.addAndGet(1);
 
                     future.finish(data);
                 }
@@ -73,9 +82,10 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
 
         if ((now - lastMessage) > 5e9) {
             lastMessage = now;
-            CubicChunks.LOGGER.info("Hits: {} Misses: {}", hits, misses2);
+            CubicChunks.LOGGER.info("Hits: {} Misses: {} Pres: {} Per call: {}ms", hits, misses2, pres.getAndSet(0), (elapsed / (double)misses2 / 1e6));
             hits = 0;
             misses2 = 0;
+            elapsed = 0;
         }
 
         synchronized (paramLock) {
@@ -119,8 +129,8 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
 
         NoiseData cached;
 
-        synchronized (cacheLock) {
-            cached = cache.getIfPresent(new TaskKey(blockX, blockY, blockZ));
+        synchronized (cache) {
+            cached = cache.remove(Coords.key(blockX, blockY, blockZ));
         }
 
         if (cached != null && cached.matches()) {
@@ -131,7 +141,13 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
         }
 
         misses2++;
-        return base.generateNoiseOctaves(data, blockX, blockY, blockZ, sx, sy, sz, scaleX, scaleY, scaleZ);
+
+        long pre = System.nanoTime();
+        double[] d2 = base.generateNoiseOctaves(data, blockX, blockY, blockZ, sx, sy, sz, scaleX, scaleY, scaleZ);
+        long post = System.nanoTime();
+        elapsed += post - pre;
+
+        return d2;
     }
 
     private NoiseData getData() {

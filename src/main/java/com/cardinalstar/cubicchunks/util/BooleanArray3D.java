@@ -3,6 +3,7 @@ package com.cardinalstar.cubicchunks.util;
 import java.util.BitSet;
 import java.util.Iterator;
 
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3i;
 import org.joml.Vector3ic;
 
@@ -44,7 +45,8 @@ public class BooleanArray3D extends BitSet implements Iterable<Vector3ic> {
         return get(index(x, y, z));
     }
 
-    public Iterator<Vector3ic> iterator() {
+    @Override
+    public @NotNull Iterator<Vector3ic> iterator() {
         return new AbstractIterator<>() {
 
             private boolean init = false;
@@ -74,5 +76,10 @@ public class BooleanArray3D extends BitSet implements Iterable<Vector3ic> {
 
     private int index(int x, int y, int z) {
         return x + (y * spanx) + (z * spanslice);
+    }
+
+    @Override
+    public BooleanArray2D clone() {
+        return (BooleanArray2D) super.clone();
     }
 }

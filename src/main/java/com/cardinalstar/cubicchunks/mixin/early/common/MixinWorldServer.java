@@ -323,24 +323,17 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
         // CubicChunks - iterate over PlayerCubeMap.TickableChunkContainer instead of Chunks, getTickableChunks already
         // includes forced chunks
-        CubicPlayerManager.TickableChunkContainer chunks = ((CubicPlayerManager) this.thePlayerManager)
-            .getTickableChunks();
-        for (Chunk chunk : chunks.columns()) {
+        for (Chunk chunk : ((CubicPlayerManager) this.thePlayerManager).getColumnsToTick()) {
             tickColumn(raining, thundering, chunk);
         }
+
         this.theProfiler.endStartSection("pollingCubes");
 
         long worldTime = worldInfo.getWorldTotalTime();
-        // CubicChunks - iterate over cubes instead of storage array from Chunk
-        for (ICube cube : chunks.forcedCubes()) {
-            tickCube(cube, worldTime);
-        }
-        for (ICube cube : chunks.playerTickableCubes()) {
-            if (cube == null) { // this is the internal array from the arraylist, anything beyond the size is null
-                break;
-            }
-            tickCube(cube, worldTime);
-        }
+
+//        for (Cube cube : ((CubeProviderServer) this.theChunkProviderServer).getTickableCubes()) {
+//            tickCube(cube, worldTime);
+//        }
 
         this.theProfiler.endSection();
     }

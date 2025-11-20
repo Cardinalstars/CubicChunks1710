@@ -35,6 +35,8 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
 import com.cardinalstar.cubicchunks.modcompat.angelica.AngelicaInterop;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.CubeStatusVisualizer;
+import com.cardinalstar.cubicchunks.util.CubeStatusVisualizer.CubeStatus;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
 
@@ -66,6 +68,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
         for (int i = 0; i < cubes.size(); i++) {
             cubePos[i] = cubes.get(i)
                 .getCoords();
+            CubeStatusVisualizer.put(cubes.get(i).getCoords(), CubeStatus.Synced);
         }
 
         ByteBuf cubeData = Unpooled.buffer();

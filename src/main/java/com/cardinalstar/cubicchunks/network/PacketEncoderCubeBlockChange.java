@@ -36,8 +36,6 @@ import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-
-import gnu.trove.TShortCollection;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -57,21 +55,24 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
 
     public PacketEncoderCubeBlockChange() {}
 
-    public static PacketCubeBlockChange createPacket(Cube cube, TShortCollection localAddresses) {
+    public static PacketCubeBlockChange createPacket(Cube cube, short[] localAddresses) {
         CubePos cubePos = cube.getCoords();
-        short[] localAddressArray = localAddresses.toArray();
-        Block[] blocks = new Block[localAddressArray.length];
-        int[] blockMetas = new int[localAddressArray.length];
+
+        Block[] blocks = new Block[localAddresses.length];
+        int[] blockMetas = new int[localAddresses.length];
 
         TIntSet xzAddresses = new TIntHashSet();
 
-        for (int i = 0; i < localAddressArray.length; i++) {
-            short localAddress = localAddressArray[i];
+        for (int i = 0, localAddressesLength = localAddresses.length; i < localAddressesLength; i++) {
+            short localAddress = localAddresses[i];
+
             int x = AddressTools.getLocalX(localAddress);
             int y = AddressTools.getLocalY(localAddress);
             int z = AddressTools.getLocalZ(localAddress);
+
             blocks[i] = cube.getBlock(x, y, z);
             blockMetas[i] = cube.getBlockMetadata(x, y, z);
+
             xzAddresses.add(AddressTools.getLocalAddress(x, z));
         }
 
@@ -89,7 +90,7 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
             i++;
         }
 
-        return new PacketCubeBlockChange(cubePos, localAddressArray, blocks, blockMetas, heightValues);
+        return new PacketCubeBlockChange(cubePos, localAddresses, blocks, blockMetas, heightValues);
     }
 
     @Override

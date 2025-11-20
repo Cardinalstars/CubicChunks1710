@@ -23,10 +23,9 @@ package com.cardinalstar.cubicchunks.world;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -44,14 +43,19 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraftforge.event.ForgeEventFactory;
 
-import com.cardinalstar.cubicchunks.server.CubeWatcher;
+import org.joml.Vector3ic;
+
+import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
+import com.cardinalstar.cubicchunks.util.BlockPosSet;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.MathUtil;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-
 import cpw.mods.fml.common.eventhandler.Event;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongLists;
 
 @ParametersAreNonnullByDefault
 public class CubeSpawnerAnimals implements ISpawnerAnimals {
@@ -61,7 +65,7 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
     private static final int SPAWN_RADIUS = 8;
 
     @Nonnull
-    private Set<CubePos> cubesForSpawn = new HashSet<>();
+    private final BlockPosSet cubesForSpawn = new BlockPosSet();
 
     @Override
     public int findChunksForSpawning(WorldServer world, boolean hostileEnable, boolean peacefulEnable,
@@ -71,70 +75,56 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
         }
         this.cubesForSpawn.clear();
 
-        int chunkCount = addEligibleCubes(world, this.cubesForSpawn);
+        int cubeCount = addEligibleCubes(world, this.cubesForSpawn);
         int totalSpawnCount = 0;
 
         for (EnumCreatureType mobType : EnumCreatureType.values()) {
             if (!shouldSpawnType(mobType, hostileEnable, peacefulEnable, spawnOnSetTickRate)) {
                 continue;
             }
+
             int worldEntityCount = world.countEntities(mobType, true);
-            int maxEntityCount = mobType.getMaxNumberOfCreature() * chunkCount / MOB_COUNT_DIV;
+            int maxEntityCount = mobType.getMaxNumberOfCreature() * cubeCount / MOB_COUNT_DIV;
 
             if (worldEntityCount > maxEntityCount) {
                 continue;
             }
-            List<CubePos> shuffled = getShuffledCopy(this.cubesForSpawn)
-                .subList(0, Math.min(this.cubesForSpawn.size(), 2 * (2 * SPAWN_RADIUS + 1)));
-            totalSpawnCount += spawnCreatureTypeInAllChunks(mobType, world, shuffled);
+
+            LongList shuffled = new LongArrayList(cubesForSpawn);
+            LongLists.shuffle(shuffled, world.rand);
+            shuffled = shuffled.subList(0, Math.min(this.cubesForSpawn.size(), 2 * (2 * SPAWN_RADIUS + 1)));
+
+            List<CubePos> cubes = shuffled.longStream().mapToObj(CubePos::unpack).collect(Collectors.toList());
+
+            totalSpawnCount += spawnCreatureTypeInAllChunks(mobType, world, cubes);
         }
+
         return totalSpawnCount;
     }
 
-    private int addEligibleCubes(WorldServer world, Set<CubePos> possibleCubes) {
-        int chunkCount = 0;
-        Random r = world.rand;
-        Set<CubePos> allCubes = new HashSet<>();
+    private int addEligibleCubes(WorldServer world, BlockPosSet possibleCubes) {
+        int cubeCount = 0;
+
+        BlockPosSet checkedCubes = new BlockPosSet();
+
         for (EntityPlayer player : world.playerEntities) {
             CubePos center = CubePos.fromEntity(player);
 
-            for (int cubeXRel = -SPAWN_RADIUS; cubeXRel <= SPAWN_RADIUS; ++cubeXRel) {
-                for (int cubeYRel = -SPAWN_RADIUS; cubeYRel <= SPAWN_RADIUS; ++cubeYRel) {
-                    for (int cubeZRel = -SPAWN_RADIUS; cubeZRel <= SPAWN_RADIUS; ++cubeZRel) {
-                        CubePos cubePos = center.add(cubeXRel, cubeYRel, cubeZRel);
+            for (Vector3ic v : new Box(center.getX(), center.getY(), center.getZ(), SPAWN_RADIUS - 1)) {
+                if (!checkedCubes.add(v.x(), v.y(), v.z())) continue;
 
-                        if (allCubes.contains(cubePos)) {
-                            continue;
-                        }
-                        assert !possibleCubes.contains(cubePos);
-                        ++chunkCount;
+                assert !possibleCubes.contains(v.x(), v.y(), v.z());
+                cubeCount++;
 
-                        boolean isEdge = cubeXRel == -SPAWN_RADIUS || cubeXRel == SPAWN_RADIUS
-                            || cubeYRel == -SPAWN_RADIUS
-                            || cubeYRel == SPAWN_RADIUS
-                            || cubeZRel == -SPAWN_RADIUS
-                            || cubeZRel == SPAWN_RADIUS;
+                boolean valid = ((CubicPlayerManager) world.getPlayerManager()).isCubeWatchedAndPresent(v.x(), v.y(), v.z());
 
-                        if (isEdge) {
-                            continue;
-                        }
-                        CubeWatcher cubeInfo = ((CubicPlayerManager) world.getPlayerManager()).getCubeWatcher(cubePos);
-
-                        if (cubeInfo != null && cubeInfo.isSentToPlayers()) {
-                            allCubes.add(cubePos);
-
-                            // TODO Make this spawn culling more intelligent. Also
-                            // maybe make this biased for the surface?
-                            if (!cubeInfo.getCube()
-                                .isEmpty()) {
-                                possibleCubes.add(cubePos);
-                            }
-                        }
-                    }
+                if (valid) {
+                    possibleCubes.add(v.x(), v.y(), v.z());
                 }
             }
         }
-        return chunkCount;
+
+        return cubeCount;
     }
 
     private int spawnCreatureTypeInAllChunks(EnumCreatureType mobType, WorldServer world, List<CubePos> cubeList) {

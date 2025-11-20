@@ -63,9 +63,9 @@ import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
+import com.cardinalstar.cubicchunks.api.MetaKey;
 import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.server.CubeWatcher;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
@@ -77,6 +77,7 @@ import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 
 /**
  * A cube is our extension of minecraft's chunk system to three dimensions. Each cube encloses a cubic area in the world
@@ -865,17 +866,27 @@ public class Cube implements ICube {
         if (this.tickets.anyMatch(t -> t instanceof SpawnCubes)) {
             forcedLoadReasons.add(ForcedLoadReason.SPAWN_AREA);
         }
-        if (this.tickets.anyMatch(t -> t instanceof CubeWatcher)) {
-            forcedLoadReasons.add(ForcedLoadReason.PLAYER);
-        }
         if (this.tickets.anyMatch(t -> t instanceof ICubicTicketInternal)) {
             forcedLoadReasons.add(ForcedLoadReason.MOD_TICKET);
         }
         if (this.tickets.anyMatch(
-            t -> !(t instanceof SpawnCubes) && !(t instanceof CubeWatcher) && !(t instanceof ICubicTicketInternal))) {
+            t -> !(t instanceof SpawnCubes) && !(t instanceof ICubicTicketInternal))) {
             forcedLoadReasons.add(ForcedLoadReason.OTHER);
         }
         return forcedLoadReasons;
+    }
+
+    private final Object2ObjectArrayMap<MetaKey<?>, Object> meta = new Object2ObjectArrayMap<>();
+
+    @Override
+    public <T> T getMeta(MetaKey<T> key) {
+        //noinspection unchecked
+        return (T) meta.get(key);
+    }
+
+    @Override
+    public <T> void setMeta(MetaKey<T> key, T value) {
+        meta.put(key, value);
     }
 
     public interface ICubeLightTrackingInfo {
