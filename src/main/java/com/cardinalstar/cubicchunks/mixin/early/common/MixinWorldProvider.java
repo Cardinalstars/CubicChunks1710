@@ -27,6 +27,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.ChunkCoordinates;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
+import net.minecraft.world.WorldType;
 import net.minecraft.world.chunk.IChunkProvider;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,12 +37,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+import com.cardinalstar.cubicchunks.api.worldgen.BuiltinWorldDecorators;
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.ICubicWorldProvider;
 import com.cardinalstar.cubicchunks.world.SpawnPlaceFinder;
+import com.cardinalstar.cubicchunks.worldgen.VanillaWorldGenerator;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 @ParametersAreNonnullByDefault
@@ -93,15 +95,18 @@ public abstract class MixinWorldProvider implements ICubicWorldProvider {
 
     @Nullable
     @Override
-    public ICubeGenerator createCubeGenerator() {
-        if (worldObj.getWorldInfo()
-            .getTerrainType() instanceof ICubicWorldType
-            && ((ICubicWorldType) worldObj.getWorldInfo()
-                .getTerrainType()).hasCubicGeneratorForWorld(worldObj)) {
-            return ((ICubicWorldType) worldObj.getWorldInfo()
-                .getTerrainType()).createCubeGenerator(worldObj);
+    public IWorldGenerator createCubeGenerator() {
+        WorldType terrainType = worldObj.getWorldInfo()
+            .getTerrainType();
+
+        if (terrainType instanceof ICubicWorldType ccWorldType && ccWorldType.hasCubicGeneratorForWorld(worldObj)) {
+            return ccWorldType.createCubeGenerator(worldObj);
         }
-        throw new NotCubicChunksWorldException();
+
+        return new VanillaWorldGenerator(
+            worldObj.provider.createChunkGenerator(),
+            worldObj,
+            BuiltinWorldDecorators.VANILLA);
     }
 
     @Inject(method = "getRandomizedSpawnPoint", at = @At(value = "HEAD"), cancellable = true, remap = false)

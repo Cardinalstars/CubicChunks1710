@@ -11,7 +11,7 @@ import com.cardinalstar.cubicchunks.api.util.Box;
 
 public class EBSBlockView implements IBlockView {
 
-    public static final Box EBS_BOUNDS = new Box(0, 0, 0, 16, 16, 16);
+    public static final Box EBS_BOUNDS = new Box(0, 0, 0, 15, 15, 15);
 
     private final ExtendedBlockStorage ebs;
 

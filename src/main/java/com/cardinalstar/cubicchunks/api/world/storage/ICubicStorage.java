@@ -23,9 +23,9 @@ package com.cardinalstar.cubicchunks.api.world.storage;
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -249,10 +249,10 @@ public interface ICubicStorage extends Flushable, AutoCloseable {
      */
     class PosBatch {
 
-        public final Set<ChunkCoordIntPair> columns;
-        public final Set<CubePos> cubes;
+        public final Collection<ChunkCoordIntPair> columns;
+        public final Collection<CubePos> cubes;
 
-        public PosBatch(Set<ChunkCoordIntPair> columns, Set<CubePos> cubes) {
+        public PosBatch(Collection<ChunkCoordIntPair> columns, Collection<CubePos> cubes) {
             this.columns = Objects.requireNonNull(columns, "columns");
             this.cubes = Objects.requireNonNull(cubes, "cubes");
         }

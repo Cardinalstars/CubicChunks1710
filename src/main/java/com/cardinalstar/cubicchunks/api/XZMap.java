@@ -45,20 +45,20 @@ public class XZMap<T extends XZAddressable> implements Iterable<T> {
         return (x << 32) | (z & 0xFFFFFFFFL);
     }
 
-    public final void remove(int x, int z) {
-        items.remove(key(x, z));
+    public final T remove(int x, int z) {
+        return items.remove(key(x, z));
     }
 
     public final T get(int x, int z) {
         return items.get(key(x, z));
     }
 
-    public final void put(T item) {
-        items.put(key(item.getX(), item.getZ()), item);
+    public final T put(T item) {
+        return items.put(key(item.getX(), item.getZ()), item);
     }
 
-    public final void remove(T item) {
-        remove(item.getX(), item.getZ());
+    public final T remove(T item) {
+        return remove(item.getX(), item.getZ());
     }
 
     @Override

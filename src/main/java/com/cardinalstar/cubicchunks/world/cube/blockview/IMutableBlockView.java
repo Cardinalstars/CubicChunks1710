@@ -21,7 +21,7 @@ public interface IMutableBlockView extends IBlockView {
         if (thisBox != null && !thisBox.contains(box))
             throw new IllegalArgumentException("sub view box must be completely contained within parent view's bounds");
 
-        return new MutableSubBlockView(this, box);
+        return new SubMutableBlockView(this, box);
     }
 
     void setBlock(int x, int y, int z, @Nonnull Block block);

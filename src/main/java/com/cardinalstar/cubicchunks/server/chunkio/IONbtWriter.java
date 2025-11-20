@@ -22,8 +22,6 @@ package com.cardinalstar.cubicchunks.server.chunkio;
 
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +29,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
-import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
@@ -46,25 +43,17 @@ import org.apache.logging.log4j.Level;
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
-import com.cardinalstar.cubicchunks.event.events.CubeDataEvent;
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-
 import cpw.mods.fml.common.FMLLog;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 @ParametersAreNonnullByDefault
 class IONbtWriter {
-
-    static byte[] writeNbtBytes(NBTTagCompound nbt) throws IOException {
-        ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        CompressedStreamTools.writeCompressed(nbt, buf);
-        return buf.toByteArray();
-    }
 
     static NBTTagCompound write(Chunk column) {
         NBTTagCompound columnNbt = new NBTTagCompound();
@@ -93,7 +82,6 @@ class IONbtWriter {
         writeScheduledTicks(cube, level);
         writeLightingInfo(cube, level);
         writeBiomes(cube, level);
-        writeModData(cube, cubeNbt);
         return cubeNbt;
     }
 
@@ -138,9 +126,8 @@ class IONbtWriter {
         cubeNbt.setInteger("z", cube.getZ());
 
         // save the worldgen stage and the target stage
-        cubeNbt.setBoolean("populated", cube.isPopulated());
+        cubeNbt.setShort("population", cube.getPopulationStatus());
         cubeNbt.setBoolean("isSurfaceTracked", cube.isSurfaceTracked());
-        cubeNbt.setBoolean("fullyPopulated", cube.isFullyPopulated());
 
         cubeNbt.setBoolean("initLightDone", cube.isInitialLightingDone());
 
@@ -259,10 +246,6 @@ class IONbtWriter {
         NBTTagCompound lightingInfo = new NBTTagCompound();
         cubeNbt.setTag("LightingInfo", lightingInfo);
         lightingManager.writeToNbt(cube, lightingInfo);
-    }
-
-    private static void writeModData(Cube cube, NBTTagCompound level) {
-        EVENT_BUS.post(new CubeDataEvent.Save(cube, level));
     }
 
     private static void writeBiomes(Cube cube, NBTTagCompound nbt) {// biomes

@@ -32,6 +32,8 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 public interface IColumnInternal extends IColumn {
 
+    void setColumn(boolean isColumn);
+
     Block[] getCompatGenerationBlockArray();
 
     byte[] getCompatGenerationByteArray();

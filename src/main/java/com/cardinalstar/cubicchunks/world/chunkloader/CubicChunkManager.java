@@ -24,12 +24,10 @@ import static com.cardinalstar.cubicchunks.util.ReflectionUtil.cast;
 
 import java.lang.invoke.MethodHandle;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.ChunkCoordIntPair;
@@ -41,11 +39,7 @@ import net.minecraftforge.common.util.Constants;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
-import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.early.common.forge.IForgeChunkManager;
-import com.cardinalstar.cubicchunks.server.ColumnWatcher;
-import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
-import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ITicket;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
@@ -53,7 +47,6 @@ import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.gtnewhorizon.gtnhlib.eventbus.EventBusSubscriber;
-
 import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.ModContainer;
@@ -235,47 +228,47 @@ public class CubicChunkManager {
         if (!(worldInstance instanceof WorldServer)) {
             return;
         }
-        addForcedCubesHeuristic(event, ticket, (WorldServer) worldInstance);
+        // TODO: properly implement chunk loading
+//        addForcedCubesHeuristic(event, ticket, (WorldServer) worldInstance);
     }
 
-    private static void addForcedCubesHeuristic(ForgeChunkManager.ForceChunkEvent event,
-        ForgeChunkManager.Ticket ticket, WorldServer worldInstance) {
-        IntSet yCoords = ((ICubicTicketInternal) ticket).getAllForcedChunkCubes()
-            .get(event.location);
-        if (yCoords != null && !yCoords.isEmpty()) {
-            yCoords.forEach(
-                cubeY -> ((ICubicWorldInternal) ticket.world)
-                    .getCubeFromCubeCoords(event.location.chunkXPos, cubeY, event.location.chunkZPos)
-                    .getTickets()
-                    .add((ITicket) ticket));
-            return;
-        }
-        WorldServer world = worldInstance;
-        CubicPlayerManager cubeMap = (CubicPlayerManager) world.getPlayerManager();
-        ColumnWatcher columnWatcher = cubeMap
-            .getColumnWatcher(new ChunkCoordIntPair(event.location.chunkXPos, event.location.chunkZPos));
-
-        if (columnWatcher == null) {
-            ((ICubicTicketInternal) ticket).setForcedChunkCubes(event.location, new IntArraySet());
-            return; // TODO: some different heuristic?
-        }
-        List<EntityPlayerMP> players = columnWatcher.getWatchingPlayers();
-        int verticalViewDistance = CubicChunksConfig.verticalCubeLoadDistance;
-        if (yCoords == null) {
-            yCoords = new IntArraySet(players.size() * verticalViewDistance * 3);
-        }
-        for (EntityPlayerMP player : players) {
-            for (int dy = -verticalViewDistance; dy <= verticalViewDistance; dy++) {
-                int cubeY = Coords.getCubeYForEntity(player) + dy;
-                Cube cube = (Cube) ((ICubicWorld) world)
-                    .getCubeFromCubeCoords(event.location.chunkXPos, cubeY, event.location.chunkZPos);
-                cube.getTickets()
-                    .add((ITicket) ticket);
-                yCoords.add(cubeY);
-            }
-        }
-        ((ICubicTicketInternal) ticket).setForcedChunkCubes(event.location, yCoords);
-    }
+//    private static void addForcedCubesHeuristic(ForgeChunkManager.ForceChunkEvent event,
+//        ForgeChunkManager.Ticket ticket, WorldServer worldInstance) {
+//        IntSet yCoords = ((ICubicTicketInternal) ticket).getAllForcedChunkCubes()
+//            .get(event.location);
+//        if (yCoords != null && !yCoords.isEmpty()) {
+//            yCoords.forEach(
+//                cubeY -> ((ICubicWorldInternal) ticket.world)
+//                    .getCubeFromCubeCoords(event.location.chunkXPos, cubeY, event.location.chunkZPos)
+//                    .getTickets()
+//                    .add((ITicket) ticket));
+//            return;
+//        }
+//        WorldServer world = worldInstance;
+//        CubicPlayerManager cubeMap = (CubicPlayerManager) world.getPlayerManager();
+//        ColumnWatcher columnWatcher = cubeMap.get;
+//
+//        if (columnWatcher == null) {
+//            ((ICubicTicketInternal) ticket).setForcedChunkCubes(event.location, new IntArraySet());
+//            return; // TODO: some different heuristic?
+//        }
+//        List<EntityPlayerMP> players = columnWatcher.getWatchingPlayers();
+//        int verticalViewDistance = CubicChunksConfig.verticalCubeLoadDistance;
+//        if (yCoords == null) {
+//            yCoords = new IntArraySet(players.size() * verticalViewDistance * 3);
+//        }
+//        for (EntityPlayerMP player : players) {
+//            for (int dy = -verticalViewDistance; dy <= verticalViewDistance; dy++) {
+//                int cubeY = Coords.getCubeYForEntity(player) + dy;
+//                Cube cube = (Cube) ((ICubicWorld) world)
+//                    .getCubeFromCubeCoords(event.location.chunkXPos, cubeY, event.location.chunkZPos);
+//                cube.getTickets()
+//                    .add((ITicket) ticket);
+//                yCoords.add(cubeY);
+//            }
+//        }
+//        ((ICubicTicketInternal) ticket).setForcedChunkCubes(event.location, yCoords);
+//    }
 
     @SubscribeEvent
     public static void onForgeChunkManagerUnforceChunk(ForgeChunkManager.UnforceChunkEvent event) {

@@ -139,6 +139,24 @@ public class CCPacketBuffer extends PacketBuffer {
         return out;
     }
 
+    public void writeIntArray(int[] array) {
+        writeVarIntToBuffer(array.length);
+
+        for (int x : array) {
+            writeVarIntToBuffer(x);
+        }
+    }
+
+    public int[] readIntArray() {
+        final int[] out = new int[readVarIntFromBuffer()];
+
+        for (int i = 0; i < out.length; i++) {
+            out[i] = readVarIntFromBuffer();
+        }
+
+        return out;
+    }
+
     public <T> void writeList(List<T> list, Encoder<T> encoder) {
         writeVarIntToBuffer(list.size());
 
