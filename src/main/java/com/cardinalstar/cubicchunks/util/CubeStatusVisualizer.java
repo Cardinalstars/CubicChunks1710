@@ -58,7 +58,7 @@ public class CubeStatusVisualizer {
             return;
         }
 
-        List<VisualizedBox> boxes = new ArrayList<>();
+        // List<VisualizedBox> boxes = new ArrayList<>();
 
         cubeStatus.forEach((pos, status) -> {
             // boxes.add(new VisualizedBox(

@@ -50,12 +50,13 @@ import com.cardinalstar.cubicchunks.mixin.early.common.IIntegratedServer;
 import com.cardinalstar.cubicchunks.network.NetworkChannel;
 import com.cardinalstar.cubicchunks.server.chunkio.RegionCubeStorage;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
+import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.util.SideUtils;
 import com.cardinalstar.cubicchunks.world.worldgen.WorldGenerators;
 import com.cardinalstar.cubicchunks.worldgen.WorldgenHangWatchdog;
+import com.falsepattern.chunk.api.DataRegistry;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
-
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.ICrashCallable;
 import cpw.mods.fml.common.Loader;
