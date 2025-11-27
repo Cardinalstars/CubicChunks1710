@@ -400,44 +400,51 @@ public class CubeLoaderServer implements ICubeLoader {
         cubeIO.close();
     }
 
-    private void handleSideEffects(GenerationResult<?> result) {
-        for (Chunk column : result.columnSideEffects) {
-            ColumnInfo info = columns.get(column.xPosition, column.zPosition);
+    private void handleSideEffects(GenerationResult<?> result, int colX, int colZ, boolean doColumns, boolean doCubes) {
+        if (doColumns) {
+            for (Chunk column : result.columnSideEffects) {
+                ColumnInfo info = columns.get(column.xPosition, column.zPosition);
 
-            if (info != null && info.column != null) {
-                CubicChunks.LOGGER.warn("Worldgen side-effect replaced column at {},{}!", column.xPosition, column.zPosition);
+                if (info != null && info.column != null) {
+                    CubicChunks.LOGGER.warn("Worldgen side-effect replaced column at {},{}!", column.xPosition, column.zPosition);
+                    continue;
+                }
+
+                if (info == null) {
+                    info = new ColumnInfo(column.xPosition, column.zPosition);
+                    columns.put(info);
+                }
+
+                info.source = ObjectSource.GeneratedSideEffect;
+                info.column = column;
+
+                info.onColumnLoaded();
             }
-
-            if (info == null) {
-                info = new ColumnInfo(column.xPosition, column.zPosition);
-                columns.put(info);
-            }
-
-            info.source = ObjectSource.GeneratedSideEffect;
-            info.column = column;
-
-            info.onColumnLoaded();
         }
 
-        for (Cube cube : result.cubeSideEffects) {
-            CubeInfo info = cubes.get(cube.getX(), cube.getY(), cube.getZ());
+        if (doCubes) {
+            for (Cube cube : result.cubeSideEffects) {
+                CubeInfo info = cubes.get(cube.getX(), cube.getY(), cube.getZ());
 
-            if (info != null && info.cube != null) {
-                CubicChunks.LOGGER.warn("Worldgen side-effect replaced cube at {},{},{}!", cube.getX(), cube.getY(), cube.getZ());
+                if (info != null && info.cube != null) {
+                    CubicChunks.LOGGER.warn("Worldgen side-effect replaced cube at {},{},{}!", cube.getX(), cube.getY(), cube.getZ());
+                    continue;
+                }
+
+                if (info == null) {
+                    info = new CubeInfo(cube.getX(), cube.getY(), cube.getZ());
+                    cubes.put(info);
+                }
+
+                info.source = ObjectSource.GeneratedSideEffect;
+                info.cube = cube;
+                cube.setMeta(CUBE_INFO, info);
+
+                info.ensureColumn(Requirement.GET_CACHED);
+
+                info.onCubeLoaded();
+                callback.onCubeGenerated(cube, cube.getInitLevel());
             }
-
-            if (info == null) {
-                info = new CubeInfo(cube.getX(), cube.getY(), cube.getZ());
-                info.column = columns.get(cube.getX(), cube.getZ());
-                cubes.put(info);
-            }
-
-            info.source = ObjectSource.GeneratedSideEffect;
-            info.cube = cube;
-            cube.setMeta(CUBE_INFO, info);
-
-            info.onCubeLoaded();
-            callback.onCubeGenerated(cube, cube.getInitLevel());
         }
     }
 
@@ -494,7 +501,7 @@ public class CubeLoaderServer implements ICubeLoader {
 
             cubeIO.saveColumn(pos, column);
 
-            handleSideEffects(result);
+            handleSideEffects(result, column.xPosition, column.zPosition, true, true);
 
             return true;
         }
@@ -597,8 +604,6 @@ public class CubeLoaderServer implements ICubeLoader {
                 return cube != null;
             }
 
-            ensureColumn();
-
             // If we haven't already loaded the NBT tag from disk, try to load it
             if (tag == null) {
                 loadNBT();
@@ -640,7 +645,15 @@ public class CubeLoaderServer implements ICubeLoader {
         }
 
         private void loadCube() throws IOException {
-            ensureColumn();
+            // Cubes should always have a containing column unless someone's deleting files. Try to load it, or fail if the column is missing.
+            ensureColumn(Requirement.LOAD);
+
+            if (this.column == null) {
+                CubicChunks.LOGGER.error("Tried to load a cube that did not have a saved column: it will be regenerated ({},{},{})", getX(), getY(), getZ(), new Exception());
+                this.cube = null;
+                this.tag = null;
+                return;
+            }
 
             this.cube = IONbtReader.readCube(column.column, getX(), getY(), getZ(), tag);
             cube.setMeta(CUBE_INFO, this);
@@ -670,21 +683,19 @@ public class CubeLoaderServer implements ICubeLoader {
 
             // If this cube hasn't been generated at all (i.e. it was never on the disk), generate it
             if (source == ObjectSource.None) {
-                ensureColumn();
-
-                // Column had a side effect that initialized this CubeInfo
-                if (isInitedTo(requestedInitLevel)) return true;
-
                 if (generating) {
                     throw new IllegalStateException(
                         "Cannot recursively generate a cube that is already being generated");
                 }
 
+                // Try to get any columns that already exist, since the generator may re-generate it if it thinks the column is missing.
+                ensureColumn(Requirement.LOAD);
+
                 GenerationResult<Cube> result;
                 try {
                     this.generating = true;
 
-                    result = generator.provideCube(column.column, pos.getX(), pos.getY(), pos.getZ());
+                    result = generator.provideCube(column == null ? null : column.column, pos.getX(), pos.getY(), pos.getZ());
                 } finally {
                     this.generating = false;
                 }
@@ -692,13 +703,24 @@ public class CubeLoaderServer implements ICubeLoader {
                 if (result == null) return false;
 
                 this.cube = result.object;
+                this.source = ObjectSource.Generated;
                 cube.setMeta(CUBE_INFO, this);
 
-                source = ObjectSource.Generated;
+                // Inject the columns, if any were generated.
+                handleSideEffects(result, getX(), getZ(), true, false);
 
+                // You can't generate a cube without also generating a column. Fetch it here if it's missing.
+                ensureColumn(Requirement.GET_CACHED);
+
+                if (this.column == null) {
+                    throw new IllegalStateException("Generated a cube without generating its column: this is an invalid state");
+                }
+
+                // Alert everything that this cube was generated
                 onCubeLoaded();
 
-                handleSideEffects(result);
+                // Inject the other cubes in this column
+                handleSideEffects(result, getX(), getZ(), false, true);
             }
 
             boolean generated = isInitedTo(CubeInitLevel.Generated);
@@ -707,7 +729,7 @@ public class CubeLoaderServer implements ICubeLoader {
             if (requestedInitLevel == CubeInitLevel.Generated) return generated;
             if (!generated) return false;
 
-            // If this cube hasn't been populated at all, generate the required cubes and populate this cube.
+            // If this cube hasn't been populated at all, populate it. This generates any required cubes recursively.
             generator.populate(cube);
 
             boolean populated = isInitedTo(CubeInitLevel.Populated);
@@ -715,12 +737,14 @@ public class CubeLoaderServer implements ICubeLoader {
             if (requestedInitLevel == CubeInitLevel.Populated) return populated;
             if (!populated) return false;
 
+            // Do the initial lighting
             if (!cube.isInitialLightingDone() || !cube.isSurfaceTracked()) {
                 ((ICubicWorldInternal) world).getLightingManager()
                     .doFirstLight(cube);
                 cube.setInitialLightingDone(true);
             }
 
+            // Put the surface into the column (to update the column heightmap) as needed
             if (!cube.isSurfaceTracked()) {
                 cube.trackSurface();
             }
@@ -729,7 +753,9 @@ public class CubeLoaderServer implements ICubeLoader {
         }
 
         public void onCubeLoaded() {
-            ensureColumn();
+            if (this.column == null) {
+                throw new IllegalStateException("Loaded a cube without giving it a column reference: this is a bug");
+            }
 
             updateInitLevel();
 
@@ -737,6 +763,8 @@ public class CubeLoaderServer implements ICubeLoader {
             column.containedCubes.add(this);
 
             cube.onCubeLoad();
+
+            CubeLoaderServer.this.generator.recreateStructures(cube);
 
             if (pauseLoadCalls == 0) {
                 callback.onCubeLoaded(cube);
@@ -767,9 +795,9 @@ public class CubeLoaderServer implements ICubeLoader {
             }
         }
 
-        private void ensureColumn() {
+        private void ensureColumn(Requirement effort) {
             if (column == null) {
-                column = getColumnInfo(getX(), getZ(), Requirement.GENERATE);
+                column = getColumnInfo(getX(), getZ(), effort);
             }
         }
     }

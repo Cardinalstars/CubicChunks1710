@@ -45,11 +45,16 @@ import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.network.CCPacketBuffer;
 import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.falsepattern.chunk.internal.DataRegistryImpl;
 import cpw.mods.fml.common.FMLLog;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 @ParametersAreNonnullByDefault
@@ -57,14 +62,21 @@ class IONbtWriter {
 
     static NBTTagCompound write(Chunk column) {
         NBTTagCompound columnNbt = new NBTTagCompound();
+
         NBTTagCompound level = new NBTTagCompound();
         columnNbt.setTag("Level", level);
-        // columnNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
-        // FMLCommonHandler.instance().getDataFixer().writeVersionData(columnNbt);
+
         writeBaseColumn(column, level);
-        writeBiomes(column, level);
         writeOpacityIndex(column, level);
+
+        if (Mods.ChunkAPI.isModLoaded()) {
+            DataRegistryImpl.writeChunkToNBT(column, columnNbt);
+        } else {
+            writeBiomes(column, level);
+        }
+
         EVENT_BUS.post(new ChunkDataEvent.Save(column, columnNbt));
+
         return columnNbt;
     }
 
@@ -73,15 +85,28 @@ class IONbtWriter {
         // Added to preserve compatibility with vanilla NBT chunk format.
         NBTTagCompound level = new NBTTagCompound();
         cubeNbt.setTag("Level", level);
-        // cubeNbt.setInteger("DataVersion", FMLCommonHandler.instance().getDataFixer().version);
-        // FMLCommonHandler.instance().getDataFixer().writeVersionData(cubeNbt);
         writeBaseCube(cube, level);
-        writeBlocks(cube, level);
+        
+        if (cube.getStorage() != null) {
+            NBTTagList sections = new NBTTagList();
+            level.setTag("Sections", sections);
+
+            NBTTagCompound section = new NBTTagCompound();
+            sections.appendTag(section);
+
+            if (!Mods.ChunkAPI.isModLoaded()) {
+                writeBlocks(cube, section);
+            } else {
+                DataRegistryImpl.writeSubChunkToNBT(cube.getColumn(), cube.getStorage(), section);
+            }
+        }
+
         writeEntities(cube, level);
         writeTileEntities(cube, level);
         writeScheduledTicks(cube, level);
         writeLightingInfo(cube, level);
         writeBiomes(cube, level);
+
         return cubeNbt;
     }
 
@@ -92,16 +117,6 @@ class IONbtWriter {
         // column properties
         nbt.setByte("v", (byte) 1);
         nbt.setLong("InhabitedTime", column.inhabitedTime);
-
-        // if (column.getCapabilities() != null) {
-        // try {
-        // nbt.setTag("ForgeCaps", column.getCapabilities().serializeNBT());
-        // } catch (Exception exception) {
-        // CubicChunks.LOGGER.error("A capability provider has thrown an exception trying to write state. It will not
-        // persist. "
-        // + "Report this to the mod author", exception);
-        // }
-        // }
     }
 
     private static void writeBiomes(Chunk column, NBTTagCompound nbt) {// biomes
@@ -130,34 +145,18 @@ class IONbtWriter {
         cubeNbt.setBoolean("isSurfaceTracked", cube.isSurfaceTracked());
 
         cubeNbt.setBoolean("initLightDone", cube.isInitialLightingDone());
-
-        // if (cube.getCapabilities() != null) {
-        // try {
-        // cubeNbt.setTag("ForgeCaps", cube.getCapabilities().serializeNBT());
-        // } catch (Exception exception) {
-        // CubicChunks.LOGGER.error("A capability provider has thrown an exception trying to write state. It will not
-        // persist. "
-        // + "Report this to the mod author", exception);
-        // }
-        // }
     }
 
-    private static void writeBlocks(Cube cube, NBTTagCompound cubeNbt) {
+    private static void writeBlocks(Cube cube, NBTTagCompound section) {
         ExtendedBlockStorage ebs = cube.getStorage();
-        if (ebs == null) {
-            return; // no data to save anyway
-        }
-        NBTTagList sectionList = new NBTTagList();
-        NBTTagCompound section = new NBTTagCompound();
-        sectionList.appendTag(section);
-        cubeNbt.setTag("Sections", sectionList);
+        assert ebs != null;
 
-        ExtendedBlockStorage storage = cube.getStorage();
-        section.setByteArray("BlocksLSB", storage.getBlockLSBArray());
-        if (storage.getBlockMSBArray() != null) {
-            section.setByteArray("BlocksMSB", storage.getBlockMSBArray().data);
+        section.setByteArray("Blocks", ebs.getBlockLSBArray());
+
+        if (ebs.getBlockMSBArray() != null) {
+            section.setByteArray("Add", ebs.getBlockMSBArray().data);
         }
-        section.setByteArray("BlocksMeta", storage.getMetadataArray().data);
+        section.setByteArray("Data", ebs.getMetadataArray().data);
 
         section.setByteArray("BlockLight", ebs.getBlocklightArray().data);
 
@@ -248,9 +247,18 @@ class IONbtWriter {
         lightingManager.writeToNbt(cube, lightingInfo);
     }
 
-    private static void writeBiomes(Cube cube, NBTTagCompound nbt) {// biomes
-        byte[] biomes = cube.getBiomeArray();
-        if (biomes != null) nbt.setByteArray("Biomes3D", biomes);
+    private static void writeBiomes(Cube cube, NBTTagCompound nbt) {
+        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+        try {
+            cube.writeBiomeArray(new CCPacketBuffer(buffer));
+
+            byte[] data = new byte[buffer.writerIndex()];
+            buffer.readBytes(data);
+
+            nbt.setByteArray("Biomes", data);
+        } finally {
+            buffer.release();
+        }
     }
 
     private static List<NextTickListEntry> getScheduledTicks(Cube cube) {

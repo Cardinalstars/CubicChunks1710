@@ -25,6 +25,7 @@ cubicchunks.command.config.set.done=Config option %s has been set to "%s"
 cubicchunks.command.config.set.requires_restart=Changing config option %s requires world restart!
 cubicchunks.command.usage.config.set.primitive=Config option %s has type %s and requires 1 parameter
 cubicchunks.command.config.reload.done=Cubic Chunks config has been reloaded
+cubicchunks.config.enable_chunk_debugging=Enable Chunk Status Debugging
 
 cubicchunks.config.optimizations=Optimizations
 cubicchunks.config.optimizations.background_threads=Background Threads

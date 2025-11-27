@@ -81,7 +81,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
         List<List<NBTTagCompound>> tileEntityTags = new ArrayList<>();
 
-        cubes.forEach(cube -> {
+        for (Cube cube : cubes) {
             if (cube.getTileEntityMap()
                 .isEmpty()) {
                 tileEntityTags.add(Collections.emptyList());
@@ -97,7 +97,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
                 tileEntityTags.add(list);
             }
-        });
+        }
 
         return new PacketCubes(cubePos, data, tileEntityTags);
     }

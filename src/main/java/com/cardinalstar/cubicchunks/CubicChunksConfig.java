@@ -98,6 +98,10 @@ public class CubicChunksConfig {
         + " client. Does not affect rendering, only what chunks are sent to client.")
     public static int verticalCubeLoadDistance = 8;
 
+    @Config.LangKey("cubicchunks.config.enable_chunk_debugging")
+    @Config.Comment("Displays coloured boxes over cubes at Y=8 for debugging purposes.")
+    public static boolean enableChunkStatusDebugging = false;
+
     @Config.LangKey("cubicchunks.config.dimension_blacklist")
     @Config.Comment("The specified dimension ID ranges won't be created as cubic chunks world for new worlds, and worlds created before this option"
         + " has been added, unless forceDimensionExcludes is set to true. IDs can be specified either as range in format min:max, or as single "

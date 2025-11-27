@@ -75,6 +75,12 @@ public enum Mixins implements IMixins {
     MIXIN_EBS(new MixinBuilder("Add simple cache to ExtendedBlockStorage.getBlockByExtId")
         .addCommonMixins("common.MixinExtendedBlockStorage")
         .setPhase(Phase.EARLY)
+        .addExcludedMod(Mods.NotEnoughIDs)
+        .addExcludedMod(Mods.ChunkAPI)
+        .setApplyIf(() -> true)),
+    ACCESSOR_S23(new MixinBuilder("Accessors for X/Y/Z fields for S23PacketBlockChange")
+        .addCommonMixins("common.AccessorS23PacketBlockChange")
+        .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
 
     // CHUNK

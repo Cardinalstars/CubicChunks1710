@@ -123,6 +123,16 @@ public class TaskPool {
         }
     }
 
+    public static void flush() {
+        while (true) {
+            synchronized (QUEUE_LOCK) {
+                if (TASK_QUEUE.isEmpty()) return;
+            }
+
+            Thread.yield();
+        }
+    }
+
     public interface ITaskExecutor<TTask, TResult> {
 
         void execute(List<ITaskFuture<TTask, TResult>> tasks);

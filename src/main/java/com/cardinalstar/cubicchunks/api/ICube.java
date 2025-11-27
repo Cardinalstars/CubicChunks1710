@@ -38,6 +38,8 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
 import com.cardinalstar.cubicchunks.util.CubePos;
@@ -264,35 +266,20 @@ public interface ICube extends XYZAddressable, MetaContainer {
 
     boolean hasLightUpdates();
 
+    @NotNull
     BiomeGenBase getBiome(int x, int y, int z);
 
     /**
      * Set biome at a cube-local 4x4x4 block segment.
      *
-     * @param localBiomeX cube-local X coordinate. One unit is 4 blocks
-     * @param localBiomeY cube-local Y coordinate. One unit is 4 blocks
-     * @param localBiomeZ cube-local Z coordinate. One unit is 4 blocks
-     * @param biome       biome at the given cube coordinates
+     * @param x cube-local block X coordinate
+     * @param y cube-local block Y coordinate
+     * @param z cube-local block Z coordinate
+     * @param biome The biome at the given cube coordinates, or null to defer to the column
      */
-    void setBiome(int localBiomeX, int localBiomeY, int localBiomeZ, BiomeGenBase biome);
+    void setBiome(int x, int y, int z, BiomeGenBase biome);
 
-    /**
-     * Set biome at a cube-local 2x2 block column.
-     *
-     * @param localBiomeX cube-local X coordinate. One unit is 2 blocks
-     * @param localBiomeZ cube-local Z coordinate. One unit is 2 blocks
-     * @param biome       biome at the given cube coordinates
-     * @deprecated Due to changes in Minecraft 1.15.x, biome storage will be changed to 1 biome per 4x4x4 blocks. Use
-     *             {@link #setBiome(int, int, int, BiomeGenBase)}
-     */
-    @Deprecated
-    default void setBiome(int localBiomeX, int localBiomeZ, BiomeGenBase biome) {
-        for (int biomeY = 0; biomeY < 4; biomeY++) {
-            setBiome(localBiomeX >> 1, biomeY, localBiomeZ >> 1, biome);
-        }
-    }
-
-    public BlockPos localAddressToBlockPos(int localAddress);
+    BlockPos localAddressToBlockPos(int localAddress);
 
     /**
      * Returns a set of reasons this cube is forced to remain loaded if it's forced to remain loaded,

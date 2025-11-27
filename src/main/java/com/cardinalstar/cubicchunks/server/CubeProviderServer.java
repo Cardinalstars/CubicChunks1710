@@ -107,9 +107,6 @@ public class CubeProviderServer extends ChunkProviderServer
     private final Map<ChunkCoordIntPair, EagerCubeLoadContainer> eagerLoads = new Object2ObjectOpenHashMap<>();
     private final List<ChunkCoordIntPair> eagerLoadOrder = new ArrayList<>();
 
-    private int columnsLoadedThisTick = 0;
-    private int cubesLoadedThisTick = 0;
-
     private static final int MAX_NS_SPENT_LOADING = 10_000_000;
 
     private final ListMultimap<ChunkCoordIntPair, Runnable> pendingAsyncChunkLoads = MultimapBuilder.hashKeys()
@@ -167,8 +164,6 @@ public class CubeProviderServer extends ChunkProviderServer
             pendingAsyncChunkLoads.removeAll(new ChunkCoordIntPair(column.xPosition, column.zPosition))
                 .forEach(Runnable::run);
 
-            columnsLoadedThisTick++;
-
             callbacks.forEach(c -> c.onColumnLoaded(column));
         }
 
@@ -183,15 +178,11 @@ public class CubeProviderServer extends ChunkProviderServer
 
         @Override
         public void onCubeLoaded(Cube cube) {
-            cubesLoadedThisTick++;
-
             callbacks.forEach(c -> c.onCubeLoaded(cube));
         }
 
         @Override
         public void onCubeGenerated(Cube cube, CubeInitLevel newLevel) {
-            cubesLoadedThisTick++;
-
             callbacks.forEach(c -> c.onCubeGenerated(cube, newLevel));
         }
 
@@ -328,9 +319,6 @@ public class CubeProviderServer extends ChunkProviderServer
         getCubeLoader().setNow(worldObj.getTotalWorldTime());
 
         doEagerLoading();
-
-        columnsLoadedThisTick = 0;
-        cubesLoadedThisTick = 0;
     }
 
     private void doEagerLoading() {
@@ -342,6 +330,9 @@ public class CubeProviderServer extends ChunkProviderServer
         profiler.endStartSection("Eager object loading");
 
         long start = System.nanoTime();
+
+        int processed = 0;
+        int startCols = eagerLoadOrder.size();
 
         while ((System.nanoTime() - start) < MAX_NS_SPENT_LOADING && !eagerLoadOrder.isEmpty()) {
             ChunkCoordIntPair coord = eagerLoadOrder.get(eagerLoadOrder.size() - 1);
@@ -362,15 +353,9 @@ public class CubeProviderServer extends ChunkProviderServer
                 cubeIter.remove();
                 request.completed = true;
 
+                processed++;
+
                 if (request.isCancelled()) continue;
-
-                cubeLoader.preloadCube(request.pos, CubeInitLevel.fromRequirement(request.effort));
-
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
 
                 cubeLoader.pauseLoadCalls();
 
@@ -406,7 +391,18 @@ public class CubeProviderServer extends ChunkProviderServer
             CubicChunks.LOGGER.warn("Spent {} ms loading the world this tick", delta / 1e6);
         }
 
+        if (processed > 0) {
+            CubicChunks.LOGGER.info("Processed {} eager load requests this tick ({} -> {} columns)",
+                processed,
+                startCols,
+                eagerLoadOrder.size());
+        }
+
         profiler.endSection();
+    }
+
+    public Collection<Chunk> getTickableChunks() {
+        return ((CubicPlayerManager) worldServer.getPlayerManager()).getColumns();
     }
 
     public Collection<Cube> getTickableCubes() {

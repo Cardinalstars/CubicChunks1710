@@ -64,8 +64,4 @@ public class AddressTools {
     public static int getLocalZ(int localAddress) {
         return Bits.unpackUnsigned(localAddress, 4, 4);
     }
-
-    public static int getBiomeAddress3d(int biomeLocalX, int biomeLocalY, int biomeLocalZ) {
-        return biomeLocalX | biomeLocalY << 2 | biomeLocalZ << 4;
-    }
 }

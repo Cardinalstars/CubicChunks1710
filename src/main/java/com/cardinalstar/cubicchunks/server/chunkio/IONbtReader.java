@@ -38,17 +38,22 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.Constants.NBT;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
-import com.cardinalstar.cubicchunks.util.AddressTools;
+import com.cardinalstar.cubicchunks.network.CCPacketBuffer;
 import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.falsepattern.chunk.internal.DataRegistryImpl;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 @ParametersAreNonnullByDefault
 public class IONbtReader {
@@ -60,12 +65,18 @@ public class IONbtReader {
         if (column == null) {
             return null;
         }
-        readBiomes(level, column);
-        readOpacityIndex(level, column);
+
+        if (!Mods.ChunkAPI.isModLoaded()) {
+            column.inhabitedTime = level.getLong("InhabitedTime");
+            readBiomes(level, column);
+            readOpacityIndex(level, column);
+        } else {
+            DataRegistryImpl.readChunkFromNBT(column, nbt);
+        }
 
         column.isModified = false; // its exactly the same as on disk so its not modified
         ((IColumnInternal) column).setColumn(true);
-        return column; // TODO: use Chunk, not IColumn, whenever possible
+        return column;
     }
 
     @Nullable
@@ -89,25 +100,16 @@ public class IONbtReader {
             return null;
         }
 
-        // create the column
-        Chunk column = new Chunk(world, x, z);
-
-        // read the rest of the column properties
-        column.inhabitedTime = nbt.getLong("InhabitedTime");
-
-        // if (column.getCapabilities() != null && nbt.hasKey("ForgeCaps")) {
-        // column.getCapabilities().deserializeNBT(nbt.getCompoundTag("ForgeCaps"));
-        // }
-        return column;
+        return new Chunk(world, x, z);
     }
 
     private static void readBiomes(NBTTagCompound nbt, Chunk column) {// biomes
         System.arraycopy(nbt.getByteArray("Biomes"), 0, column.getBiomeArray(), 0, Cube.SIZE * Cube.SIZE);
     }
 
-    private static void readOpacityIndex(NBTTagCompound nbt, Chunk chunk) {// biomes
+    private static void readOpacityIndex(NBTTagCompound nbt, Chunk chunk) {
         IHeightMap hmap = ((IColumn) chunk).getOpacityIndex();
-        ((ServerHeightMap) hmap).readData(nbt.getByteArray("OpacityIndex"));
+        ((ServerHeightMap) hmap).readData(new CCPacketBuffer(Unpooled.wrappedBuffer(nbt.getByteArray("OpacityIndex"))));
     }
 
     static CubeInitLevel getCubeInitLevel(NBTTagCompound nbt) {
@@ -176,12 +178,29 @@ public class IONbtReader {
         // this status will get unset again in readLightingInfo() if the lighting engine is changed (LightingInfoType).
         cube.setInitialLightingDone(level.getBoolean("initLightDone"));
 
-        // if (cube.getCapabilities() != null && nbt.hasKey("ForgeCaps")) {
-        // cube.getCapabilities().deserializeNBT(nbt.getCompoundTag("ForgeCaps"));
-        // }
+        NBTTagList sections = level.getTagList("Sections", NBT.TAG_COMPOUND);
+
+        // Block loading has to be done before TE loading, otherwise the TEs get deleted
+        if (sections.tagCount() > 0) {
+            NBTTagCompound section = sections.getCompoundTagAt(0);
+
+            if (Mods.ChunkAPI.isModLoaded()) {
+                section.setInteger("Y", cubeY);
+
+                ExtendedBlockStorage ebs = new ExtendedBlockStorage(
+                    Coords.cubeToMinBlock(cube.getY()),
+                    !cube.getWorld().provider.hasNoSky);
+
+                DataRegistryImpl.readSubChunkFromNBT(cube.getColumn(), ebs, section);
+
+                ebs.removeInvalidBlocks();
+                cube.setStorageFromSave(ebs);
+            } else {
+                readBlocks(section, world, cube);
+            }
+        }
 
         readBiomes(cube, level);
-        readBlocks(level, world, cube);
         readEntities(level, world, cube);
         readTileEntities(level, world, cube);
         readScheduledBlockTicks(level, world);
@@ -193,32 +212,26 @@ public class IONbtReader {
         return cube;
     }
 
-    private static void readBlocks(NBTTagCompound nbt, World world, Cube cube) {
-        boolean isEmpty = !nbt.hasKey("Sections");// is this an empty cube?
-        if (!isEmpty) {
-            NBTTagList sectionList = nbt.getTagList("Sections", 10);
-            nbt = sectionList.getCompoundTagAt(0);
+    private static void readBlocks(NBTTagCompound section, World world, Cube cube) {
+        ExtendedBlockStorage ebs = new ExtendedBlockStorage(
+            Coords.cubeToMinBlock(cube.getY()),
+            !cube.getWorld().provider.hasNoSky);
 
-            ExtendedBlockStorage ebs = new ExtendedBlockStorage(
-                Coords.cubeToMinBlock(cube.getY()),
-                !cube.getWorld().provider.hasNoSky);
-
-            ebs.setBlockLSBArray(nbt.getByteArray("BlocksLSB"));
-            if (nbt.hasKey("BlocksMSB")) {
-                ebs.setBlockMSBArray(new NibbleArray(nbt.getByteArray("BlocksMSB"), 4));
-            }
-
-            ebs.setBlockMetadataArray(new NibbleArray(nbt.getByteArray("BlocksMeta"), 4));
-
-            ebs.setBlocklightArray(new NibbleArray(nbt.getByteArray("BlockLight"), 4));
-
-            if (!world.provider.hasNoSky) {
-                ebs.setSkylightArray(new NibbleArray(nbt.getByteArray("SkyLight"), 4));
-            }
-
-            ebs.removeInvalidBlocks();
-            cube.setStorageFromSave(ebs);
+        ebs.setBlockLSBArray(section.getByteArray("Blocks"));
+        if (section.hasKey("Add")) {
+            ebs.setBlockMSBArray(new NibbleArray(section.getByteArray("Add"), 4));
         }
+
+        ebs.setBlockMetadataArray(new NibbleArray(section.getByteArray("Data"), 4));
+
+        ebs.setBlocklightArray(new NibbleArray(section.getByteArray("BlockLight"), 4));
+
+        if (!world.provider.hasNoSky) {
+            ebs.setSkylightArray(new NibbleArray(section.getByteArray("SkyLight"), 4));
+        }
+
+        ebs.removeInvalidBlocks();
+        cube.setStorageFromSave(ebs);
     }
 
     private static void readEntities(NBTTagCompound cubeNbt, World world, Cube cube) {// entities
@@ -349,31 +362,10 @@ public class IONbtReader {
     }
 
     private static void readBiomes(Cube cube, NBTTagCompound nbt) {// biomes
-        if (nbt.hasKey("Biomes3D")) {
-            cube.setBiomeArray(nbt.getByteArray("Biomes3D"));
-        }
         if (nbt.hasKey("Biomes")) {
-            cube.setBiomeArray(convertFromOldCubeBiomes(nbt.getByteArray("Biomes")));
-        }
-    }
+            ByteBuf data = Unpooled.wrappedBuffer(nbt.getByteArray("Biomes"));
 
-    private static byte[] convertFromOldCubeBiomes(byte[] biomes) {
-        byte[] newBiomes = new byte[4 * 4 * 4];
-        for (int x = 0; x < 4; x++) {
-            for (int y = 0; y < 4; y++) {
-                for (int z = 0; z < 4; z++) {
-                    // NOTE: spread the biomes from 4 2x2 segments into the 4 vertical 4x4x4 segments
-                    // this ensures that no biome data has been lost, but some of it may get arranged weirdly
-                    newBiomes[AddressTools.getBiomeAddress3d(x, y, z)] = biomes[getOldBiomeAddress(
-                        x << 1 | (y & 1),
-                        z << 1 | ((y >> 1) & 1))];
-                }
-            }
+            cube.readBiomeArray(new CCPacketBuffer(data));
         }
-        return newBiomes;
-    }
-
-    public static int getOldBiomeAddress(int biomeX, int biomeZ) {
-        return biomeX << 3 | biomeZ;
     }
 }

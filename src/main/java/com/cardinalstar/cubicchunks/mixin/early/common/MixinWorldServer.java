@@ -321,9 +321,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         boolean thundering = this.isThundering();
         this.theProfiler.startSection("pollingChunks");
 
-        // CubicChunks - iterate over PlayerCubeMap.TickableChunkContainer instead of Chunks, getTickableChunks already
-        // includes forced chunks
-        for (Chunk chunk : ((CubicPlayerManager) this.thePlayerManager).getColumnsToTick()) {
+        for (Chunk chunk :  ((CubeProviderServer) this.theChunkProviderServer).getTickableChunks()) {
             tickColumn(raining, thundering, chunk);
         }
 
@@ -331,9 +329,9 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
 
         long worldTime = worldInfo.getWorldTotalTime();
 
-//        for (Cube cube : ((CubeProviderServer) this.theChunkProviderServer).getTickableCubes()) {
-//            tickCube(cube, worldTime);
-//        }
+        for (Cube cube : ((CubeProviderServer) this.theChunkProviderServer).getTickableCubes()) {
+            tickCube(cube, worldTime);
+        }
 
         this.theProfiler.endSection();
     }

@@ -32,6 +32,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.tileentity.TileEntity;
@@ -73,6 +75,8 @@ import com.cardinalstar.cubicchunks.api.IntRange;
 import com.cardinalstar.cubicchunks.api.world.ICubicWorldType;
 import com.cardinalstar.cubicchunks.lighting.LightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.network.PacketEncoderWorldHeight;
+import com.cardinalstar.cubicchunks.network.PacketEncoderWorldHeight.PacketWorldHeight;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.ReflectionUtil;
@@ -379,6 +383,26 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         return this.provider.getHeight();
     }
 
+    @Override
+    public void setHeightBounds(int minHeight, int maxHeight) {
+        if (minHeight >= this.minGenerationHeight && maxHeight <= this.maxHeight) return;
+
+        this.minHeight = minHeight;
+        this.maxHeight = maxHeight;
+
+        if (!this.isRemote) {
+            CubicChunksSavedData savedData = CubicChunksSavedData.get((World) (Object) this);
+            savedData.minHeight = minHeight;
+            savedData.maxHeight = maxHeight;
+
+            PacketWorldHeight packet = PacketEncoderWorldHeight.create(minHeight, maxHeight);
+
+            for (EntityPlayer player : this.playerEntities) {
+                packet.sendToPlayer((EntityPlayerMP) player);
+            }
+        }
+    }
+
     @Inject(method = "updateLightByType", at = @At("HEAD"), cancellable = true)
     private void updateLightByType(EnumSkyBlock lightType, int x, int y, int z, CallbackInfoReturnable<Boolean> ci) {
         ci.setReturnValue(getLightingManager() != null && getLightingManager().checkLightFor(lightType, x, y, z));
@@ -410,6 +434,9 @@ public abstract class MixinWorld implements ICubicWorldInternal {
 
     @Shadow
     public abstract Block getBlock(int x, int y, int z);
+
+    @Shadow
+    public List<EntityPlayer> playerEntities;
 
     /**
      * @param x block x position

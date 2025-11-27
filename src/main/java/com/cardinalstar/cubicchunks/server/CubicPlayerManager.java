@@ -26,7 +26,6 @@ import static net.minecraft.util.MathHelper.clamp_int;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -130,32 +129,33 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         provider.registerCallback(this);
     }
 
-    public Iterable<Chunk> getColumnsToTick() {
-        // TODO: this
-        return Collections.emptyList();
-    }
-
-    public Iterable<Cube> getCubesToTick() {
-        // TODO: this
-        return Collections.emptyList();
-    }
-
-    public Iterable<Chunk> getWatchedColumns() {
-        return () -> new AbstractIterator<>() {
-
-            final Iterator<WatchedColumn> iter = watchedColumns.iterator();
+    public Collection<Chunk> getColumns() {
+        return new AbstractCollection<>() {
 
             @Override
-            protected Chunk computeNext() {
-                while (iter.hasNext()) {
-                    WatchedColumn column = iter.next();
+            public @NotNull Iterator<Chunk> iterator() {
+                return new AbstractIterator<>() {
 
-                    if (column.column == null || column.watchingPlayers.isEmpty()) continue;
+                    final Iterator<WatchedColumn> iter = watchedColumns.iterator();
 
-                    return column.column;
-                }
+                    @Override
+                    protected Chunk computeNext() {
+                        while (iter.hasNext()) {
+                            WatchedColumn column = iter.next();
 
-                return this.endOfData();
+                            if (column.column == null) continue;
+
+                            return column.column;
+                        }
+
+                        return this.endOfData();
+                    }
+                };
+            }
+
+            @Override
+            public int size() {
+                return watchedColumns.getSize();
             }
         };
     }
@@ -267,6 +267,8 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         List<WatchedCube> fullSync = new ObjectArrayList<>();
 
+        List<WatchedCube> notReady = new ArrayList<>();
+
         for (WatchedCube cube : dirtyCubes) {
             if (cube.cube == null) continue;
 
@@ -279,6 +281,13 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
                     cube.clean();
                 }
                 case Full -> {
+                    WatchedColumn col = watchedColumns.get(cube.getX(), cube.getZ());
+
+                    if (col == null || col.column == null) {
+                        notReady.add(cube);
+                        continue;
+                    }
+
                     fullSync.add(cube);
                 }
             }
@@ -287,6 +296,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         }
 
         dirtyCubes.clear();
+        dirtyCubes.addAll(notReady);
 
         for (WatchedCube cube : fullSync) {
             for (WatchingPlayer player : cube.watchingPlayers) {
@@ -303,7 +313,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
     @Override
     public void onColumnLoaded(Chunk column) {
-        WatchedColumn watcher = this.watchedColumns.get(column.xPosition, column.zPosition);
+        WatchedColumn watcher = this.getOrCreateWatchedColumn(new ChunkCoordIntPair(column.xPosition, column.zPosition));
 
         if (watcher != null) {
             watcher.setColumn(column);
@@ -975,6 +985,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         public void clean() {
             this.dirtyBlocks.clear();
             this.dirty = Dirtiness.None;
+            CubeStatusVisualizer.put(new CubePos(this), CubeStatus.Synced);
         }
 
         private void syncPartial() {
@@ -988,9 +999,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             int blockY = this.cube.getY() << 4;
             int blockZ = this.cube.getZ() << 4;
 
-            for (int i = 0, localAddressesLength = dirtyBlocks.length; i < localAddressesLength; i++) {
-                short localAddress = dirtyBlocks[i];
-
+            for (short localAddress : dirtyBlocks) {
                 int x = AddressTools.getLocalX(localAddress);
                 int y = AddressTools.getLocalY(localAddress);
                 int z = AddressTools.getLocalZ(localAddress);

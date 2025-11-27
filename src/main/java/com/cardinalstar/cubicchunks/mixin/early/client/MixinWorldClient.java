@@ -68,12 +68,6 @@ public abstract class MixinWorldClient extends MixinWorld implements ICubicWorld
         return (CubeProviderClient) this.clientChunkProvider;
     }
 
-    @Override
-    public void setHeightBounds(int minHeight1, int maxHeight1) {
-        this.minHeight = minHeight1;
-        this.maxHeight = maxHeight1;
-    }
-
     // Has to be in here because the world is intialized before initCubicWorldClient gets called. This causes a crash in
     // prepare spawn location on the client.
     @Redirect(

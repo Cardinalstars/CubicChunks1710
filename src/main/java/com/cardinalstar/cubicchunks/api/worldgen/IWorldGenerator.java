@@ -46,7 +46,7 @@ public interface IWorldGenerator {
      *
      * @return A CubePrimer with the generated blocks
      */
-    GenerationResult<Cube> provideCube(Chunk chunk, int cubeX, int cubeY, int cubeZ);
+    GenerationResult<Cube> provideCube(@Nullable Chunk chunk, int cubeX, int cubeY, int cubeZ);
 
     /**
      * Generate column-global information such as biome data

@@ -21,13 +21,13 @@
 package com.cardinalstar.cubicchunks.worldgen;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.block.Block;
@@ -254,33 +254,38 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
     }
 
     @Override
-    public void recreateStructures(Chunk column) {
-        vanilla.recreateStructures(column.xPosition, column.zPosition); // TODO WATCH
+    public void recreateStructures(ICube cube) {
+
     }
 
     @Override
-    public GenerationResult<Cube> provideCube(Chunk chunk, int cubeX, int cubeY, int cubeZ) {
+    public void recreateStructures(Chunk column) {
+        vanilla.recreateStructures(column.xPosition, column.zPosition);
+    }
+
+    @Override
+    public GenerationResult<Cube> provideCube(@Nullable Chunk chunk, int cubeX, int cubeY, int cubeZ) {
         try {
             WorldgenHangWatchdog.startWorldGen();
 
-            IBlockView cubeData;
+            List<Chunk> generatedColumns = new ArrayList<>();
+            List<Cube> generatedCubes = new ArrayList<>();
 
-            if (cubeY < 0) {
-                FillerInfo fillerInfo = getBottomFillerInfo();
-
-                cubeData = new UniformBlockView(fillerInfo.filler);
-            } else if (cubeY >= worldHeightCubes) {
-                FillerInfo fillerInfo = getTopFillerInfo();
-
-                cubeData = new UniformBlockView(fillerInfo.filler);
-            } else {
+            if (cubeY >= 0 && cubeY < 16 || chunk == null) {
+                // Generate the vanilla chunk
                 Pair<Chunk, IBlockView> data = getVanillaChunkView(cubeX, cubeZ);
 
-                Cube self = null;
-                List<Cube> sideEffects = new ArrayList<>();
+                IBlockView chunkBlocks = data.right();
+
+                if (chunk != null) {
+                    CubicChunks.LOGGER.error("Needed to regenerate a cube within the vanilla chunk for a chunk that already exists: something is fucky ({},{},{})", cubeX, cubeY, cubeZ, new Exception());
+                } else {
+                    chunk = data.left();
+                    generatedColumns.add(chunk);
+                }
 
                 // Ceiling div by 16
-                int heightCubes = (data.right()
+                int heightCubes = (chunkBlocks
                     .getBounds()
                     .getSizeY() + 15) >> 4;
 
@@ -288,7 +293,7 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                     Cube c = new Cube(
                         chunk,
                         y,
-                        data.right()
+                        chunkBlocks
                             .subView(Box.horizontalChunkSlice(y << 4, 16)));
 
                     try {
@@ -297,25 +302,38 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                         CubicChunks.LOGGER.error("Could not run generation for cube {},{},{}", cubeX, y, cubeZ, t);
                     }
 
-                    if (y == cubeY) {
-                        self = c;
-                    } else {
-                        sideEffects.add(c);
-                    }
+                    generatedCubes.add(c);
+                }
+            }
+
+            if (cubeY < 0 || cubeY >= 16) {
+                FillerInfo fillerInfo = cubeY < 0 ? getBottomFillerInfo() : getTopFillerInfo();
+                IBlockView cubeData = new UniformBlockView(fillerInfo.filler);
+
+                Cube cube = new Cube(chunk, cubeY, cubeData);
+
+                try {
+                    decorator.generate(world, cube);
+                } catch (Throwable t) {
+                    CubicChunks.LOGGER.error("Could not run generation for cube {},{},{}", cubeX, cubeY, cubeZ, t);
                 }
 
-                return new GenerationResult<>(self, Collections.singletonList(data.left()), sideEffects);
+                generatedCubes.add(cube);
             }
 
-            Cube cube = new Cube(chunk, cubeY, cubeData);
+            Cube primary = null;
 
-            try {
-                decorator.generate(world, cube);
-            } catch (Throwable t) {
-                CubicChunks.LOGGER.error("Could not run generation for cube {},{},{}", cubeX, cubeY, cubeZ, t);
+            for (int i = 0; i < generatedCubes.size(); i++) {
+                Cube c = generatedCubes.get(i);
+
+                if (c.getY() == cubeY) {
+                    primary = c;
+                    generatedCubes.remove(i);
+                    break;
+                }
             }
 
-            return new GenerationResult<>(cube);
+            return new GenerationResult<>(primary, generatedColumns, generatedCubes);
         } finally {
             WorldgenHangWatchdog.endWorldGen();
         }
@@ -418,9 +436,15 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                             .recalculateStagingHeightmap();
                     }
                 }
+            }
 
-                for (int dx = -1; dx <= 0; dx++) {
-                    for (int dz = -1; dz <= 0; dz++) {
+            for (Vector3ic v : getCubesToPopulate(cx, cy, cz)) {
+                Cube center = loader.getCube(v.x(), v.y(), v.z(), Requirement.GENERATE);
+
+                if (!center.isPopulated()) {
+                    decorator.populate(world, center);
+
+                    if (v.y() == 0) {
                         // For some bizarre reason, MC offsets its block positions by +8 when populating. This means
                         // that when a chunk
                         // gets populated, it's actually populating the 16x16 blocks centered on the +x/+z corner. This
@@ -429,17 +453,11 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                         // columns in the
                         // negative directions (-x,z, x,-z, -x,-z).
 
-                        populateChunk(loader, cx + dx, cz + dz);
+                        populateChunk(loader, v.x(), v.z());
                     }
+
+                    center.markPopulated(Cube.POP_000);
                 }
-            }
-
-            for (Vector3ic v : getCubesToPopulate(cx, cy, cz)) {
-                Cube center = loader.getCube(v.x(), v.y(), v.z(), Requirement.GENERATE);
-
-                decorator.populate(world, center);
-
-                center.markPopulated(Cube.POP_000);
             }
 
             for (Vector3ic v : getFullyPopulatedCubes(cx, cy, cz)) {
@@ -447,23 +465,6 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
 
                 center.markPopulated(Cube.POP_ALL);
                 loader.onCubeGenerated(center);
-            }
-
-            if (!cube.isFullyPopulated()) {
-                for (Vector3ic v : AFFECTED_CUBES) {
-                    Cube adj = loader.getCube(cx + v.x(), cy + v.y(), cz + v.z(), Requirement.GENERATE);
-
-                    if (!adj.isPopulated()) {
-                        CubicChunks.LOGGER.error(
-                            "Failed to populate cube {},{},{}: requires cube: {},{},{}",
-                            cx,
-                            cy,
-                            cz,
-                            cx + v.x(),
-                            cy + v.y(),
-                            cz + v.z());
-                    }
-                }
             }
         } catch (Throwable t) {
             CubicChunks.LOGGER.error("Could not run non-vanilla population for cube {},{},{}", cx, cy, cz, t);
@@ -490,9 +491,9 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
 
     private Box getCubesToPopulate(int x, int y, int z) {
         if (y >= 0 && y < 16) {
-            return new Box(x - 1, -1, x - 1, x, 15, z);
+            return new Box(x - 1, -1, z - 1, x, 15, z);
         } else {
-            return new Box(x - 1, y - 1, x - 1, x, y, z);
+            return new Box(x - 1, y - 1, z - 1, x, y, z);
         }
     }
 
@@ -506,8 +507,6 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
 
     private void populateChunk(ICubeLoader loader, int columnX, int columnZ) {
         Chunk column = loader.getColumn(columnX, columnZ, Requirement.GENERATE);
-
-        if (column.isTerrainPopulated) return;
 
         column.isTerrainPopulated = true;
         column.isModified = true;
@@ -573,9 +572,6 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
             decorator.prepopulate(world, pos);
         }
     }
-
-    @Override
-    public void recreateStructures(ICube cube) {}
 
     @Override
     public List<BiomeGenBase.SpawnListEntry> getPossibleCreatures(EnumCreatureType creatureType, int x, int y, int z) {

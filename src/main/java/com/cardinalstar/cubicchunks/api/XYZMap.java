@@ -43,10 +43,18 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
     Long2ObjectOpenHashMap<T> items = new Long2ObjectOpenHashMap<>();
 
     public T remove(int x, int y, int z) {
+        if (x < -2097152 || x > 2097151) return null;
+        if (y < -2097152 || y > 2097151) return null;
+        if (z < -2097152 || z > 2097151) return null;
+
         return items.remove(Coords.key(x, y, z));
     }
 
     public final T get(int x, int y, int z) {
+        if (x < -2097152 || x > 2097151) return null;
+        if (y < -2097152 || y > 2097151) return null;
+        if (z < -2097152 || z > 2097151) return null;
+
         return items.get(Coords.key(x, y, z));
     }
 
@@ -55,6 +63,10 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
     }
 
     public final T put(T item) {
+        if (item.getX() < -2097152 || item.getX() > 2097151) return null;
+        if (item.getY() < -2097152 || item.getY() > 2097151) return null;
+        if (item.getZ() < -2097152 || item.getZ() > 2097151) return null;
+
         return items.put(Coords.key(item.getX(), item.getY(), item.getZ()), item);
     }
 

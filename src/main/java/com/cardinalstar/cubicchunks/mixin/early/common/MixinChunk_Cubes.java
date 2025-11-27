@@ -68,6 +68,7 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
 import com.cardinalstar.cubicchunks.world.column.CubeMap;
@@ -267,7 +268,9 @@ public abstract class MixinChunk_Cubes {
         // this.chunkSections = null;
         // this.skylightUpdateMap = null;
 
-        Arrays.fill(getBiomeArray(), (byte) -1);
+        if (!Mods.ChunkAPI.isModLoaded()) {
+            Arrays.fill(getBiomeArray(), (byte) -1);
+        }
     }
 
     @Redirect(
@@ -702,8 +705,10 @@ public abstract class MixinChunk_Cubes {
         if (!isColumn) {
             return;
         }
-        ((ICubicWorldInternal) worldObj).getLightingManager()
-            .onGetLight(type, x, y, z);
+        if (((ICubicWorldInternal) worldObj).getLightingManager() != null) {
+            ((ICubicWorldInternal) worldObj).getLightingManager()
+                .onGetLight(type, x, y, z);
+        }
         cir.setReturnValue(((Cube) ((IColumn) this).getCube(blockToCube(y))).getCachedLightFor(type, x, y, z));
     }
 
