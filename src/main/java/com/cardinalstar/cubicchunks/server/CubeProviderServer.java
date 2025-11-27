@@ -68,6 +68,7 @@ import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.cardinalstar.cubicchunks.world.savedata.WorldFormatSavedData;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.ints.IntComparator;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -216,7 +217,7 @@ public class CubeProviderServer extends ChunkProviderServer
         // noinspection ConstantValue
         if (worldServer == null) return Collections.emptyList();
 
-        //noinspection unchecked
+        // noinspection unchecked
         return (List<EntityPlayerMP>) (List<?>) worldServer.playerEntities;
     }
 
@@ -325,7 +326,9 @@ public class CubeProviderServer extends ChunkProviderServer
         profiler.startSection("Eager object sorting");
 
         // TODO: make this faster
-        eagerLoadOrder.sort(Comparator.comparingInt(this::getChunkDistanceSquared).reversed());
+        eagerLoadOrder.sort(
+            Comparator.comparingInt(this::getChunkDistanceSquared)
+                .reversed());
 
         profiler.endStartSection("Eager object loading");
 
@@ -345,7 +348,8 @@ public class CubeProviderServer extends ChunkProviderServer
                 continue;
             }
 
-            Iterator<EagerCubeLoadRequest> cubeIter = container.cubes.values().iterator();
+            Iterator<EagerCubeLoadRequest> cubeIter = container.cubes.values()
+                .iterator();
 
             while ((System.nanoTime() - start) < MAX_NS_SPENT_LOADING && cubeIter.hasNext()) {
                 EagerCubeLoadRequest request = cubeIter.next();
@@ -359,7 +363,8 @@ public class CubeProviderServer extends ChunkProviderServer
 
                 cubeLoader.pauseLoadCalls();
 
-                Cube cube = cubeLoader.getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
+                Cube cube = cubeLoader
+                    .getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
 
                 cubeLoader.unpauseLoadCalls();
 
@@ -392,7 +397,8 @@ public class CubeProviderServer extends ChunkProviderServer
         }
 
         if (processed > 0) {
-            CubicChunks.LOGGER.info("Processed {} eager load requests this tick ({} -> {} columns)",
+            CubicChunks.LOGGER.info(
+                "Processed {} eager load requests this tick ({} -> {} columns)",
                 processed,
                 startCols,
                 eagerLoadOrder.size());
@@ -456,7 +462,8 @@ public class CubeProviderServer extends ChunkProviderServer
 
         public final ChunkCoordIntPair pos;
 
-        public final Int2ObjectRBTreeMap<EagerCubeLoadRequest> cubes = new Int2ObjectRBTreeMap<>(IntComparator.comparingInt(i -> -i));
+        public final Int2ObjectRBTreeMap<EagerCubeLoadRequest> cubes = new Int2ObjectRBTreeMap<>(
+            IntComparator.comparingInt(i -> -i));
 
         public EagerCubeLoadContainer(ChunkCoordIntPair pos) {
             this.pos = pos;

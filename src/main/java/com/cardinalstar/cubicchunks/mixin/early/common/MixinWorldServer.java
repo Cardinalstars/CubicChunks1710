@@ -321,7 +321,7 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         boolean thundering = this.isThundering();
         this.theProfiler.startSection("pollingChunks");
 
-        for (Chunk chunk :  ((CubeProviderServer) this.theChunkProviderServer).getTickableChunks()) {
+        for (Chunk chunk : ((CubeProviderServer) this.theChunkProviderServer).getTickableChunks()) {
             tickColumn(raining, thundering, chunk);
         }
 

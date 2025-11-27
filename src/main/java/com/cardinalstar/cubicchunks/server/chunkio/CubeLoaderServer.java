@@ -33,12 +33,13 @@ import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Setter;
 
 public class CubeLoaderServer implements ICubeLoader {
 
-    private static final MetaKey<CubeInfo> CUBE_INFO = new MetaKey<>() { };
+    private static final MetaKey<CubeInfo> CUBE_INFO = new MetaKey<>() {};
 
     private final WorldServer world;
     private final ICubeIO cubeIO;
@@ -384,9 +385,14 @@ public class CubeLoaderServer implements ICubeLoader {
             unloadColumn(column);
         }
 
-        CubicChunks.LOGGER.info("Garbage collected {} columns ({} -> {}) and {} cubes ({} -> {}). Removed {} columns automatically because they were empty.",
-            pendingColumnUnloads.size(), startCols, columns.getSize(),
-            pendingCubeUnloads.size(), startCubes, cubes.getSize(),
+        CubicChunks.LOGGER.info(
+            "Garbage collected {} columns ({} -> {}) and {} cubes ({} -> {}). Removed {} columns automatically because they were empty.",
+            pendingColumnUnloads.size(),
+            startCols,
+            columns.getSize(),
+            pendingCubeUnloads.size(),
+            startCubes,
+            cubes.getSize(),
             startCols - autoCols);
     }
 
@@ -406,7 +412,8 @@ public class CubeLoaderServer implements ICubeLoader {
                 ColumnInfo info = columns.get(column.xPosition, column.zPosition);
 
                 if (info != null && info.column != null) {
-                    CubicChunks.LOGGER.warn("Worldgen side-effect replaced column at {},{}!", column.xPosition, column.zPosition);
+                    CubicChunks.LOGGER
+                        .warn("Worldgen side-effect replaced column at {},{}!", column.xPosition, column.zPosition);
                     continue;
                 }
 
@@ -427,7 +434,8 @@ public class CubeLoaderServer implements ICubeLoader {
                 CubeInfo info = cubes.get(cube.getX(), cube.getY(), cube.getZ());
 
                 if (info != null && info.cube != null) {
-                    CubicChunks.LOGGER.warn("Worldgen side-effect replaced cube at {},{},{}!", cube.getX(), cube.getY(), cube.getZ());
+                    CubicChunks.LOGGER
+                        .warn("Worldgen side-effect replaced cube at {},{},{}!", cube.getX(), cube.getY(), cube.getZ());
                     continue;
                 }
 
@@ -645,11 +653,17 @@ public class CubeLoaderServer implements ICubeLoader {
         }
 
         private void loadCube() throws IOException {
-            // Cubes should always have a containing column unless someone's deleting files. Try to load it, or fail if the column is missing.
+            // Cubes should always have a containing column unless someone's deleting files. Try to load it, or fail if
+            // the column is missing.
             ensureColumn(Requirement.LOAD);
 
             if (this.column == null) {
-                CubicChunks.LOGGER.error("Tried to load a cube that did not have a saved column: it will be regenerated ({},{},{})", getX(), getY(), getZ(), new Exception());
+                CubicChunks.LOGGER.error(
+                    "Tried to load a cube that did not have a saved column: it will be regenerated ({},{},{})",
+                    getX(),
+                    getY(),
+                    getZ(),
+                    new Exception());
                 this.cube = null;
                 this.tag = null;
                 return;
@@ -688,14 +702,16 @@ public class CubeLoaderServer implements ICubeLoader {
                         "Cannot recursively generate a cube that is already being generated");
                 }
 
-                // Try to get any columns that already exist, since the generator may re-generate it if it thinks the column is missing.
+                // Try to get any columns that already exist, since the generator may re-generate it if it thinks the
+                // column is missing.
                 ensureColumn(Requirement.LOAD);
 
                 GenerationResult<Cube> result;
                 try {
                     this.generating = true;
 
-                    result = generator.provideCube(column == null ? null : column.column, pos.getX(), pos.getY(), pos.getZ());
+                    result = generator
+                        .provideCube(column == null ? null : column.column, pos.getX(), pos.getY(), pos.getZ());
                 } finally {
                     this.generating = false;
                 }
@@ -713,7 +729,8 @@ public class CubeLoaderServer implements ICubeLoader {
                 ensureColumn(Requirement.GET_CACHED);
 
                 if (this.column == null) {
-                    throw new IllegalStateException("Generated a cube without generating its column: this is an invalid state");
+                    throw new IllegalStateException(
+                        "Generated a cube without generating its column: this is an invalid state");
                 }
 
                 // Alert everything that this cube was generated

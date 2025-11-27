@@ -81,7 +81,8 @@ public class TaskPool {
 
     public static final ITaskExecutor<Runnable, Void> RUNNABLE_EXECUTOR = tasks -> {
         for (var task : tasks) {
-            task.getTask().run();
+            task.getTask()
+                .run();
             task.finish(null);
         }
     };
@@ -94,7 +95,8 @@ public class TaskPool {
         return submit(executor, task, null);
     }
 
-    public static <TTask, TResult> Future<TResult> submit(ITaskExecutor<TTask, TResult> executor, TTask task, @Nullable Consumer<TResult> callback) {
+    public static <TTask, TResult> Future<TResult> submit(ITaskExecutor<TTask, TResult> executor, TTask task,
+        @Nullable Consumer<TResult> callback) {
         TaskFuture<TTask, TResult> future = new TaskFuture<>(task, callback);
 
         synchronized (QUEUE_LOCK) {
@@ -105,8 +107,8 @@ public class TaskPool {
                     @SuppressWarnings("unchecked")
                     TaskContainer<TTask, TResult> end2 = (TaskContainer<TTask, TResult>) end;
 
-                    //noinspection unchecked
-                    if (end2.executor.canMerge((List<ITaskFuture<TTask,TResult>>) (List<?>) end2.tasks, task)) {
+                    // noinspection unchecked
+                    if (end2.executor.canMerge((List<ITaskFuture<TTask, TResult>>) (List<?>) end2.tasks, task)) {
                         end2.tasks.add(future);
                         QUEUE_LOCK.notify();
                         return future;
@@ -151,7 +153,8 @@ public class TaskPool {
         void fail(Throwable t);
     }
 
-    private static class TaskFuture<TTask, TResult> extends AbstractFuture<TResult> implements ITaskFuture<TTask, TResult> {
+    private static class TaskFuture<TTask, TResult> extends AbstractFuture<TResult>
+        implements ITaskFuture<TTask, TResult> {
 
         public final TTask task;
         @Nullable
@@ -193,8 +196,8 @@ public class TaskPool {
             try {
                 tasks.removeIf(TaskFuture::isCancelled);
 
-                //noinspection unchecked
-                executor.execute((List<ITaskFuture<TTask,TResult>>) (List<?>) tasks);
+                // noinspection unchecked
+                executor.execute((List<ITaskFuture<TTask, TResult>>) (List<?>) tasks);
             } catch (Exception e) {
                 CubicChunks.LOGGER.error("Could not run background task", e);
             }

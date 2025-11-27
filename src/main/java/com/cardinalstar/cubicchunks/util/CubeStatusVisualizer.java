@@ -1,21 +1,15 @@
 package com.cardinalstar.cubicchunks.util;
 
 import java.awt.*;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 
-import org.joml.primitives.AABBd;
-
 import com.cardinalstar.cubicchunks.CubicChunksConfig;
 import com.gtnewhorizon.gtnhlib.eventbus.EventBusSubscriber;
-// import com.gtnewhorizon.gtnhlib.visualization.BoxVisualizer;
-// import com.gtnewhorizon.gtnhlib.visualization.VisualizedBox;
+
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.Phase;
 import cpw.mods.fml.common.gameevent.TickEvent.ServerTickEvent;
@@ -50,7 +44,8 @@ public class CubeStatusVisualizer {
         if (!CubicChunksConfig.enableChunkStatusDebugging) {
             if (wasSent) {
                 wasSent = false;
-                for (EntityPlayerMP player : MinecraftServer.getServer().getConfigurationManager().playerEntityList) {
+                for (EntityPlayerMP player : MinecraftServer.getServer()
+                    .getConfigurationManager().playerEntityList) {
                     // BoxVisualizer.sendBoxes(player, Duration.ofMinutes(0), new ArrayList<>(), true);
                 }
             }
@@ -62,23 +57,24 @@ public class CubeStatusVisualizer {
 
         cubeStatus.forEach((pos, status) -> {
             // boxes.add(new VisualizedBox(
-            //     switch (status) {
-            //         case None -> new Color(100, 50, 100, 50);
-            //         case Generated -> new Color(50, 200, 50, 50);
-            //         case Populated -> new Color(50, 50, 200, 50);
-            //         case Lit -> new Color(200, 200, 50, 50);
-            //         case Dirty -> new Color(14, 229, 187, 50);
-            //         case Synced -> new Color(200, 50, 50, 50);
-            //     },
-            //     new AABBd(
-            //         pos.getMinBlockX() - 0.5, pos.getMinBlockY() + 0.5, pos.getMinBlockZ() - 0.5,
-            //         pos.getMaxBlockX() - 0.5, pos.getMaxBlockY() - 0.5, pos.getMaxBlockZ() - 0.5)
+            // switch (status) {
+            // case None -> new Color(100, 50, 100, 50);
+            // case Generated -> new Color(50, 200, 50, 50);
+            // case Populated -> new Color(50, 50, 200, 50);
+            // case Lit -> new Color(200, 200, 50, 50);
+            // case Dirty -> new Color(14, 229, 187, 50);
+            // case Synced -> new Color(200, 50, 50, 50);
+            // },
+            // new AABBd(
+            // pos.getMinBlockX() - 0.5, pos.getMinBlockY() + 0.5, pos.getMinBlockZ() - 0.5,
+            // pos.getMaxBlockX() - 0.5, pos.getMaxBlockY() - 0.5, pos.getMaxBlockZ() - 0.5)
             // ));
         });
 
         wasSent = true;
 
-        for (EntityPlayerMP player : MinecraftServer.getServer().getConfigurationManager().playerEntityList) {
+        for (EntityPlayerMP player : MinecraftServer.getServer()
+            .getConfigurationManager().playerEntityList) {
             // BoxVisualizer.sendBoxes(player, Duration.ofMinutes(5), boxes, true);
         }
     }

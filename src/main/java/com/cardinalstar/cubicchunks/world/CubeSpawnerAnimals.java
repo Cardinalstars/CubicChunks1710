@@ -52,6 +52,7 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.MathUtil;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
 import cpw.mods.fml.common.eventhandler.Event;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -94,7 +95,9 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
             LongLists.shuffle(shuffled, world.rand);
             shuffled = shuffled.subList(0, Math.min(this.cubesForSpawn.size(), 2 * (2 * SPAWN_RADIUS + 1)));
 
-            List<CubePos> cubes = shuffled.longStream().mapToObj(CubePos::unpack).collect(Collectors.toList());
+            List<CubePos> cubes = shuffled.longStream()
+                .mapToObj(CubePos::unpack)
+                .collect(Collectors.toList());
 
             totalSpawnCount += spawnCreatureTypeInAllChunks(mobType, world, cubes);
         }
@@ -116,7 +119,8 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                 assert !possibleCubes.contains(v.x(), v.y(), v.z());
                 cubeCount++;
 
-                boolean valid = ((CubicPlayerManager) world.getPlayerManager()).isCubeWatchedAndPresent(v.x(), v.y(), v.z());
+                boolean valid = ((CubicPlayerManager) world.getPlayerManager())
+                    .isCubeWatchedAndPresent(v.x(), v.y(), v.z());
 
                 if (valid) {
                     possibleCubes.add(v.x(), v.y(), v.z());

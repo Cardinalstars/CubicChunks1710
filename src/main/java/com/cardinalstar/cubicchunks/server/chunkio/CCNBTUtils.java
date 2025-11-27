@@ -23,7 +23,8 @@ public class CCNBTUtils {
             }
         }
 
-        return CompressedStreamTools.func_152456_a(new DataInputStream(new ByteArrayInputStream(data)), NBTSizeTracker.field_152451_a);
+        return CompressedStreamTools
+            .func_152456_a(new DataInputStream(new ByteArrayInputStream(data)), NBTSizeTracker.field_152451_a);
     }
 
     public static byte[] saveTag(NBTTagCompound tag, boolean compress) throws IOException {

@@ -44,6 +44,7 @@ import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
 import com.cardinalstar.cubicchunks.server.chunkio.region.ShadowPagingRegion;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.DataUtils;
+
 import cubicchunks.regionlib.impl.EntryLocation2D;
 import cubicchunks.regionlib.impl.EntryLocation3D;
 import cubicchunks.regionlib.impl.SaveCubeColumns;
@@ -85,18 +86,14 @@ public class RegionCubeStorage implements ICubicStorage {
                             .setKeyProvider(keyProv)
                             .setSectorSize(512)
                             .build(),
-                        (dir, key) -> Files.exists(
-                            part2d.resolve(
-                                key.getName())))),
+                        (dir, key) -> Files.exists(part2d.resolve(key.getName())))),
                 new SharedCachedRegionProvider<>(
                     new SimpleRegionFactory<>(
                         new EntryLocation2D.Provider(),
                         part2d,
                         (keyProvider,
                             regionKey) -> new ExtRegion<>(part2d, Collections.emptyList(), keyProvider, regionKey),
-                        (dir, key) -> Files.exists(
-                            part2d.resolve(
-                                key.getName() + ".ext")))));
+                        (dir, key) -> Files.exists(part2d.resolve(key.getName() + ".ext")))));
             @SuppressWarnings("unchecked")
             SaveSection3D section3d = new SaveSection3D(
                 new SharedCachedRegionProvider<>(
@@ -109,18 +106,14 @@ public class RegionCubeStorage implements ICubicStorage {
                             .setKeyProvider(keyProv)
                             .setSectorSize(512)
                             .build(),
-                        (dir, key) -> Files.exists(
-                            part3d.resolve(
-                                key.getName())))),
+                        (dir, key) -> Files.exists(part3d.resolve(key.getName())))),
                 new SharedCachedRegionProvider<>(
                     new SimpleRegionFactory<>(
                         new EntryLocation3D.Provider(),
                         part3d,
                         (keyProvider,
                             regionKey) -> new ExtRegion<>(part3d, Collections.emptyList(), keyProvider, regionKey),
-                        (dir, key) -> Files.exists(
-                            part3d.resolve(
-                                key.getName() + ".ext")))));
+                        (dir, key) -> Files.exists(part3d.resolve(key.getName() + ".ext")))));
 
             return new SaveCubeColumns(section2d, section3d);
         } else {
@@ -156,7 +149,9 @@ public class RegionCubeStorage implements ICubicStorage {
         Optional<ByteBuffer> data = this.save.load(new EntryLocation2D(pos.chunkXPos, pos.chunkZPos), true);
         if (!data.isPresent()) return null;
 
-        return CCNBTUtils.loadTag(data.get().array());
+        return CCNBTUtils.loadTag(
+            data.get()
+                .array());
     }
 
     @Override
@@ -165,21 +160,32 @@ public class RegionCubeStorage implements ICubicStorage {
         Optional<ByteBuffer> data = this.save.load(new EntryLocation3D(pos.getX(), pos.getY(), pos.getZ()), true);
         if (!data.isPresent()) return null;
 
-        return CCNBTUtils.loadTag(data.get().array());
+        return CCNBTUtils.loadTag(
+            data.get()
+                .array());
     }
 
     @Override
     public @NotNull NBTBatch readBatch(PosBatch positions) throws IOException {
-        var columns = this.save.load2D(DataUtils.mapToList(positions.columns, c -> new EntryLocation2D(c.chunkXPos, c.chunkZPos)), false);
-        var cubes = this.save.load3D(DataUtils.mapToList(positions.cubes, c -> new EntryLocation3D(c.getX(), c.getY(), c.getZ())), false);
+        var columns = this.save
+            .load2D(DataUtils.mapToList(positions.columns, c -> new EntryLocation2D(c.chunkXPos, c.chunkZPos)), false);
+        var cubes = this.save.load3D(
+            DataUtils.mapToList(positions.cubes, c -> new EntryLocation3D(c.getX(), c.getY(), c.getZ())),
+            false);
 
         var columnTags = columns.read.entrySet()
             .parallelStream()
             .map(e -> {
                 try {
                     return Pair.of(
-                        new ChunkCoordIntPair(e.getKey().getEntryX(), e.getKey().getEntryZ()),
-                        CCNBTUtils.loadTag(e.getValue().array()));
+                        new ChunkCoordIntPair(
+                            e.getKey()
+                                .getEntryX(),
+                            e.getKey()
+                                .getEntryZ()),
+                        CCNBTUtils.loadTag(
+                            e.getValue()
+                                .array()));
                 } catch (IOException ex) {
                     throw new UncheckedIOException(ex);
                 }
@@ -191,8 +197,16 @@ public class RegionCubeStorage implements ICubicStorage {
             .map(e -> {
                 try {
                     return Pair.of(
-                        new CubePos(e.getKey().getEntryX(), e.getKey().getEntryY(), e.getKey().getEntryZ()),
-                        CCNBTUtils.loadTag(e.getValue().array()));
+                        new CubePos(
+                            e.getKey()
+                                .getEntryX(),
+                            e.getKey()
+                                .getEntryY(),
+                            e.getKey()
+                                .getEntryZ()),
+                        CCNBTUtils.loadTag(
+                            e.getValue()
+                                .array()));
                 } catch (IOException ex) {
                     throw new UncheckedIOException(ex);
                 }
@@ -245,19 +259,13 @@ public class RegionCubeStorage implements ICubicStorage {
             this.save.save2d(
                 compressedColumns.entrySet()
                     .stream()
-                    .collect(
-                        Collectors.toMap(
-                            Map.Entry::getKey,
-                            entry -> ByteBuffer.wrap(entry.getValue()))));
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> ByteBuffer.wrap(entry.getValue()))));
         }
         if (!compressedCubes.isEmpty()) {
             this.save.save3d(
                 compressedCubes.entrySet()
                     .stream()
-                    .collect(
-                        Collectors.toMap(
-                            Map.Entry::getKey,
-                            entry -> ByteBuffer.wrap(entry.getValue()))));
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> ByteBuffer.wrap(entry.getValue()))));
         }
     }
 

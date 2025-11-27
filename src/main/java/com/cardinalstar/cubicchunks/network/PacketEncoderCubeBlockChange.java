@@ -44,6 +44,7 @@ import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.falsepattern.chunk.internal.DataRegistryImpl;
 import com.github.bsideup.jabel.Desugar;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gnu.trove.iterator.TIntIterator;
@@ -54,7 +55,8 @@ import gnu.trove.set.hash.TIntHashSet;
 public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderCubeBlockChange.PacketCubeBlockChange> {
 
     @Desugar
-    public record PacketCubeBlockChange(CubePos cubePos, int[] heightValues, List<S23PacketBlockChange> updates) implements CCPacket {
+    public record PacketCubeBlockChange(CubePos cubePos, int[] heightValues, List<S23PacketBlockChange> updates)
+        implements CCPacket {
 
         @Override
         public byte getPacketID() {
@@ -157,7 +159,7 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
     }
 
     @Override
-@SideOnly(Side.CLIENT)
+    @SideOnly(Side.CLIENT)
     public void process(World world, PacketCubeBlockChange packet) {
         WorldClient worldClient = (WorldClient) world;
         CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getChunkProvider();

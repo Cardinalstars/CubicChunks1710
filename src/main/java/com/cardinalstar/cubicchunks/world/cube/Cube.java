@@ -80,6 +80,7 @@ import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 
 /**
@@ -484,7 +485,8 @@ public class Cube implements ICube {
         BiomeGenBase biome = biomes3d == null ? null : biomes3d.get(biomeX, biomeY, biomeZ);
 
         if (biome == null) {
-            biome = this.getColumn().getBiomeGenForWorldCoords(biomeX, biomeY, world.provider.worldChunkMgr);
+            biome = this.getColumn()
+                .getBiomeGenForWorldCoords(biomeX, biomeY, world.provider.worldChunkMgr);
         }
 
         return biome;
@@ -883,8 +885,7 @@ public class Cube implements ICube {
         if (this.tickets.anyMatch(t -> t instanceof ICubicTicketInternal)) {
             forcedLoadReasons.add(ForcedLoadReason.MOD_TICKET);
         }
-        if (this.tickets.anyMatch(
-            t -> !(t instanceof SpawnCubes) && !(t instanceof ICubicTicketInternal))) {
+        if (this.tickets.anyMatch(t -> !(t instanceof SpawnCubes) && !(t instanceof ICubicTicketInternal))) {
             forcedLoadReasons.add(ForcedLoadReason.OTHER);
         }
         return forcedLoadReasons;
@@ -894,7 +895,7 @@ public class Cube implements ICube {
 
     @Override
     public <T> T getMeta(MetaKey<T> key) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (T) meta.get(key);
     }
 

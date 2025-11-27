@@ -228,7 +228,8 @@ class WorldEncoder {
                 try {
                     // DataRegistryImpl.readFromBufferCubic(cube.getColumn(), storage, in.readByteArray(buffer));
                 } catch (Throwable t) {
-                    CubicChunks.LOGGER.error("Error decoding ChunkAPI data ({},{},{})", cube.getX(), cube.getY(), cube.getZ(), t);
+                    CubicChunks.LOGGER
+                        .error("Error decoding ChunkAPI data ({},{},{})", cube.getX(), cube.getY(), cube.getZ(), t);
                 }
             }
 

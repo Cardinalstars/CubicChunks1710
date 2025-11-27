@@ -75,7 +75,8 @@ public class FirstLightProcessor {
         BlockPos maxPos = cube.getCoords()
             .getMaxBlockPos();
 
-        ICubeLoader loader = ((ICubicWorldInternal.Server) cube.getWorld()).getCubeCache().getCubeLoader();
+        ICubeLoader loader = ((ICubicWorldInternal.Server) cube.getWorld()).getCubeCache()
+            .getCubeLoader();
 
         loader.cacheCubes(cube.getX(), cube.getY(), cube.getZ(), 1, 1, 1);
 

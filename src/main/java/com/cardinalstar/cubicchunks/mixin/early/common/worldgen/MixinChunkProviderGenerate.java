@@ -16,6 +16,7 @@ import com.cardinalstar.cubicchunks.world.worldgen.vanilla.PrecalcedVanillaOctav
 import com.cardinalstar.cubicchunks.world.worldgen.vanilla.PrecalculableNoise;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
@@ -35,9 +36,10 @@ public class MixinChunkProviderGenerate implements Precalculable {
     public NoiseGeneratorOctaves noiseGen6;
 
     @WrapOperation(
-        method = "<init>", at = @At(
-        value = "NEW", target = "(Ljava/util/Random;I)Lnet/minecraft/world/gen/NoiseGeneratorOctaves;"))
-    public NoiseGeneratorOctaves usePregenerateNoise(Random random, int octaves, Operation<NoiseGeneratorOctaves> original) {
+        method = "<init>",
+        at = @At(value = "NEW", target = "(Ljava/util/Random;I)Lnet/minecraft/world/gen/NoiseGeneratorOctaves;"))
+    public NoiseGeneratorOctaves usePregenerateNoise(Random random, int octaves,
+        Operation<NoiseGeneratorOctaves> original) {
         return new PrecalcedVanillaOctaves(original.call(random, octaves));
     }
 

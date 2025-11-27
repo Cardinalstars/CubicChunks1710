@@ -5,6 +5,7 @@ import net.minecraft.world.biome.BiomeGenBase;
 import org.jetbrains.annotations.Nullable;
 
 import com.cardinalstar.cubicchunks.util.AddressTools;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 
 public interface BiomeArray extends Int2ObjectFunction<BiomeGenBase> {

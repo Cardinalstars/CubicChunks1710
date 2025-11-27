@@ -34,7 +34,7 @@ public class CuboidalCubeSelector extends CubeSelector {
 
     public static final CuboidalCubeSelector INSTANCE = new CuboidalCubeSelector();
 
-    private CuboidalCubeSelector() { }
+    private CuboidalCubeSelector() {}
 
     @Override
     public void forAllVisibleFrom(CubePos cubePos, int horizontalViewDistance, int verticalViewDistance,

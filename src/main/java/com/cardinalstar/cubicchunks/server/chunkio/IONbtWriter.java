@@ -52,6 +52,7 @@ import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.ServerHeightMap;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.falsepattern.chunk.internal.DataRegistryImpl;
+
 import cpw.mods.fml.common.FMLLog;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -86,7 +87,7 @@ class IONbtWriter {
         NBTTagCompound level = new NBTTagCompound();
         cubeNbt.setTag("Level", level);
         writeBaseCube(cube, level);
-        
+
         if (cube.getStorage() != null) {
             NBTTagList sections = new NBTTagList();
             level.setTag("Sections", sections);

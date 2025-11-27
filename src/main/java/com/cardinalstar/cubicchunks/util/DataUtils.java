@@ -76,7 +76,9 @@ public class DataUtils {
         int l = array.length;
 
         for (int i = 0; i < l; i++) {
-            if (array[i] == value) { return i; }
+            if (array[i] == value) {
+                return i;
+            }
         }
 
         return -1;
@@ -86,7 +88,9 @@ public class DataUtils {
         int l = array.length;
 
         for (int i = 0; i < l; i++) {
-            if (filter.test(array[i])) { return i; }
+            if (filter.test(array[i])) {
+                return i;
+            }
         }
 
         return -1;
@@ -222,7 +226,7 @@ public class DataUtils {
 
         return instance -> {
             try {
-                //noinspection unchecked
+                // noinspection unchecked
                 return (R) method.invokeExact(instance);
             } catch (Throwable e) {
                 throw new RuntimeException("Could not get field " + clazz.getName() + ":" + names[0], e);

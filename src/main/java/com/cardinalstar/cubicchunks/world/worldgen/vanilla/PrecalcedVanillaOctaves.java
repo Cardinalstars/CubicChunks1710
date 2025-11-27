@@ -12,6 +12,7 @@ import com.cardinalstar.cubicchunks.async.TaskPool.ITaskFuture;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.ObjectPooler;
 import com.github.bsideup.jabel.Desugar;
+
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 
 public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements PrecalculableNoise {
@@ -29,11 +30,11 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
 
     private final Object paramLock = new Object();
 
-//    private final Cache<TaskKey, NoiseData> cache = CacheBuilder.newBuilder()
-//        .expireAfterWrite(5, TimeUnit.MINUTES)
-//        .maximumSize(8192)
-//        .removalListener(notification -> releaseData((NoiseData) notification.getValue()))
-//        .build();
+    // private final Cache<TaskKey, NoiseData> cache = CacheBuilder.newBuilder()
+    // .expireAfterWrite(5, TimeUnit.MINUTES)
+    // .maximumSize(8192)
+    // .removalListener(notification -> releaseData((NoiseData) notification.getValue()))
+    // .build();
 
     private final Long2ObjectLinkedOpenHashMap<NoiseData> cache = new Long2ObjectLinkedOpenHashMap<>();
 
@@ -82,7 +83,12 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
 
         if ((now - lastMessage) > 5e9) {
             lastMessage = now;
-            CubicChunks.LOGGER.info("Hits: {} Misses: {} Pres: {} Per call: {}ms", hits, misses2, pres.getAndSet(0), (elapsed / (double)misses2 / 1e6));
+            CubicChunks.LOGGER.info(
+                "Hits: {} Misses: {} Pres: {} Per call: {}ms",
+                hits,
+                misses2,
+                pres.getAndSet(0),
+                (elapsed / (double) misses2 / 1e6));
             hits = 0;
             misses2 = 0;
             elapsed = 0;
@@ -212,17 +218,7 @@ public class PrecalcedVanillaOctaves extends NoiseGeneratorOctaves implements Pr
             data.yscale = this.yscale;
             data.zscale = this.zscale;
 
-            base.generateNoiseOctaves(
-                data.data,
-                key.x,
-                key.y,
-                key.z,
-                xspan,
-                yspan,
-                zspan,
-                xscale,
-                yscale,
-                zscale);
+            base.generateNoiseOctaves(data.data, key.x, key.y, key.z, xspan, yspan, zspan, xscale, yscale, zscale);
 
             return data;
         }

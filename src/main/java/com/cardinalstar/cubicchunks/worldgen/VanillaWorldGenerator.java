@@ -73,6 +73,7 @@ import com.cardinalstar.cubicchunks.world.cube.blockview.UniformBlockView;
 import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
+
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
@@ -278,23 +279,23 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                 IBlockView chunkBlocks = data.right();
 
                 if (chunk != null) {
-                    CubicChunks.LOGGER.error("Needed to regenerate a cube within the vanilla chunk for a chunk that already exists: something is fucky ({},{},{})", cubeX, cubeY, cubeZ, new Exception());
+                    CubicChunks.LOGGER.error(
+                        "Needed to regenerate a cube within the vanilla chunk for a chunk that already exists: something is fucky ({},{},{})",
+                        cubeX,
+                        cubeY,
+                        cubeZ,
+                        new Exception());
                 } else {
                     chunk = data.left();
                     generatedColumns.add(chunk);
                 }
 
                 // Ceiling div by 16
-                int heightCubes = (chunkBlocks
-                    .getBounds()
+                int heightCubes = (chunkBlocks.getBounds()
                     .getSizeY() + 15) >> 4;
 
                 for (int y = 0; y < heightCubes; y++) {
-                    Cube c = new Cube(
-                        chunk,
-                        y,
-                        chunkBlocks
-                            .subView(Box.horizontalChunkSlice(y << 4, 16)));
+                    Cube c = new Cube(chunk, y, chunkBlocks.subView(Box.horizontalChunkSlice(y << 4, 16)));
 
                     try {
                         decorator.generate(world, c);
@@ -478,8 +479,8 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
         new Vector3i(1, 1, 0), new Vector3i(0, 0, 1), new Vector3i(1, 0, 1), new Vector3i(0, 1, 1),
         new Vector3i(1, 1, 1), };
 
-//    private static final short[] CUBE_FLAGS = { Cube.POP_100, Cube.POP_010, Cube.POP_110, Cube.POP_001, Cube.POP_101,
-//        Cube.POP_011, Cube.POP_111, };
+    // private static final short[] CUBE_FLAGS = { Cube.POP_100, Cube.POP_010, Cube.POP_110, Cube.POP_001, Cube.POP_101,
+    // Cube.POP_011, Cube.POP_111, };
 
     private Box getCubesToGenerate(int x, int y, int z) {
         if (y >= 0 && y < 16) {

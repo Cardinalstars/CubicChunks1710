@@ -68,7 +68,10 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
         for (int i = 0; i < cubes.size(); i++) {
             cubePos[i] = cubes.get(i)
                 .getCoords();
-            CubeStatusVisualizer.put(cubes.get(i).getCoords(), CubeStatus.Synced);
+            CubeStatusVisualizer.put(
+                cubes.get(i)
+                    .getCoords(),
+                CubeStatus.Synced);
         }
 
         ByteBuf cubeData = Unpooled.buffer();

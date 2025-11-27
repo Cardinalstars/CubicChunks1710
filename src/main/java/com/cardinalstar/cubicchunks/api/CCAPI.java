@@ -18,7 +18,7 @@ import com.google.common.collect.AbstractIterator;
 @SuppressWarnings("unused")
 public final class CCAPI {
 
-    private CCAPI() { }
+    private CCAPI() {}
 
     public static ExtendedBlockStorage getBlockStorage(Chunk chunk, int yLevel) {
         ICube cube = ((IColumn) chunk).getCube(yLevel);
@@ -31,7 +31,8 @@ public final class CCAPI {
     /// Gets a loaded cube. Does not load or generate the cube.
     @Nullable
     public static ICube getLoadedCube(World world, int cubeX, int cubeY, int cubeZ) {
-        return ((ICubicWorld) world).getCubeCache().getLoadedCube(cubeX, cubeY, cubeZ);
+        return ((ICubicWorld) world).getCubeCache()
+            .getLoadedCube(cubeX, cubeY, cubeZ);
     }
 
     /// Gets a cube. Does terrain generation if the cube is not in memory and could not be loaded from disk.
@@ -46,7 +47,7 @@ public final class CCAPI {
 
     /// Gets all loaded cubes in a column.
     public static Collection<ICube> getLoadedCubes(Chunk chunk) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (Collection<ICube>) ((IColumn) chunk).getLoadedCubes();
     }
 
@@ -54,7 +55,8 @@ public final class CCAPI {
     public static Iterable<ExtendedBlockStorage> getLoadedBlockStorages(Chunk chunk) {
         return () -> new AbstractIterator<>() {
 
-            private final Iterator<? extends ICube> iter = ((IColumn) chunk).getLoadedCubes().iterator();
+            private final Iterator<? extends ICube> iter = ((IColumn) chunk).getLoadedCubes()
+                .iterator();
 
             @Override
             protected ExtendedBlockStorage computeNext() {

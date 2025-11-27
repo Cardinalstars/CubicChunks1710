@@ -26,6 +26,7 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.DataUtils;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
+
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.AllArgsConstructor;
@@ -33,7 +34,8 @@ import lombok.NoArgsConstructor;
 
 public class CubeIO implements ICubeIO {
 
-    private static final long EXPIRY = Duration.ofSeconds(120).toMillis();
+    private static final long EXPIRY = Duration.ofSeconds(120)
+        .toMillis();
 
     private final ICubicStorage storage;
     private final IPreloadFailureDelegate preloadFailures;
@@ -45,16 +47,19 @@ public class CubeIO implements ICubeIO {
 
     private final Object2ObjectLinkedOpenHashMap<CubePos, SaveData> cubeCache = new Object2ObjectLinkedOpenHashMap<>();
 
-    interface Savable { }
+    interface Savable {
+    }
 
     @Desugar
-    private record SaveColumn(ChunkCoordIntPair pos, NBTTagCompound tag) implements Savable { }
+    private record SaveColumn(ChunkCoordIntPair pos, NBTTagCompound tag) implements Savable {}
+
     @Desugar
-    private record SaveCube(CubePos pos, NBTTagCompound tag) implements Savable { }
+    private record SaveCube(CubePos pos, NBTTagCompound tag) implements Savable {}
 
     @NoArgsConstructor
     @AllArgsConstructor
     private static class SaveData {
+
         @Nullable
         public NBTTagCompound tag;
         @Nullable
@@ -68,10 +73,8 @@ public class CubeIO implements ICubeIO {
 
         columnLoadExecutor = tasks -> {
             try {
-                var result = storage.readBatch(
-                    new PosBatch(
-                        DataUtils.mapToList(tasks, ITaskFuture::getTask),
-                        Collections.emptyList()));
+                var result = storage
+                    .readBatch(new PosBatch(DataUtils.mapToList(tasks, ITaskFuture::getTask), Collections.emptyList()));
 
                 for (var task : tasks) {
                     NBTTagCompound tag = result.columns.get(task.getTask());
@@ -87,10 +90,8 @@ public class CubeIO implements ICubeIO {
 
         cubeLoadExecutor = tasks -> {
             try {
-                var result = storage.readBatch(
-                    new PosBatch(
-                        Collections.emptyList(),
-                        DataUtils.mapToList(tasks, ITaskFuture::getTask)));
+                var result = storage
+                    .readBatch(new PosBatch(Collections.emptyList(), DataUtils.mapToList(tasks, ITaskFuture::getTask)));
 
                 for (var task : tasks) {
                     NBTTagCompound tag = result.cubes.get(task.getTask());
@@ -255,7 +256,8 @@ public class CubeIO implements ICubeIO {
             if (columnCache.size() > 5000) {
                 int i = 0;
 
-                var iter = columnCache.object2ObjectEntrySet().fastIterator();
+                var iter = columnCache.object2ObjectEntrySet()
+                    .fastIterator();
 
                 while (columnCache.size() > 5000 && i++ < 100) {
                     var e = iter.next();
@@ -295,7 +297,8 @@ public class CubeIO implements ICubeIO {
             if (cubeCache.size() > 30000) {
                 int i = 0;
 
-                var iter = cubeCache.object2ObjectEntrySet().fastIterator();
+                var iter = cubeCache.object2ObjectEntrySet()
+                    .fastIterator();
 
                 while (cubeCache.size() > 30000 && i++ < 100) {
                     var e = iter.next();
@@ -330,7 +333,8 @@ public class CubeIO implements ICubeIO {
             synchronized (columnCache) {
                 if (columnCache.isEmpty()) break;
 
-                columnCache.object2ObjectEntrySet().removeIf(e -> e.getValue().task == null || e.getValue().task.isDone());
+                columnCache.object2ObjectEntrySet()
+                    .removeIf(e -> e.getValue().task == null || e.getValue().task.isDone());
             }
 
             Thread.yield();
@@ -340,7 +344,8 @@ public class CubeIO implements ICubeIO {
             synchronized (cubeCache) {
                 if (cubeCache.isEmpty()) break;
 
-                cubeCache.object2ObjectEntrySet().removeIf(e -> e.getValue().task == null || e.getValue().task.isDone());
+                cubeCache.object2ObjectEntrySet()
+                    .removeIf(e -> e.getValue().task == null || e.getValue().task.isDone());
             }
 
             Thread.yield();

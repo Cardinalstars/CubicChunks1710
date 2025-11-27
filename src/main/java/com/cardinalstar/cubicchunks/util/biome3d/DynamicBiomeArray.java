@@ -3,6 +3,7 @@ package com.cardinalstar.cubicchunks.util.biome3d;
 import net.minecraft.world.biome.BiomeGenBase;
 
 import com.cardinalstar.cubicchunks.network.CCPacketBuffer;
+
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
@@ -135,7 +136,8 @@ public class DynamicBiomeArray implements BiomeArray {
                     i += len;
                 }
                 default -> {
-                    throw new InvalidBiomeDataException("Unexpected operation " + insn + " at index" + buffer.readerIndex());
+                    throw new InvalidBiomeDataException(
+                        "Unexpected operation " + insn + " at index" + buffer.readerIndex());
                 }
             }
         }

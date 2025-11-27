@@ -39,6 +39,6 @@ public class MixinRegionFileCache {
 
     @Inject(method = "clearRegionFileReferences", at = @At("HEAD"))
     private static void onClearRefs(CallbackInfo cbi) throws IOException {
-//        SharedCachedRegionProvider.clearRegions();
+        // SharedCachedRegionProvider.clearRegions();
     }
 }
