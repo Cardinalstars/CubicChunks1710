@@ -1,6 +1,5 @@
 package com.cardinalstar.cubicchunks.util;
 
-import java.awt.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
