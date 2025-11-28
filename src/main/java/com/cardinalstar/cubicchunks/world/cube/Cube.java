@@ -595,7 +595,7 @@ public class Cube implements ICube {
 
     public ExtendedBlockStorage getOrCreateStorage() {
         if (this.storage == null) {
-            setStorage(new ExtendedBlockStorage(getY(), !column.worldObj.provider.hasNoSky));
+            setStorage(new ExtendedBlockStorage(cubeToMinBlock(getY()), !column.worldObj.provider.hasNoSky));
         }
 
         return storage;
