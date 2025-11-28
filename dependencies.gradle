@@ -38,8 +38,11 @@ dependencies {
     implementation("com.github.GTNewHorizons:RegionLib:v0.1.0-GTNH:dev")
     devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.40-GTNH:dev")
 
-    devOnlyNonPublishable("com.falsepattern:chunkapi-mc1.7.10:0.7.0-1-g67006b5-dirty:dev")
-    devOnlyNonPublishable("com.falsepattern:endlessids-mc1.7.10:1.6.14-dirty:dev")
+    compileOnly("com.falsepattern:chunkapi-mc1.7.10:0.7.0:dev")
+    compileOnly("com.falsepattern:endlessids-mc1.7.10:1.6.14:dev")
+
+//    runtimeOnlyNonPublishable("com.falsepattern:chunkapi-mc1.7.10:0.7.0-1-g67006b5-dirty:dev")
+//    implementation("com.falsepattern:endlessids-mc1.7.10:1.6.14-dirty:dev")
 
     compileOnly("org.jetbrains:annotations:26.0.2")
 
