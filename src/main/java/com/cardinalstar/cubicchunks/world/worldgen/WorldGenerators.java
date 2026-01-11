@@ -8,9 +8,9 @@ import net.minecraft.init.Blocks;
 
 import com.cardinalstar.cubicchunks.util.DoubleInterval;
 import com.cardinalstar.cubicchunks.util.Mods;
-import com.cardinalstar.cubicchunks.world.worldgen.caves.CaveBiomePopulator;
-import com.cardinalstar.cubicchunks.world.worldgen.caves.NoodleCaveGenerator;
-import com.cardinalstar.cubicchunks.world.worldgen.caves.SpaghettiCaveGenerator;
+// import com.cardinalstar.cubicchunks.world.worldgen.caves.CaveBiomePopulator;
+// import com.cardinalstar.cubicchunks.world.worldgen.caves.NoodleCaveGenerator;
+// import com.cardinalstar.cubicchunks.world.worldgen.caves.SpaghettiCaveGenerator;
 import com.cardinalstar.cubicchunks.world.worldgen.compat.DeepslateCubePopulator;
 import com.cardinalstar.cubicchunks.world.worldgen.noise.OctavesSampler;
 import com.cardinalstar.cubicchunks.world.worldgen.noise.ScaledNoise;
@@ -32,11 +32,11 @@ public class WorldGenerators {
     }
 
     private static void initVanillaTerrain() {
-        CUBIC_VANILLA.terrain()
-            .addObject("noodle-caves", new NoodleCaveGenerator(), "required-by:caves-all");
+        // CUBIC_VANILLA.terrain()
+        //     .addObject("noodle-caves", new NoodleCaveGenerator(), "required-by:caves-all");
 
-        CUBIC_VANILLA.terrain()
-            .addObject("spaghetti-caves", new SpaghettiCaveGenerator(), "required-by:caves-all");
+        // CUBIC_VANILLA.terrain()
+        //     .addObject("spaghetti-caves", new SpaghettiCaveGenerator(), "required-by:caves-all");
 
         CUBIC_VANILLA.terrain()
             .addTarget("caves-all");
@@ -55,8 +55,8 @@ public class WorldGenerators {
     }
 
     private static void initVanillaPopulation() {
-        CUBIC_VANILLA.population()
-            .addObject("biomes", new CaveBiomePopulator());
+        // CUBIC_VANILLA.population()
+        //     .addObject("biomes", new CaveBiomePopulator());
     }
 
     @Optional.Method(modid = Mods.ModIDs.ET_FUTURUM_REQUIEM)
