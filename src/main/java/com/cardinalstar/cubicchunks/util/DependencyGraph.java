@@ -4,29 +4,28 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
+import org.jetbrains.annotations.Nullable;
+
+import com.cardinalstar.cubicchunks.api.registry.IDependencyGraph;
+import com.github.bsideup.jabel.Desugar;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
-public class DependencyGraph<T> {
+public class DependencyGraph<T> implements IDependencyGraph<T> {
 
-    private static class DepInfo {
-
-        public final String dependency;
-        public final boolean optional;
-
-        public DepInfo(String dependency, boolean optional) {
-            this.dependency = dependency;
-            this.optional = optional;
-        }
+    @Desugar
+    private record DepInfo(String dependency, boolean optional) {
 
         @Override
-        public final boolean equals(Object o) {
+        public boolean equals(Object o) {
             if (!(o instanceof DepInfo depInfo)) return false;
 
             return Objects.equals(dependency, depInfo.dependency);
@@ -38,7 +37,8 @@ public class DependencyGraph<T> {
         }
     }
 
-    private final Object2ObjectOpenHashMap<String, T> objects = new Object2ObjectOpenHashMap<>();
+    private final Object2ObjectOpenHashMap<String, Optional<T>> objects = new Object2ObjectOpenHashMap<>();
+    private final ObjectOpenHashSet<String> targets = new ObjectOpenHashSet<>();
 
     private final Multimap<String, DepInfo> dependencies = MultimapBuilder.hashKeys()
         .hashSetValues()
@@ -46,16 +46,22 @@ public class DependencyGraph<T> {
 
     private List<T> cachedSorted;
 
-    public void addObject(String name, T value) {
+    public DependencyGraph() {
+        objects.defaultReturnValue(null);
+    }
+
+    @Override
+    public void addObject(String name, T value, String... deps) {
         Objects.requireNonNull(name, "name must not be null");
         Objects.requireNonNull(value, "value must not be null");
 
-        objects.put(name, value);
+        objects.put(name, Optional.of(value));
         cachedSorted = null;
-    }
 
-    public static final String REQUIRES = "requires:";
-    public static final String REQUIRED_BY = "required-by:";
+        for (String dep : deps) {
+            addUnparsedDependency(name, dep);
+        }
+    }
 
     public void addUnparsedDependency(String object, String dep) {
         Objects.requireNonNull(object, "object must not be null");
@@ -75,33 +81,57 @@ public class DependencyGraph<T> {
             dep = dep.substring(REQUIRED_BY.length())
                 .trim();
             dependencies.put(dep, new DepInfo(object, optional));
+        } else if (dep.startsWith(AFTER)) {
+            dep = dep.substring(AFTER.length())
+                .trim();
+            dependencies.put(object, new DepInfo(dep, true));
+        } else if (dep.startsWith(BEFORE)) {
+            dep = dep.substring(BEFORE.length())
+                .trim();
+            dependencies.put(dep, new DepInfo(object, true));
         } else {
-            dependencies.put(object, new DepInfo(dep, optional));
+            throw new IllegalArgumentException("Invalid dependency specification for object '" + object + "': '" + dep + "'");
         }
 
         cachedSorted = null;
     }
 
-    public void addDependency(String object, String dependsOn) {
+    @Override
+    public void addDependency(String object, String dependsOn, boolean optional) {
         Objects.requireNonNull(object, "object must not be null");
         Objects.requireNonNull(dependsOn, "dependsOn must not be null");
 
-        dependencies.put(object, new DepInfo(dependsOn, false));
+        dependencies.put(object, new DepInfo(dependsOn, optional));
         cachedSorted = null;
     }
 
-    public void removeDependency(String object, String dependsOn) {
+    @Override
+    public boolean removeDependency(String object, String dependsOn) {
         Objects.requireNonNull(object, "object must not be null");
         Objects.requireNonNull(dependsOn, "dependsOn must not be null");
 
-        dependencies.remove(object, new DepInfo(dependsOn, false));
+        boolean successful = dependencies.remove(object, new DepInfo(dependsOn, false));
         cachedSorted = null;
+
+        return successful;
     }
 
-    public void addTarget(String targetName) {
+    @Override
+    public void addTarget(String targetName, String... deps) {
         Objects.requireNonNull(targetName, "targetName must not be null");
 
-        objects.put(targetName, null);
+        objects.put(targetName, Optional.empty());
+        targets.add(targetName);
+
+        for (String dep : deps) {
+            addUnparsedDependency(targetName, dep);
+        }
+    }
+
+    /// Not made public because there is no well-defined initialization timing.
+    @Nullable
+    public Optional<T> get(String name) {
+        return objects.get(name);
     }
 
     public List<T> sorted() {
@@ -133,12 +163,13 @@ public class DependencyGraph<T> {
 
                 added.add(curr);
 
-                T value = objects.get(curr);
+                Optional<T> value = objects.get(curr);
 
-                // Only targets are null
-                if (value != null) {
-                    out.add(value);
+                if (value == null) {
+                    throw new IllegalStateException("Missing value for key: " + curr);
                 }
+
+                value.ifPresent(out::add);
             }
         }
 
@@ -152,10 +183,10 @@ public class DependencyGraph<T> {
             throw new IllegalStateException(
                 node + " has a cyclic dependency with itself. The path is: "
                     + path.stream()
-                        .reduce("", (s, s2) -> s + ", " + s2));
+                    .reduce("", (s, s2) -> s + ", " + s2));
         }
 
-        if (!optional && !objects.containsKey(node)) {
+        if (!optional && !targets.contains(node) && !objects.containsKey(node)) {
             throw new IllegalStateException(
                 node + " is present in the dependency graph but does not have a matching object");
         }
