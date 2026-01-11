@@ -28,7 +28,7 @@ public final class CCAPI {
         return cube.getStorage();
     }
 
-    /// Gets a loaded cube. Does not load or generate the cube.
+    /// Gets a loaded cube. Does not load or generate the cube. Will return null if the cube is not loaded.
     @Nullable
     public static ICube getLoadedCube(World world, int cubeX, int cubeY, int cubeZ) {
         return ((ICubicWorld) world).getCubeCache()
