@@ -90,7 +90,8 @@ public class DependencyGraph<T> implements IDependencyGraph<T> {
                 .trim();
             dependencies.put(dep, new DepInfo(object, true));
         } else {
-            throw new IllegalArgumentException("Invalid dependency specification for object '" + object + "': '" + dep + "'");
+            throw new IllegalArgumentException(
+                "Invalid dependency specification for object '" + object + "': '" + dep + "'");
         }
 
         cachedSorted = null;
@@ -183,7 +184,7 @@ public class DependencyGraph<T> implements IDependencyGraph<T> {
             throw new IllegalStateException(
                 node + " has a cyclic dependency with itself. The path is: "
                     + path.stream()
-                    .reduce("", (s, s2) -> s + ", " + s2));
+                        .reduce("", (s, s2) -> s + ", " + s2));
         }
 
         if (!optional && !targets.contains(node) && !objects.containsKey(node)) {
