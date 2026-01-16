@@ -93,7 +93,7 @@ import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallback {
 
     /**
-     * Mapping if entityId to PlayerCubeMap.PlayerWrapper objects.
+     * Mapping of entityId to PlayerCubeMap.PlayerWrapper objects.
      */
     private final Int2ObjectOpenHashMap<WatchingPlayer> players = new Int2ObjectOpenHashMap<>();
 
