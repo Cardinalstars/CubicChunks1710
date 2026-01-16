@@ -23,7 +23,7 @@ import com.cardinalstar.cubicchunks.util.DirectionUtils;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
-import com.gtnewhorizon.gtnhlib.client.renderer.quad.Axis;
+import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.properties.ModelQuadFacing.Axis;
 
 public class LightingHooks {
 

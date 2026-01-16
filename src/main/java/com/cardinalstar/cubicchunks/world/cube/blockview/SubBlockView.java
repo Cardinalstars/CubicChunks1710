@@ -23,22 +23,14 @@ public class SubBlockView implements IBlockView {
     public Block getBlock(int x, int y, int z) {
         validateCoords(x, y, z);
 
-        x += box.getX1();
-        y += box.getY1();
-        z += box.getZ1();
-
-        return blockView.getBlock(x, y, z);
+        return blockView.getBlock(x + box.getX1(), y + box.getY1(), z + box.getZ1());
     }
 
     @Override
     public int getBlockMetadata(int x, int y, int z) {
         validateCoords(x, y, z);
 
-        x += box.getX1();
-        y += box.getY1();
-        z += box.getZ1();
-
-        return blockView.getBlockMetadata(x, y, z);
+        return blockView.getBlockMetadata(x + box.getX1(), y + box.getY1(), z + box.getZ1());
     }
 
     public Box getBox() {
@@ -56,11 +48,11 @@ public class SubBlockView implements IBlockView {
     }
 
     protected final void validateCoords(int x, int y, int z) {
-        if (x < 0 || x >= (box.getX2() - box.getX1())) throw new IllegalArgumentException(
+        if (x < 0 || x > box.getX2() - box.getX1()) throw new IllegalArgumentException(
             String.format("illegal argument: x (x=%s, x1=%s, x2=%s)", x, box.getX1(), box.getX2()));
-        if (y < 0 || y >= (box.getY2() - box.getY1())) throw new IllegalArgumentException(
+        if (y < 0 || y > box.getY2() - box.getY1()) throw new IllegalArgumentException(
             String.format("illegal argument: y (y=%s, y1=%s, y2=%s)", y, box.getY1(), box.getY2()));
-        if (z < 0 || z >= (box.getZ2() - box.getZ1())) throw new IllegalArgumentException(
+        if (z < 0 || z > box.getZ2() - box.getZ1()) throw new IllegalArgumentException(
             String.format("illegal argument: z (z=%s, z1=%s, z2=%s)", z, box.getZ1(), box.getZ2()));
     }
 }

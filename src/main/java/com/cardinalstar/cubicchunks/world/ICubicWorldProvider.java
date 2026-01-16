@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.world.World;
 
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
 
 public interface ICubicWorldProvider {
 
@@ -14,7 +14,7 @@ public interface ICubicWorldProvider {
      * @return a new Cube generator
      */
     @Nullable
-    ICubeGenerator createCubeGenerator();
+    IWorldGenerator createCubeGenerator();
 
     int getOriginalActualHeight();
 

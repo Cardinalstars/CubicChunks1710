@@ -15,19 +15,25 @@ public abstract class CCPacketEncoder<Packet extends CCPacket> {
     /**
      * Encode the data into given byte buffer.
      */
-    public abstract void writePacket(CCPacketBuffer buffer, Packet packet);
+    public void writePacket(CCPacketBuffer buffer, Packet packet) {
+        throw new UnsupportedOperationException("Wrong side");
+    }
 
     /**
      * Decode byte buffer into packet object.
      */
-    public abstract Packet readPacket(CCPacketBuffer buffer);
+    public Packet readPacket(CCPacketBuffer buffer) {
+        throw new UnsupportedOperationException("Wrong side");
+    }
 
     /**
      * Process the received packet.
      *
      * @param world null if message is received on server side, the client world if message is received on client side
      */
-    public abstract void process(World world, Packet packet);
+    public void process(World world, Packet packet) {
+        throw new UnsupportedOperationException("Wrong side");
+    }
 
     /**
      * This will be called just before {@link #process(World, CCPacket)}} to inform the handler about the source and

@@ -20,24 +20,23 @@
  */
 package com.cardinalstar.cubicchunks.event.events;
 
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
 import net.minecraftforge.event.world.WorldEvent;
 
-import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 /**
  * CubicChunks equivalent of {@link net.minecraftforge.event.world.ChunkEvent}.
  */
 public class CubeEvent extends WorldEvent {
 
-    private final ICube chunk;
+    public final CubePos pos;
 
-    public CubeEvent(ICube cube) {
-        super(cube.getWorld());
-        this.chunk = cube;
-    }
-
-    public ICube getCube() {
-        return chunk;
+    protected CubeEvent(World world, CubePos pos) {
+        super(world);
+        this.pos = pos;
     }
 
     /**
@@ -45,8 +44,11 @@ public class CubeEvent extends WorldEvent {
      */
     public static class Load extends CubeEvent {
 
-        public Load(ICube cube) {
-            super(cube);
+        public final Cube cube;
+
+        public Load(World world, CubePos pos, Cube cube) {
+            super(world, pos);
+            this.cube = cube;
         }
     }
 
@@ -55,8 +57,31 @@ public class CubeEvent extends WorldEvent {
      */
     public static class Unload extends CubeEvent {
 
-        public Unload(ICube cube) {
-            super(cube);
+        public final Cube cube;
+
+        public Unload(World world, CubePos pos, Cube cube) {
+            super(world, pos);
+            this.cube = cube;
+        }
+    }
+
+    public static class LoadNBT extends CubeEvent {
+
+        public NBTTagCompound tag;
+
+        public LoadNBT(World world, CubePos pos, NBTTagCompound tag) {
+            super(world, pos);
+            this.tag = tag;
+        }
+    }
+
+    public static class SaveNBT extends CubeEvent {
+
+        public NBTTagCompound tag;
+
+        public SaveNBT(World world, CubePos pos, NBTTagCompound tag) {
+            super(world, pos);
+            this.tag = tag;
         }
     }
 }

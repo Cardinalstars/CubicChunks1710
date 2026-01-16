@@ -68,6 +68,7 @@ import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
+import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
 import com.cardinalstar.cubicchunks.world.column.CubeMap;
@@ -174,8 +175,7 @@ public abstract class MixinChunk_Cubes {
     @Nullable
     private ExtendedBlockStorage getEBS_CubicChunks(int index) {
         if (!isColumn) {
-            // vanilla case, subtract minHeight for extended height support
-            return storageArrays[index - blockToCube(getWorldObj().getMinHeight())];
+            return storageArrays[blockToCube(index)];
         }
         if (cachedCube != null && cachedCube.getY() == index) {
             return cachedCube.getStorage();
@@ -252,7 +252,6 @@ public abstract class MixinChunk_Cubes {
             // Some mods construct chunks with null world, ignore them
             return;
         }
-        this.isColumn = true;
         // this.lightManager = world.getLightingManager();
 
         this.cubeMap = new CubeMap();
@@ -269,7 +268,9 @@ public abstract class MixinChunk_Cubes {
         // this.chunkSections = null;
         // this.skylightUpdateMap = null;
 
-        Arrays.fill(getBiomeArray(), (byte) -1);
+        if (!Mods.ChunkAPI.isModLoaded()) {
+            Arrays.fill(getBiomeArray(), (byte) -1);
+        }
     }
 
     @Redirect(
@@ -303,6 +304,10 @@ public abstract class MixinChunk_Cubes {
             return -1;
         }
         return _16;
+    }
+
+    public void chunk_internal$setColumn(boolean isColumn) {
+        this.isColumn = isColumn;
     }
 
     public Block[] chunk_internal$getCompatGenerationBlockArray() {
@@ -521,7 +526,7 @@ public abstract class MixinChunk_Cubes {
             args = "array=get",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private ExtendedBlockStorage getBlock_getStorage(ExtendedBlockStorage[] ebs, int y) {
-        return getEBS_CubicChunks(y);
+        return isColumn ? getEBS_CubicChunks(y) : ebs[y];
     }
 
     // ==============================================
@@ -700,8 +705,10 @@ public abstract class MixinChunk_Cubes {
         if (!isColumn) {
             return;
         }
-        ((ICubicWorldInternal) worldObj).getLightingManager()
-            .onGetLight(type, x, y, z);
+        if (((ICubicWorldInternal) worldObj).getLightingManager() != null) {
+            ((ICubicWorldInternal) worldObj).getLightingManager()
+                .onGetLight(type, x, y, z);
+        }
         cir.setReturnValue(((Cube) ((IColumn) this).getCube(blockToCube(y))).getCachedLightFor(type, x, y, z));
     }
 
@@ -725,8 +732,10 @@ public abstract class MixinChunk_Cubes {
         if (!isColumn) {
             return;
         }
-        getWorldObj().getLightingManager()
-            .onGetLightSubtracted(x, y, z);
+        if (getWorldObj().getLightingManager() != null) {
+            getWorldObj().getLightingManager()
+                .onGetLightSubtracted(x, y, z);
+        }
     }
 
     // ==============================================

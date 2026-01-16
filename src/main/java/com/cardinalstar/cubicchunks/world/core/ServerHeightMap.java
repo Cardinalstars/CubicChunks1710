@@ -21,8 +21,6 @@
 
 package com.cardinalstar.cubicchunks.world.core;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 import javax.annotation.Nonnull;
@@ -30,8 +28,12 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
+import com.cardinalstar.cubicchunks.network.CCPacketBuffer;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 
 @ParametersAreNonnullByDefault
 public class ServerHeightMap implements IHeightMap {
@@ -716,64 +718,52 @@ public class ServerHeightMap implements IHeightMap {
     // Serialization / NBT ---------------------------------------------------------------------------------------------
 
     public byte[] getData() {
+        ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer();
+
         try {
-            ByteArrayOutputStream buf = new ByteArrayOutputStream();
-            DataOutputStream out = new DataOutputStream(buf);
-            writeData(out);
-            out.close();
-            return buf.toByteArray();
+            writeData(new CCPacketBuffer(buf));
+
+            byte[] data = new byte[buf.writerIndex()];
+            buf.readBytes(data);
+            return data;
         } catch (IOException ex) {
             throw new Error(ex);
+        } finally {
+            buf.release();
         }
     }
 
-    public void readData(byte[] data) {
-        int pos = 0;
+    public void readData(CCPacketBuffer buffer) {
         for (int i = 0; i < this.segments.length; i++) {
-            this.ymin[i] = readIntBigEndian(data, pos);
-            pos += Integer.BYTES;
-            this.ymax.set(i, readIntBigEndian(data, pos));
-            pos += Integer.BYTES;
-            int[] segments = new int[readUShortBigEndian(data, pos)];
-            pos += Short.BYTES;
-            if (segments.length == 0) {
-                continue;
-            }
+            this.ymin[i] = buffer.readVarIntFromBuffer();
+            this.ymax.set(i, buffer.readVarIntFromBuffer());
+
+            int[] segments = new int[buffer.readVarIntFromBuffer()];
+            if (segments.length == 0) continue;
+
             for (int j = 0; j < segments.length; j++) {
-                segments[j] = readIntBigEndian(data, pos);
-                pos += Integer.BYTES;
+                segments[j] = buffer.readVarIntFromBuffer();
             }
+
             this.segments[i] = segments;
+
             assert parityCheck(i) : "The number of segments was wrong!";
         }
     }
 
-    private int readIntBigEndian(byte[] arr, int pos) {
-        int ch1 = arr[pos] & 0xFF;
-        int ch2 = arr[pos + 1] & 0xFF;
-        int ch3 = arr[pos + 2] & 0xFF;
-        int ch4 = arr[pos + 3] & 0xFF;
-        return (ch1 << 24) | (ch2 << 16) | (ch3 << 8) | ch4;
-    }
-
-    private int readUShortBigEndian(byte[] arr, int pos) {
-        int ch1 = arr[pos] & 0xFF;
-        int ch2 = arr[pos + 1] & 0xFF;
-        return (ch1 << 8) | ch2;
-    }
-
-    private void writeData(DataOutputStream out) throws IOException {
+    private void writeData(CCPacketBuffer buffer) throws IOException {
         for (int i = 0; i < this.segments.length; i++) {
-            out.writeInt(this.ymin[i]);
-            out.writeInt(this.ymax.get(i));
+            buffer.writeVarIntToBuffer(this.ymin[i]);
+            buffer.writeVarIntToBuffer(this.ymax.get(i));
+
             int[] segments = this.segments[i];
             if (segments == null || segments.length == 0) {
-                out.writeShort(0);
+                buffer.writeVarIntToBuffer(0);
             } else {
                 int lastSegmentIndex = getLastSegmentIndex(segments);
-                out.writeShort(lastSegmentIndex + 1);
+                buffer.writeVarIntToBuffer(lastSegmentIndex + 1);
                 for (int j = 0; j <= lastSegmentIndex; j++) {
-                    out.writeInt(segments[j]);
+                    buffer.writeVarIntToBuffer(segments[j]);
                 }
             }
         }

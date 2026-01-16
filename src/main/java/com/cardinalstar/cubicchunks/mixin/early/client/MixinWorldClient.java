@@ -35,7 +35,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import com.cardinalstar.cubicchunks.api.IntRange;
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
-import com.cardinalstar.cubicchunks.lighting.LightingManager;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.early.common.MixinWorld;
 import com.llamalad7.mixinextras.expression.Definition;
@@ -57,23 +56,16 @@ public abstract class MixinWorldClient extends MixinWorld implements ICubicWorld
         CubeProviderClient cubeProviderClient = new CubeProviderClient(this);
         this.chunkProvider = cubeProviderClient;
         this.clientChunkProvider = cubeProviderClient;
-        this.lightingManager = new LightingManager((World) (Object) this);
     }
 
     @Override
     public void tickCubicWorld() {
-        getLightingManager().onTick();
+        if (getLightingManager() != null) getLightingManager().onTick();
     }
 
     @Override
     public CubeProviderClient getCubeCache() {
         return (CubeProviderClient) this.clientChunkProvider;
-    }
-
-    @Override
-    public void setHeightBounds(int minHeight1, int maxHeight1) {
-        this.minHeight = minHeight1;
-        this.maxHeight = maxHeight1;
     }
 
     // Has to be in here because the world is intialized before initCubicWorldClient gets called. This causes a crash in

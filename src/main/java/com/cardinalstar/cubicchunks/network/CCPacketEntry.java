@@ -8,7 +8,10 @@ public enum CCPacketEntry {
     UnloadCube(new PacketEncoderUnloadCube()),
     CubeBlockChange(new PacketEncoderCubeBlockChange()),
     HeightMapUpdate(new PacketEncoderHeightMapUpdate()),
-    CubeSkyLightUpdates(new PacketEncoderCubeSkyLightUpdates()),;
+    CubeSkyLightUpdates(new PacketEncoderCubeSkyLightUpdates()),
+    WorldHeight(new PacketEncoderWorldHeight()),
+    //
+    ;
 
     public final byte id = (byte) ordinal();
     public final CCPacketEncoder<?> encoder;

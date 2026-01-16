@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -34,7 +33,10 @@ import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
+import com.cardinalstar.cubicchunks.modcompat.angelica.AngelicaInterop;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.CubeStatusVisualizer;
+import com.cardinalstar.cubicchunks.util.CubeStatusVisualizer.CubeStatus;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.github.bsideup.jabel.Desugar;
 
@@ -57,7 +59,6 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
     public PacketEncoderCubes() {}
 
     public static PacketCubes createPacket(List<Cube> cubes) {
-        CubicChunks.LOGGER.info("Sending packet with {} cubes", cubes.size());
         cubes.sort(
             Comparator.comparingInt(Cube::getY)
                 .thenComparingInt(Cube::getX)
@@ -67,6 +68,10 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
         for (int i = 0; i < cubes.size(); i++) {
             cubePos[i] = cubes.get(i)
                 .getCoords();
+            CubeStatusVisualizer.put(
+                cubes.get(i)
+                    .getCoords(),
+                CubeStatus.Synced);
         }
 
         ByteBuf cubeData = Unpooled.buffer();
@@ -79,7 +84,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
         List<List<NBTTagCompound>> tileEntityTags = new ArrayList<>();
 
-        cubes.forEach(cube -> {
+        for (Cube cube : cubes) {
             if (cube.getTileEntityMap()
                 .isEmpty()) {
                 tileEntityTags.add(Collections.emptyList());
@@ -95,7 +100,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
                 tileEntityTags.add(list);
             }
-        });
+        }
 
         return new PacketCubes(cubePos, data, tileEntityTags);
     }
@@ -146,9 +151,16 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
         ByteBuf buf = Unpooled.wrappedBuffer(packet.data);
         WorldEncoder.decodeCube(new CCPacketBuffer(buf), cubes);
 
-        cubes.stream()
-            .filter(Objects::nonNull)
-            .forEach(Cube::markForRenderUpdate);
+        for (Cube cube : cubes) {
+            if (cube != null) {
+                cube.markForRenderUpdate();
+
+                if (AngelicaInterop.hasDelegate()) {
+                    AngelicaInterop.getDelegate()
+                        .onCubeLoaded(cube.getX(), cube.getY(), cube.getZ());
+                }
+            }
+        }
 
         packet.tileEntityTags.forEach(list -> {
             list.forEach(tag -> {
