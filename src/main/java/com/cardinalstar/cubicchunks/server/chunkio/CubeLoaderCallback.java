@@ -24,8 +24,8 @@ public interface CubeLoaderCallback {
     }
 
     /**
-     * This is called when a cube is generated. It is called when a cube is loaded, then generated further, and when the
-     * cube is initially generated from nothing.
+     * This is called when a cube is generated. It is called when a cube's init level increases - that is, when an
+     * already loaded cube is generated further, or when a cube is newly generated.
      */
     default void onCubeGenerated(Cube cube, CubeInitLevel newLevel) {
 

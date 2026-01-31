@@ -12,6 +12,14 @@ public interface BiomeArray extends Int2ObjectFunction<BiomeGenBase> {
 
     boolean isEmpty();
 
+    @Override
+    void clear();
+
+    @Override
+    default int size() {
+        return 16 * 16 * 16;
+    }
+
     default BiomeGenBase put(int x, int y, int z, BiomeGenBase value) {
         return put(AddressTools.getLocalAddress(x, y, z), value);
     }

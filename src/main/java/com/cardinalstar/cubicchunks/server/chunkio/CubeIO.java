@@ -357,7 +357,7 @@ public class CubeIO implements ICubeIO {
     @Override
     public void preloadColumn(ChunkCoordIntPair pos) {
         TaskPool.submit(columnLoadExecutor, pos, tag -> {
-            if (tag == null) {
+            if (!tag.isPresent()) {
                 if (preloadFailures != null) preloadFailures.onColumnPreloadFailed(pos);
             } else {
                 synchronized (columnCache) {

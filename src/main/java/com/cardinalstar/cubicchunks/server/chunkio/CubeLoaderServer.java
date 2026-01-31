@@ -164,9 +164,7 @@ public class CubeLoaderServer implements ICubeLoader {
     public boolean cubeExists(int x, int y, int z) {
         if (getLoadedCube(x, y, z) != null) return true;
 
-        if (cubeIO.cubeExists(new CubePos(x, y, z))) return true;
-
-        return false;
+        return cubeIO.cubeExists(new CubePos(x, y, z));
     }
 
     @Override

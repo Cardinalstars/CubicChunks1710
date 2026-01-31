@@ -8,21 +8,22 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 public class PalettizedBiomeArray implements BiomeArray {
 
-    private int freePaletteIndices = ~0b1;
+    private final boolean[] usedPaletteIndices = new boolean[16];
     private final BiomeGenBase[] palette = new BiomeGenBase[16];
     private final Object2IntOpenHashMap<BiomeGenBase> paletteReversed = new Object2IntOpenHashMap<>();
 
-    {
+    public PalettizedBiomeArray() {
         paletteReversed.defaultReturnValue(-1);
         paletteReversed.put(null, 0);
         palette[0] = null;
+        usedPaletteIndices[0] = true;
     }
 
-    private final byte[] data = new byte[16 * 16 * 16 / 2];
+    private final byte[] nibbleArray = new byte[16 * 16 * 16 / 2];
 
     @Override
     public boolean isEmpty() {
-        for (byte b : data) {
+        for (byte b : nibbleArray) {
             if (b != 0) return false;
         }
 
@@ -30,13 +31,8 @@ public class PalettizedBiomeArray implements BiomeArray {
     }
 
     @Override
-    public int size() {
-        return 16 * 16 * 16;
-    }
-
-    @Override
     public void clear() {
-        Arrays.fill(data, (byte) 0);
+        Arrays.fill(nibbleArray, (byte) 0);
     }
 
     @Override
@@ -44,12 +40,28 @@ public class PalettizedBiomeArray implements BiomeArray {
         int paletteIndex = paletteReversed.getInt(value);
 
         if (paletteIndex == -1) {
-            int free = Integer.lowestOneBit(freePaletteIndices);
+            int free = -1;
+
+            for (int i = 0; i < usedPaletteIndices.length; i++) {
+                boolean b = usedPaletteIndices[i];
+
+                if (b) continue;
+
+                free = i;
+                break;
+            }
 
             if (free >= 16) {
                 cleanPalette();
 
-                free = Integer.lowestOneBit(freePaletteIndices);
+                for (int i = 0; i < usedPaletteIndices.length; i++) {
+                    boolean b = usedPaletteIndices[i];
+
+                    if (b) continue;
+
+                    free = i;
+                    break;
+                }
 
                 if (free >= 16) {
                     throw new PaletteFullError();
@@ -59,10 +71,10 @@ public class PalettizedBiomeArray implements BiomeArray {
             paletteIndex = free;
             palette[free] = value;
             paletteReversed.put(value, free);
-            freePaletteIndices &= ~(0b1 << paletteIndex);
+            usedPaletteIndices[paletteIndex] = true;
         }
 
-        byte b = data[key >> 1];
+        byte b = nibbleArray[key >> 1];
 
         if ((key & 0b1) == 0) {
             b = (byte) ((b & 0xF0) | paletteIndex);
@@ -70,22 +82,18 @@ public class PalettizedBiomeArray implements BiomeArray {
             b = (byte) ((paletteIndex << 4) | (b & 0xF));
         }
 
-        data[key >> 1] = b;
+        nibbleArray[key >> 1] = b;
 
         return null;
     }
 
     @Override
     public BiomeGenBase get(int key) {
-        byte b = data[key >> 1];
+        int index = key >> 1;
 
-        if ((key & 0b1) == 0) {
-            b >>= 4;
-        }
+        int id = (key & 1) == 0 ? (this.nibbleArray[index] & 0xF) : (this.nibbleArray[index] >> 4 & 0xF);
 
-        b &= 0xF;
-
-        return palette[b];
+        return palette[id];
     }
 
     @Override
@@ -103,14 +111,15 @@ public class PalettizedBiomeArray implements BiomeArray {
     }
 
     public void cleanPalette() {
-        freePaletteIndices = ~0b1;
+        Arrays.fill(usedPaletteIndices, false);
+        usedPaletteIndices[0] = true;
 
-        for (byte b : data) {
+        for (byte b : nibbleArray) {
             int lower = b & 0xF;
             int upper = (b >> 4) & 0xF;
 
-            freePaletteIndices &= ~(0b1 << lower);
-            freePaletteIndices &= ~(0b1 << upper);
+            usedPaletteIndices[lower] = true;
+            usedPaletteIndices[upper] = true;
         }
 
         paletteReversed.clear();
@@ -119,7 +128,7 @@ public class PalettizedBiomeArray implements BiomeArray {
         paletteReversed.put(palette[0], 0);
 
         for (int i = 1; i < 16; i++) {
-            if ((freePaletteIndices & (0b1 << i)) != 0) {
+            if (!usedPaletteIndices[i]) {
                 palette[i] = null;
             } else {
                 if (palette[i] != null) {

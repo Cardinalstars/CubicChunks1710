@@ -3,10 +3,12 @@ package com.cardinalstar.cubicchunks.util.biome3d;
 import net.minecraft.world.biome.BiomeGenBase;
 
 import com.cardinalstar.cubicchunks.network.CCPacketBuffer;
+import com.cardinalstar.cubicchunks.util.biome3d.NaiveCompression.NaiveCompressionDataInput;
+import com.cardinalstar.cubicchunks.util.biome3d.NaiveCompression.NaiveCompressionDataOutput;
 
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-
+/// This is a [BiomeArray] implementation that dynamically switches its backing storage to the most optimal format as
+/// needed. By default it will use a [PalettizedBiomeArray], and once its palette is completely full, it will migrate
+/// the data to a [ReferenceBiomeArray].
 public class DynamicBiomeArray implements BiomeArray {
 
     private BiomeArray backing = new PalettizedBiomeArray();
@@ -17,11 +19,6 @@ public class DynamicBiomeArray implements BiomeArray {
     }
 
     @Override
-    public int size() {
-        return 16 * 16 * 16;
-    }
-
-    @Override
     public void clear() {
         backing.clear();
     }
@@ -29,8 +26,10 @@ public class DynamicBiomeArray implements BiomeArray {
     @Override
     public BiomeGenBase put(int key, BiomeGenBase value) {
         try {
+            // Try to insert the biome value into the storage
             backing.put(key, value);
         } catch (PaletteFullError e) {
+            // If we're using a palette array and its palette is full, migrate the data
             BiomeArray reference = new ReferenceBiomeArray();
 
             int size = size();
@@ -44,6 +43,7 @@ public class DynamicBiomeArray implements BiomeArray {
             backing.put(key, value);
         }
 
+        // Boilerplate for Int2ObjectFunction.put
         return null;
     }
 
@@ -52,6 +52,7 @@ public class DynamicBiomeArray implements BiomeArray {
         return backing.get(key);
     }
 
+    /// Changes the 'default' biome, since we don't want null biomes in these arrays
     @Override
     public void defaultReturnValue(BiomeGenBase rv) {
         backing.defaultReturnValue(rv);
@@ -62,86 +63,33 @@ public class DynamicBiomeArray implements BiomeArray {
         return backing.defaultReturnValue();
     }
 
-    private static final byte ADD_PALLETE = 0;
-    private static final byte DATA = 1;
-
     public void write(CCPacketBuffer buffer) {
-        Object2IntOpenHashMap<BiomeGenBase> palette = new Object2IntOpenHashMap<>();
+        NaiveCompression.compress(new NaiveCompressionDataInput() {
 
-        palette.defaultReturnValue(-1);
-
-        int start = buffer.writerIndex();
-
-        int ops = 0;
-
-        for (int i = 0; i < size(); i++) {
-            BiomeGenBase curr = get(i);
-
-            int paletteIndex = palette.getInt(curr);
-
-            if (paletteIndex == -1) {
-                paletteIndex = palette.size();
-                palette.put(curr, paletteIndex);
-
-                buffer.writeByte(ADD_PALLETE);
-                buffer.writeVarIntToBuffer(curr.biomeID);
-                ops++;
+            @Override
+            public int size() {
+                return DynamicBiomeArray.this.size();
             }
 
-            int i2 = i + 1;
-
-            while (i2 < size() && get(i2) == curr) {
-                i2++;
+            @Override
+            public int get(int index) {
+                return DynamicBiomeArray.this.get(index).biomeID;
             }
-
-            int len = i2 - i;
-
-            buffer.writeByte(DATA);
-            buffer.writeVarIntToBuffer(paletteIndex);
-            buffer.writeVarIntToBuffer(len);
-            ops++;
-        }
-
-        int end = buffer.writerIndex();
-
-        buffer.writerIndex(start);
-        buffer.writeInt(ops);
-
-        buffer.writerIndex(end);
+        }, buffer);
     }
 
     public void read(CCPacketBuffer buffer) {
-        int ops = buffer.readInt();
+        NaiveCompression.decompress(buffer, new NaiveCompressionDataOutput() {
 
-        ObjectArrayList<BiomeGenBase> palette = new ObjectArrayList<>();
-
-        int i = 0;
-
-        for (int op = 0; op < ops; op++) {
-            byte insn = buffer.readByte();
-            switch (insn) {
-                case ADD_PALLETE -> {
-                    BiomeGenBase biome = BiomeGenBase.getBiome(buffer.readVarIntFromBuffer());
-
-                    palette.add(biome);
-                }
-                case DATA -> {
-                    BiomeGenBase biome = palette.get(buffer.readVarIntFromBuffer());
-                    int len = buffer.readVarIntFromBuffer();
-
-                    for (int k = 0; k < len; k++) {
-                        put(i + k, biome);
-                    }
-
-                    i += len;
-                }
-                default -> {
-                    throw new InvalidBiomeDataException(
-                        "Unexpected operation " + insn + " at index" + buffer.readerIndex());
-                }
+            @Override
+            public int size() {
+                return DynamicBiomeArray.this.size();
             }
-        }
 
-        if (i != size()) throw new InvalidBiomeDataException("Expected " + size() + " biomes indices, got " + i);
+            @Override
+            public void set(int index, int value) {
+                DynamicBiomeArray.this.put(index, BiomeGenBase.getBiome(value));
+            }
+        });
     }
 }
