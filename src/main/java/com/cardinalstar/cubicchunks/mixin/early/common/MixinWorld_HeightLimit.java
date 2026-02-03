@@ -532,4 +532,12 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
 
         return cube.isPopulated();
     }
+
+    @Redirect(
+        method = "getBiomeGenForCoordsBody",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;blockExists(III)Z"))
+    private boolean checkColumnExists(World instance, int x, int zero, int z) {
+        return ((ICubicWorld) instance).getCubeCache()
+            .getLoadedColumn(x >> 4, z >> 4) != null;
+    }
 }

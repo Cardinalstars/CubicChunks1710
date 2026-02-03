@@ -154,4 +154,55 @@ public class Coords {
     public static Random coordsSeedRandom(long seed, int x, int y, int z) {
         return new Random(coordsSeedHash(seed, x, y, z));
     }
+
+    public static final long MASK = 0b111111111111111111111;
+    public static final int SHIFT = 21;
+    public static final int X_SHIFT = SHIFT * 2;
+    public static final int Y_SHIFT = SHIFT;
+    public static final int Z_SHIFT = 0;
+
+    private static long pack(long k, int shift) {
+        if (k < ~MASK || k > MASK) {
+            throw new IllegalArgumentException(
+                "Can only pack numbers between " + (~MASK) + ".." + MASK + " (inclusive): got " + k);
+        }
+
+        // Trim off the upper bits, preserving the sign
+        k <<= Long.numberOfLeadingZeros(MASK);
+        // Shift back to the original position, but keep the sign bit on the left-most side of the long
+        k >>>= Long.numberOfLeadingZeros(MASK);
+        // Shift back up to where the long should be in the final packing
+        k <<= shift;
+
+        return k;
+    }
+
+    private static long unpack(long k, int shift) {
+        // Shift back to 0 offset
+        k >>>= shift;
+        // Only keep the good bits
+        k &= MASK;
+        // Shift the sign bit up
+        k <<= Long.numberOfLeadingZeros(MASK);
+        // Shift back to 0 offset, preserving the sign
+        k >>= Long.numberOfLeadingZeros(MASK);
+
+        return k;
+    }
+
+    public static long key(long x, long y, long z) {
+        return pack(x, X_SHIFT) | pack(y, Y_SHIFT) | pack(z, Z_SHIFT);
+    }
+
+    public static int x(long key) {
+        return (int) unpack(key, X_SHIFT);
+    }
+
+    public static int y(long key) {
+        return (int) unpack(key, Y_SHIFT);
+    }
+
+    public static int z(long key) {
+        return (int) unpack(key, Z_SHIFT);
+    }
 }

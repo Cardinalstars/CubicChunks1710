@@ -78,6 +78,8 @@ public interface ICubicWorldInternal extends ICubicWorld {
 
     void fakeWorldHeight(int height);
 
+    void setHeightBounds(int minHeight, int maxHeight);
+
     default BlockPos getTopSolidOrLiquidBlockVanilla(int x, int y, int z) {
         Chunk chunk = ((World) this).getChunkFromBlockCoords(x, y);
 
@@ -138,8 +140,6 @@ public interface ICubicWorldInternal extends ICubicWorld {
         void initCubicWorldClient(IntRange heightRange, IntRange generationRange);
 
         CubeProviderClient getCubeCache();
-
-        void setHeightBounds(int minHeight, int maxHeight);
     }
 
     interface CompatGenerationScope extends AutoCloseable {

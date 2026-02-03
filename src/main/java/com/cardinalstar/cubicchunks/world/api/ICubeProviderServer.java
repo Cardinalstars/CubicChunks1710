@@ -69,7 +69,7 @@ public interface ICubeProviderServer extends ICubeProvider {
          */
         GET_CACHED,
         /**
-         * Load the NBT from disk, but don't load the chunk into the world at all
+         * Load the NBT from disk, but don't load the cube/column into the world at all
          */
         NBT,
         /**

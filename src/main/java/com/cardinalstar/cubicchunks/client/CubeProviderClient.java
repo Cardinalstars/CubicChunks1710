@@ -22,6 +22,8 @@ package com.cardinalstar.cubicchunks.client;
 
 import static net.minecraftforge.common.MinecraftForge.EVENT_BUS;
 
+import java.util.function.Consumer;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -38,6 +40,7 @@ import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.early.client.IChunkProviderClient;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
@@ -88,9 +91,17 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
 
     @Override
     public Chunk loadChunk(int cubeX, int cubeZ) {
+        return loadChunk(cubeX, cubeZ, null);
+    }
+
+    public Chunk loadChunk(int cubeX, int cubeZ, @Nullable Consumer<Chunk> init) {
         Chunk column = new Chunk((World) this.world, cubeX, cubeZ); // make a new one
+        ((IColumnInternal) column).setColumn(true);
+
         ((IChunkProviderClient) this).getChunkMapping()
             .add(ChunkCoordIntPair.chunkXZ2Int(cubeX, cubeZ), column);
+
+        if (init != null) init.accept(column);
 
         // fire a forge event... make mods happy :)
         net.minecraftforge.common.MinecraftForge.EVENT_BUS
@@ -141,8 +152,8 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
         this.cubeMap.put(cube);
         world.getLightingManager()
             .onCubeLoad(cube);
-        EVENT_BUS.post(new CubeEvent.Load(cube));
         cube.setCubeLoaded();
+        EVENT_BUS.post(new CubeEvent.Load(column.worldObj, pos, cube));
         return cube;
     }
 
@@ -177,10 +188,18 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
         return getCube(coords.getX(), coords.getY(), coords.getZ());
     }
 
+    private volatile Cube lastCube;
+
     @Nullable
     @Override
     public Cube getLoadedCube(int cubeX, int cubeY, int cubeZ) {
-        return cubeMap.get(cubeX, cubeY, cubeZ);
+        Cube c = lastCube;
+
+        if (c != null && c.getX() == cubeX && c.getY() == cubeY && c.getZ() == cubeZ) {
+            return c;
+        }
+
+        return lastCube = cubeMap.get(cubeX, cubeY, cubeZ);
     }
 
     @Nullable

@@ -20,24 +20,33 @@
  */
 package com.cardinalstar.cubicchunks.network;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import net.minecraft.block.Block;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.network.play.server.S23PacketBlockChange;
 import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
+import com.cardinalstar.cubicchunks.mixin.early.common.AccessorS23PacketBlockChange;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+import com.falsepattern.chunk.internal.DataRegistryImpl;
 import com.github.bsideup.jabel.Desugar;
-import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
-import gnu.trove.TShortCollection;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import gnu.trove.iterator.TIntIterator;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
@@ -46,8 +55,8 @@ import gnu.trove.set.hash.TIntHashSet;
 public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderCubeBlockChange.PacketCubeBlockChange> {
 
     @Desugar
-    public record PacketCubeBlockChange(CubePos cubePos, short[] localAddresses, Block[] blocks, int[] blockMetas,
-        int[] heightValues) implements CCPacket {
+    public record PacketCubeBlockChange(CubePos cubePos, int[] heightValues, List<S23PacketBlockChange> updates)
+        implements CCPacket {
 
         @Override
         public byte getPacketID() {
@@ -57,21 +66,39 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
 
     public PacketEncoderCubeBlockChange() {}
 
-    public static PacketCubeBlockChange createPacket(Cube cube, TShortCollection localAddresses) {
+    @SuppressWarnings("DataFlowIssue")
+    public static PacketCubeBlockChange createPacket(Cube cube, short[] localAddresses) {
         CubePos cubePos = cube.getCoords();
-        short[] localAddressArray = localAddresses.toArray();
-        Block[] blocks = new Block[localAddressArray.length];
-        int[] blockMetas = new int[localAddressArray.length];
 
+        List<S23PacketBlockChange> updates = new ArrayList<>(localAddresses.length);
         TIntSet xzAddresses = new TIntHashSet();
 
-        for (int i = 0; i < localAddressArray.length; i++) {
-            short localAddress = localAddressArray[i];
+        for (int i = 0, localAddressesLength = localAddresses.length; i < localAddressesLength; i++) {
+            short localAddress = localAddresses[i];
+
             int x = AddressTools.getLocalX(localAddress);
             int y = AddressTools.getLocalY(localAddress);
             int z = AddressTools.getLocalZ(localAddress);
-            blocks[i] = cube.getBlock(x, y, z);
-            blockMetas[i] = cube.getBlockMetadata(x, y, z);
+
+            S23PacketBlockChange change = new S23PacketBlockChange();
+
+            int wX = (cube.getX() << 4) + x;
+            int wY = (cube.getY() << 4) + y;
+            int wZ = (cube.getZ() << 4) + z;
+
+            ((AccessorS23PacketBlockChange) change).setX(wX);
+            ((AccessorS23PacketBlockChange) change).setY(wY);
+            ((AccessorS23PacketBlockChange) change).setZ(wZ);
+
+            change.field_148883_d = cube.getBlock(x, y, z);
+            change.field_148884_e = cube.getBlockMetadata(x, y, z);
+
+            if (Mods.ChunkAPI.isModLoaded()) {
+                DataRegistryImpl.writeBlockToPacket(cube.getColumn(), wX, wY, wZ, change);
+            }
+
+            updates.add(change);
+
             xzAddresses.add(AddressTools.getLocalAddress(x, z));
         }
 
@@ -89,7 +116,7 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
             i++;
         }
 
-        return new PacketCubeBlockChange(cubePos, localAddressArray, blocks, blockMetas, heightValues);
+        return new PacketCubeBlockChange(cubePos, heightValues, updates);
     }
 
     @Override
@@ -100,49 +127,39 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
     @Override
     public void writePacket(CCPacketBuffer buffer, PacketCubeBlockChange packet) {
         buffer.writeCubePos(packet.cubePos);
+        buffer.writeIntArray(packet.heightValues);
 
-        buffer.writeShort(packet.localAddresses.length);
-
-        for (int i = 0; i < packet.localAddresses.length; i++) {
-            buffer.writeShort(packet.localAddresses[i]);
-            buffer.writeBlock(packet.blocks[i]);
-            buffer.writeBlockMeta(packet.blockMetas[i]);
-        }
-
-        buffer.writeByte(packet.heightValues.length);
-
-        for (int v : packet.heightValues) {
-            buffer.writeInt(v);
-        }
+        buffer.writeList(packet.updates, (buffer1, value) -> {
+            try {
+                value.writePacketData(buffer1);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Could not save S23PacketBlockChange " + value.serialize(), e);
+            }
+        });
     }
 
     @Override
     public PacketCubeBlockChange readPacket(CCPacketBuffer buffer) {
         CubePos pos = buffer.readCubePos();
+        int[] heightValues = buffer.readIntArray();
 
-        int blockCount = buffer.readShort();
+        List<S23PacketBlockChange> updates = buffer.readList(buffer1 -> {
+            S23PacketBlockChange packet = new S23PacketBlockChange();
 
-        short[] addresses = new short[blockCount];
-        Block[] blocks = new Block[blockCount];
-        int[] metas = new int[blockCount];
+            try {
+                packet.readPacketData(buffer1);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
 
-        for (short i = 0; i < blockCount; i++) {
-            addresses[i] = buffer.readShort();
-            blocks[i] = buffer.readBlock();
-            metas[i] = buffer.readBlockMeta();
-        }
+            return packet;
+        });
 
-        int heightmapCount = buffer.readUnsignedByte();
-        int[] heightValues = new int[heightmapCount];
-
-        for (int i = 0; i < heightmapCount; i++) {
-            heightValues[i] = buffer.readInt();
-        }
-
-        return new PacketCubeBlockChange(pos, addresses, blocks, metas, heightValues);
+        return new PacketCubeBlockChange(pos, heightValues, updates);
     }
 
     @Override
+    @SideOnly(Side.CLIENT)
     public void process(World world, PacketCubeBlockChange packet) {
         WorldClient worldClient = (WorldClient) world;
         CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getChunkProvider();
@@ -156,6 +173,7 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
 
         ClientHeightMap index = (ClientHeightMap) cube.getColumn()
             .getOpacityIndex();
+
         for (int hmapUpdate : packet.heightValues) {
             int x = hmapUpdate & 0xF;
             int z = (hmapUpdate >> 4) & 0xF;
@@ -163,12 +181,9 @@ public class PacketEncoderCubeBlockChange extends CCPacketEncoder<PacketEncoderC
             int height = hmapUpdate >> 8;
             index.setHeight(x, z, height);
         }
-        // apply the update
-        for (int i = 0; i < packet.localAddresses.length; i++) {
-            BlockPos pos = cube.localAddressToBlockPos(packet.localAddresses[i]);
-            worldClient
-                .invalidateBlockReceiveRegion(pos.getX(), pos.getY(), pos.getZ(), pos.getX(), pos.getY(), pos.getZ());
-            worldClient.setBlock(pos.getX(), pos.getY(), pos.getZ(), packet.blocks[i], packet.blockMetas[i], 3);
+
+        for (S23PacketBlockChange update : packet.updates) {
+            update.processPacket(Minecraft.getMinecraft().thePlayer.sendQueue);
         }
     }
 }

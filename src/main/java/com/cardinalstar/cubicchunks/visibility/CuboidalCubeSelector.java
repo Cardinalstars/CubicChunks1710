@@ -32,6 +32,10 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 @ParametersAreNonnullByDefault
 public class CuboidalCubeSelector extends CubeSelector {
 
+    public static final CuboidalCubeSelector INSTANCE = new CuboidalCubeSelector();
+
+    private CuboidalCubeSelector() {}
+
     @Override
     public void forAllVisibleFrom(CubePos cubePos, int horizontalViewDistance, int verticalViewDistance,
         Consumer<CubePos> consumer) {

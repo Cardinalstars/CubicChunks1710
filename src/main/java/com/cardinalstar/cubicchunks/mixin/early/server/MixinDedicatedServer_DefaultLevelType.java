@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
-import com.cardinalstar.cubicchunks.world.type.VanillaCubicWorldType;
+import com.cardinalstar.cubicchunks.api.worldtype.VanillaCubicWorldType;
 
 @Mixin(DedicatedServer.class)
 public class MixinDedicatedServer_DefaultLevelType {

@@ -23,6 +23,7 @@ package com.cardinalstar.cubicchunks.mixin.early.common;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 
@@ -68,6 +69,9 @@ public abstract class MixinWorld_Tick implements ICubicWorld {
         require = 1)
     private boolean canUpdateEntity(World _this, int startBlockX, int oldStartBlockY, int startBlockZ, int endBlockX,
         int oldEndBlockY, int endBlockZ, @Local(argsOnly = true) Entity entity) {
+
+        // Prevent player rubberbanding
+        if (entity instanceof EntityPlayer) return true;
 
         int entityPosY = MathHelper.floor_double(entity.posY);
         int entityPosX = MathHelper.floor_double(entity.posX);

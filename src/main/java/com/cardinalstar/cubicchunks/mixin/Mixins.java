@@ -68,6 +68,20 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.vanillaclient.MixinS01PacketJoinGame")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_OVERWORLD_GENERATOR(new MixinBuilder("Modify overworld chunk generator")
+        .addCommonMixins("common.worldgen.MixinChunkProviderGenerate")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+    MIXIN_EBS(new MixinBuilder("Add simple cache to ExtendedBlockStorage.getBlockByExtId")
+        .addCommonMixins("common.MixinExtendedBlockStorage")
+        .setPhase(Phase.EARLY)
+        .addExcludedMod(Mods.NotEnoughIDs)
+        .addExcludedMod(Mods.ChunkAPI)
+        .setApplyIf(() -> true)),
+    ACCESSOR_S23(new MixinBuilder("Accessors for X/Y/Z fields for S23PacketBlockChange")
+        .addCommonMixins("common.AccessorS23PacketBlockChange")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
 
     // CHUNK
     MIXIN_CHUNK_COLUMN(
@@ -160,6 +174,10 @@ public enum Mixins implements IMixins {
         .setApplyIf(() -> true)),
     MIXIN_PATH_FINDER(
         new MixinBuilder("Fixing mobs walking off into chasms below y = 0").addCommonMixins("common.MixinPathFinder")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
+    MIXIN_ENTITY_BRIGHTNESS(
+        new MixinBuilder("Fix Entity.getBrightness").addCommonMixins("common.MixinEntity_Brightness")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
 
@@ -261,7 +279,18 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Changing default level in servers with this mod installed to be VanillaCubic.")
             .addServerMixins("server.MixinDedicatedServer_DefaultLevelType")
             .setPhase(Phase.EARLY)
-            .setApplyIf(() -> true));
+            .setApplyIf(() -> true)),
+
+    // =============================================================
+    // Mod Mixins
+    // =============================================================
+    MIXIN_COORD_PACKER(new MixinBuilder("Overwrite GTNHLib CoordinatePacker algorithm with a CC-compatible one")
+        .addCommonMixins("common.MixinCoordinatePacker")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+
+    //
+    ;
 
     private final MixinBuilder builder;
 

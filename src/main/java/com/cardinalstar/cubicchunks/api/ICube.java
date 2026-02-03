@@ -38,14 +38,16 @@ import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
-import com.cardinalstar.cubicchunks.server.chunkio.CubeLoaderServer;
+import org.jetbrains.annotations.NotNull;
+
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
 @ParametersAreNonnullByDefault
-public interface ICube extends XYZAddressable {
+public interface ICube extends XYZAddressable, MetaContainer {
 
     /**
      * Side length of a cube
@@ -216,7 +218,7 @@ public interface ICube extends XYZAddressable {
 
     /**
      * Check whether this cube was populated, i.e. if this cube was passed as argument to
-     * {@link ICubeGenerator#populate(ICube)}. Check there for more information regarding
+     * {@link IWorldGenerator#populate(ICube)}. Check there for more information regarding
      * population.
      *
      * @return {@code true} if this cube has been populated, {@code false} otherwise
@@ -225,7 +227,7 @@ public interface ICube extends XYZAddressable {
 
     /**
      * Check whether this cube was fully populated, i.e. if any cube potentially writing to this cube was passed as an
-     * argument to {@link ICubeGenerator#populate(ICube)}. Check there for more
+     * argument to {@link IWorldGenerator#populate(ICube)}. Check there for more
      * information regarding population
      *
      * @return {@code true} if this cube has been populated, {@code false} otherwise
@@ -246,17 +248,17 @@ public interface ICube extends XYZAddressable {
      */
     boolean isInitialLightingDone();
 
-    default CubeLoaderServer.CubeInitLevel getInitLevel() {
-        if (isPopulated() && isInitialLightingDone() && isSurfaceTracked()) {
-            return CubeLoaderServer.CubeInitLevel.Lit;
-        } else if (isPopulated()) {
-            return CubeLoaderServer.CubeInitLevel.Populated;
+    default CubeInitLevel getInitLevel() {
+        if (isFullyPopulated() && isInitialLightingDone() && isSurfaceTracked()) {
+            return CubeInitLevel.Lit;
+        } else if (isFullyPopulated()) {
+            return CubeInitLevel.Populated;
         } else {
-            return CubeLoaderServer.CubeInitLevel.Generated;
+            return CubeInitLevel.Generated;
         }
     }
 
-    default boolean isInitializedToLevel(CubeLoaderServer.CubeInitLevel initLevel) {
+    default boolean isInitializedToLevel(CubeInitLevel initLevel) {
         return getInitLevel().ordinal() >= initLevel.ordinal();
     }
 
@@ -264,35 +266,20 @@ public interface ICube extends XYZAddressable {
 
     boolean hasLightUpdates();
 
+    @NotNull
     BiomeGenBase getBiome(int x, int y, int z);
 
     /**
      * Set biome at a cube-local 4x4x4 block segment.
      *
-     * @param localBiomeX cube-local X coordinate. One unit is 4 blocks
-     * @param localBiomeY cube-local Y coordinate. One unit is 4 blocks
-     * @param localBiomeZ cube-local Z coordinate. One unit is 4 blocks
-     * @param biome       biome at the given cube coordinates
+     * @param x     cube-local block X coordinate
+     * @param y     cube-local block Y coordinate
+     * @param z     cube-local block Z coordinate
+     * @param biome The biome at the given cube coordinates, or null to defer to the column
      */
-    void setBiome(int localBiomeX, int localBiomeY, int localBiomeZ, BiomeGenBase biome);
+    void setBiome(int x, int y, int z, BiomeGenBase biome);
 
-    /**
-     * Set biome at a cube-local 2x2 block column.
-     *
-     * @param localBiomeX cube-local X coordinate. One unit is 2 blocks
-     * @param localBiomeZ cube-local Z coordinate. One unit is 2 blocks
-     * @param biome       biome at the given cube coordinates
-     * @deprecated Due to changes in Minecraft 1.15.x, biome storage will be changed to 1 biome per 4x4x4 blocks. Use
-     *             {@link #setBiome(int, int, int, BiomeGenBase)}
-     */
-    @Deprecated
-    default void setBiome(int localBiomeX, int localBiomeZ, BiomeGenBase biome) {
-        for (int biomeY = 0; biomeY < 4; biomeY++) {
-            setBiome(localBiomeX >> 1, biomeY, localBiomeZ >> 1, biome);
-        }
-    }
-
-    public BlockPos localAddressToBlockPos(int localAddress);
+    BlockPos localAddressToBlockPos(int localAddress);
 
     /**
      * Returns a set of reasons this cube is forced to remain loaded if it's forced to remain loaded,
