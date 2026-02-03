@@ -20,21 +20,21 @@
  */
 package com.cardinalstar.cubicchunks.api.world;
 
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.cardinalstar.cubicchunks.api.IntRange;
-import com.cardinalstar.cubicchunks.api.worldgen.ICubeGenerator;
+import com.cardinalstar.cubicchunks.api.worldgen.IWorldGenerator;
 
 @ParametersAreNonnullByDefault
 public interface ICubicWorldType {
 
-    // TODO: Make it Nonnull. VanillaCubic uses null
-    @Nullable
-    ICubeGenerator createCubeGenerator(World world);
+    @NotNull
+    IWorldGenerator createCubeGenerator(World world);
 
     IntRange calculateGenerationHeightRange(WorldServer world);
 

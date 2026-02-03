@@ -1,6 +1,7 @@
 package com.cardinalstar.cubicchunks.network;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,6 +15,7 @@ import net.minecraft.world.ChunkCoordIntPair;
 import com.cardinalstar.cubicchunks.util.CubePos;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class CCPacketBuffer extends PacketBuffer {
 
@@ -131,10 +133,65 @@ public class CCPacketBuffer extends PacketBuffer {
         writeBytes(array);
     }
 
+    public void writeByteArray(byte[] array, int offset, int length) {
+        writeVarIntToBuffer(length);
+
+        writeBytes(array, offset, length);
+    }
+
     public byte[] readByteArray() {
         byte[] out = new byte[readVarIntFromBuffer()];
 
         readBytes(out);
+
+        return out;
+    }
+
+    public byte[] readByteArray(byte[] cached) {
+        int len = readVarIntFromBuffer();
+        byte[] out = len < cached.length ? cached : new byte[len];
+
+        readBytes(out, 0, len);
+
+        return out;
+    }
+
+    public void writeByteBuf(ByteBuf buffer) {
+        byte[] data = new byte[buffer.readableBytes()];
+        buffer.readBytes(data);
+
+        writeByteArray(data);
+    }
+
+    public ByteBuf readByteBuf() {
+        return Unpooled.wrappedBuffer(readByteArray());
+    }
+
+    public void writeByteBuffer(ByteBuffer buffer) {
+        byte[] data = new byte[buffer.remaining()];
+        buffer.get(data);
+
+        writeByteArray(data);
+    }
+
+    public ByteBuffer readByteBuffer() {
+        return ByteBuffer.wrap(readByteArray());
+    }
+
+    public void writeIntArray(int[] array) {
+        writeVarIntToBuffer(array.length);
+
+        for (int x : array) {
+            writeVarIntToBuffer(x);
+        }
+    }
+
+    public int[] readIntArray() {
+        final int[] out = new int[readVarIntFromBuffer()];
+
+        for (int i = 0; i < out.length; i++) {
+            out[i] = readVarIntFromBuffer();
+        }
 
         return out;
     }

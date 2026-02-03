@@ -1,35 +1,23 @@
 package com.cardinalstar.cubicchunks.world.worldgen;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-
-import javax.annotation.Nonnull;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.biome.BiomeGenBase;
 
-import org.joml.Vector3i;
-import org.joml.Vector3ic;
-
-import com.cardinalstar.cubicchunks.api.XYZAddressable;
-import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.api.util.Box;
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.util.XSTR;
-import com.cardinalstar.cubicchunks.worldgen.VanillaCompatibilityGenerator;
-import com.gtnewhorizon.gtnhlib.util.CoordinatePacker;
+import com.cardinalstar.cubicchunks.worldgen.VanillaWorldGenerator;
+import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
+import com.gtnewhorizon.gtnhlib.util.data.LazyBlock;
 
-import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
-
-public class MapGenCavesCubic
-    extends SeedBasedCubicPopulator<MapGenCavesCubic.CaveSeed, VanillaCompatibilityGenerator> {
+public class MapGenCavesCubic extends FeatureCubicGenerator<MapGenCavesCubic.CaveSeed, VanillaWorldGenerator> {
 
     private final XSTR caveRandom = new XSTR(0);
 
@@ -38,7 +26,7 @@ public class MapGenCavesCubic
     }
 
     @Override
-    protected void getSeeds(Random rng, int cubeX, int cubeY, int cubeZ, List<CaveSeed> seeds) {
+    protected void getSeedsImpl(Random rng, int cubeX, int cubeY, int cubeZ, List<CaveSeed> seeds) {
         if (rng.nextInt(4) != 0) return;
 
         double offsetX = cubeX * 16 + rng.nextInt(16);
@@ -79,35 +67,37 @@ public class MapGenCavesCubic
     }
 
     @Override
-    protected void generate(Random rng, CaveSeed caveSeed, WorldView worldView) {
-        generateCave(caveSeed, worldView);
+    protected int getSeedX(CaveSeed caveSeed) {
+        return (int) caveSeed.offsetX;
     }
 
-    protected void generateCave(CaveSeed caveSeed, WorldView worldView) {
+    @Override
+    protected int getSeedY(CaveSeed caveSeed) {
+        return (int) caveSeed.offsetY;
+    }
+
+    @Override
+    protected int getSeedZ(CaveSeed caveSeed) {
+        return (int) caveSeed.offsetZ;
+    }
+
+    @Override
+    protected Collection<CaveSeed> getSeedBranches(CaveSeed caveSeed) {
+        return caveSeed.branches;
+    }
+
+    @Override
+    protected boolean shouldGenerate(WorldView worldView, WorldgenFeature<CaveSeed> feature) {
         Box box = worldView.getBounds();
 
-        if (!scanOuterBoxForWater(
+        return !scanOuterBoxForWater(
             worldView,
             box.getX1(),
             box.getX2(),
             box.getY1(),
             box.getY2(),
             box.getZ1(),
-            box.getZ2())) {
-            CubePos pos = worldView.getCube();
-
-            for (Vector3ic v : caveSeed.getDigs(pos.getX(), pos.getY(), pos.getZ())) {
-                int x = v.x() + box.getX1();
-                int y = v.y() + box.getY1();
-                int z = v.z() + box.getZ1();
-
-                digBlock(worldView, x, y, z);
-            }
-        }
-
-        for (CaveSeed branch : caveSeed.branches) {
-            generateCave(branch, worldView);
-        }
+            box.getZ2());
     }
 
     private static boolean scanOuterBoxForWater(WorldView worldView, int xmin, int xmax, int zmin, int zmax, int ymax,
@@ -149,18 +139,9 @@ public class MapGenCavesCubic
         return biome == BiomeGenBase.desert;
     }
 
-    /**
-     * Digs out the current block, default implementation removes stone, filler, and top block
-     * Sets the block to lava if y is less then 10, and air other wise.
-     * If setting to air, it also checks to see if we've broken the surface and if so
-     * tries to make the floor the biome's top block
-     *
-     * @param worldView The world view
-     * @param x         global X position
-     * @param y         global Y position
-     * @param z         global Z position
-     */
-    protected void digBlock(WorldView worldView, int x, int y, int z) {
+    @Override
+    protected void place(WorldView worldView, WorldgenFeature<CaveSeed> feature, int x, int y, int z,
+        ImmutableBlockMeta bm) {
         BiomeGenBase biome = worldView.getBiomeGenForBlock(x, y, z);
         Block block = worldView.getBlock(x, y, z);
 
@@ -168,15 +149,14 @@ public class MapGenCavesCubic
         Block filler = (isExceptionBiome(biome) ? Blocks.dirt : biome.fillerBlock);
 
         if (block == Blocks.stone || block == Blocks.bedrock || block == filler || block == top) {
-            if (false) {
-                worldView.setBlock(x, y, z, Blocks.lava, 0);
-            } else {
-                worldView.setBlock(x, y, z, Blocks.air, 0);
-            }
+            worldView.setBlock(x, y, z, bm);
         }
     }
 
-    protected void walkCave(CaveSeed cave) {
+    private static final LazyBlock AIR = new LazyBlock(Mods.Minecraft, () -> Blocks.air, 0);
+
+    @Override
+    protected void generateSeed(CaveSeed cave, WorldgenFeature<CaveSeed> feature) {
         long seed = cave.seed;
         double offsetX = cave.offsetX;
         double offsetY = cave.offsetY;
@@ -287,7 +267,7 @@ public class MapGenCavesCubic
 
                                 if (ellipseY > -0.7D
                                     && ellipseX * ellipseX + ellipseY * ellipseY + ellipseZ * ellipseZ < 1.0D) {
-                                    cave.dig(globalX, globalY, globalZ);
+                                    feature.setBlock(globalX, globalY, globalZ, AIR);
                                 }
                             }
                         }
@@ -301,7 +281,7 @@ public class MapGenCavesCubic
         }
     }
 
-    protected class CaveSeed {
+    protected static class CaveSeed {
 
         private final long seed;
         private final double offsetX;
@@ -313,10 +293,6 @@ public class MapGenCavesCubic
         private final int stepIndex;
         private final int stepCount;
         private final double height;
-
-        private final XYZMap<DigSet> pendingDigs = new XYZMap<>();
-
-        private final Box.Mutable aabb;
 
         private final List<CaveSeed> branches = new ArrayList<>();
 
@@ -332,96 +308,6 @@ public class MapGenCavesCubic
             this.stepIndex = stepIndex;
             this.stepCount = stepCount;
             this.height = height;
-
-            aabb = new Box.Mutable(
-                (int) offsetX,
-                (int) offsetY,
-                (int) offsetZ,
-                (int) offsetX,
-                (int) offsetY,
-                (int) offsetZ);
-
-            walkCave(this);
-        }
-
-        public void dig(int x, int y, int z) {
-            aabb.expand(x, y, z);
-
-            DigSet digs = pendingDigs.get(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z));
-
-            if (digs == null) {
-                pendingDigs.put(digs = new DigSet(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z)));
-            }
-
-            digs.dig(Coords.blockToLocal(x), Coords.blockToLocal(y), Coords.blockToLocal(z));
-        }
-
-        public boolean affects(int cubeX, int cubeY, int cubeZ) {
-            return aabb.containsCube(cubeX, cubeY, cubeZ);
-        }
-
-        public Iterable<Vector3ic> getDigs(int cubeX, int cubeY, int cubeZ) {
-            DigSet digs = pendingDigs.get(cubeX, cubeY, cubeZ);
-
-            return digs == null ? Collections.emptyList() : digs;
-        }
-    }
-
-    protected static class DigSet implements Iterable<Vector3ic>, XYZAddressable {
-
-        private final int x, y, z;
-
-        private final LongLinkedOpenHashSet digs = new LongLinkedOpenHashSet();
-
-        public DigSet(int x, int y, int z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        @Override
-        public int getX() {
-            return x;
-        }
-
-        @Override
-        public int getY() {
-            return y;
-        }
-
-        @Override
-        public int getZ() {
-            return z;
-        }
-
-        public void dig(int x, int y, int z) {
-            digs.add(CoordinatePacker.pack(x, y, z));
-        }
-
-        @Override
-        @Nonnull
-        public Iterator<Vector3ic> iterator() {
-            return new Iterator<>() {
-
-                private final LongIterator iter = digs.iterator();
-                private final Vector3i v = new Vector3i();
-
-                @Override
-                public boolean hasNext() {
-                    return iter.hasNext();
-                }
-
-                @Override
-                public Vector3ic next() {
-                    long k = iter.nextLong();
-
-                    v.x = CoordinatePacker.unpackX(k);
-                    v.y = CoordinatePacker.unpackY(k);
-                    v.z = CoordinatePacker.unpackZ(k);
-
-                    return v;
-                }
-            };
         }
     }
 }

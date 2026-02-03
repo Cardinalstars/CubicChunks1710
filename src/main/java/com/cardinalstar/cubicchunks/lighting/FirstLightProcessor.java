@@ -32,10 +32,13 @@ import net.minecraft.world.IBlockAccess;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.joml.Vector3ic;
 
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
+import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.util.MathUtil;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
@@ -72,13 +75,21 @@ public class FirstLightProcessor {
         BlockPos maxPos = cube.getCoords()
             .getMaxBlockPos();
 
-        Iterable<BlockPos> allBlocks = BlockPos.getAllInBox(minPos.x, minPos.y, minPos.z, maxPos.x, maxPos.y, maxPos.z);
-        for (BlockPos pos : allBlocks) {
-            if (cube.getBlock(pos.x, pos.y, pos.z)
-                .getLightValue(cube.getWorld(), pos.x, pos.y, pos.z) > 0) {
-                lm.checkLightFor(EnumSkyBlock.Block, pos.x, pos.y, pos.z);
+        ICubeLoader loader = ((ICubicWorldInternal.Server) cube.getWorld()).getCubeCache()
+            .getCubeLoader();
+
+        loader.cacheCubes(cube.getX(), cube.getY(), cube.getZ(), 1, 1, 1);
+
+        Box allBlocks = new Box(minPos.x, minPos.y, minPos.z, maxPos.x, maxPos.y, maxPos.z);
+        for (Vector3ic v : allBlocks) {
+            if (cube.getBlock(v.x(), v.y(), v.z())
+                .getLightValue(cube.getWorld(), v.x(), v.y(), v.z()) > 0) {
+                lm.checkLightFor(EnumSkyBlock.Block, v.x(), v.y(), v.z());
             }
         }
+
+        loader.uncacheCubes();
+
         if (cube.getWorld().provider.hasNoSky) {
             return;
         }

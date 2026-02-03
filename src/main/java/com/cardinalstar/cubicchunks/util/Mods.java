@@ -62,6 +62,7 @@ public enum Mods implements IMod, ITargetMod {
     CatWalks(ModIDs.CAT_WALKS),
     Chisel(ModIDs.CHISEL),
     ChiselTones(ModIDs.CHISEL_TONES),
+    ChunkAPI(ModIDs.CHUNK_API, "com.falsepattern.chunk.internal.core.CoreLoadingPlugin"),
     CodeChickenCore(ModIDs.CODE_CHICKEN_CORE),
     Computronics(ModIDs.COMPUTRONICS),
     Controlling(ModIDs.CONTROLLING),
@@ -85,6 +86,7 @@ public enum Mods implements IMod, ITargetMod {
     EnderIO(ModIDs.ENDER_I_O),
     EnderStorage(ModIDs.ENDER_STORAGE),
     EnderZoo(ModIDs.ENDER_ZOO),
+    EndlessIDs(ModIDs.ENDLESS_IDS, "com.falsepattern.endlessids.asm.EndlessIDsCore"),
     EnhancedLootBags(ModIDs.ENHANCED_LOOT_BAGS),
     EtFuturumRequiem(ModIDs.ET_FUTURUM_REQUIEM),
     EternalSingularity(ModIDs.ETERNAL_SINGULARITY),
@@ -159,7 +161,7 @@ public enum Mods implements IMod, ITargetMod {
     NewHorizonsCoreMod(ModIDs.NEW_HORIZONS_CORE_MOD),
     NodalMechanics(ModIDs.NODAL_MECHANICS),
     NotEnoughEnergistics(ModIDs.NOT_ENOUGH_ENERGISTICS),
-    NotEnoughIDs(ModIDs.NOT_ENOUGH_I_DS),
+    NotEnoughIDs(ModIDs.NOT_ENOUGH_I_DS, "com.gtnewhorizons.neid.core.NEIDCore"),
     NotEnoughItems(ModIDs.NOT_ENOUGH_ITEMS),
     IC2NuclearControl(ModIDs.I_C2_NUCLEAR_CONTROL),
     Nutrition(ModIDs.NUTRITION),
@@ -358,6 +360,7 @@ public enum Mods implements IMod, ITargetMod {
         public static final String CHISEL = "chisel",
             CHISEL_API = "ChiselAPI";
         public static final String CHISEL_TONES = "chiseltones";
+        public static final String CHUNK_API = "chunkapi";
         public static final String CODE_CHICKEN_CORE = "CodeChickenCore";
         public static final String COMPUTRONICS = "computronics";
         public static final String CONTROLLING = "controlling";
@@ -381,6 +384,7 @@ public enum Mods implements IMod, ITargetMod {
         public static final String ENDER_I_O = "EnderIO";
         public static final String ENDER_STORAGE = "EnderStorage";
         public static final String ENDER_ZOO = "EnderZoo";
+        public static final String ENDLESS_IDS = "endlessids";
         public static final String ENHANCED_LOOT_BAGS = "enhancedlootbags";
         public static final String ET_FUTURUM_REQUIEM = "etfuturum";
         public static final String ETERNAL_SINGULARITY = "eternalsingularity";

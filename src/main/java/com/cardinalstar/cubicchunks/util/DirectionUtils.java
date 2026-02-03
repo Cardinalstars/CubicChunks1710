@@ -4,7 +4,7 @@ import net.minecraft.util.EnumFacing;
 
 import org.joml.Vector3i;
 
-import com.gtnewhorizon.gtnhlib.client.renderer.quad.Axis;
+import com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.properties.ModelQuadFacing.Axis;
 
 public class DirectionUtils {
 

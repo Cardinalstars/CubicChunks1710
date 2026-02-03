@@ -26,6 +26,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
 import com.cardinalstar.cubicchunks.client.CubeProviderClient;
+import com.cardinalstar.cubicchunks.modcompat.angelica.AngelicaInterop;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.github.bsideup.jabel.Desugar;
 
@@ -78,10 +79,15 @@ public class PacketEncoderColumn extends CCPacketEncoder<PacketEncoderColumn.Pac
         ICubicWorld worldClient = (ICubicWorld) world;
         CubeProviderClient cubeCache = (CubeProviderClient) worldClient.getCubeCache();
 
-        Chunk column = cubeCache.loadChunk(packet.chunkX, packet.chunkZ);
+        cubeCache.loadChunk(packet.chunkX, packet.chunkZ, column -> {
+            ByteBuf buf = Unpooled.wrappedBuffer(packet.data);
 
-        ByteBuf buf = Unpooled.wrappedBuffer(packet.data);
+            WorldEncoder.decodeColumn(new CCPacketBuffer(buf), column);
+        });
 
-        WorldEncoder.decodeColumn(new CCPacketBuffer(buf), column);
+        if (AngelicaInterop.hasDelegate()) {
+            AngelicaInterop.getDelegate()
+                .onColumnLoaded(packet.chunkX, packet.chunkZ);
+        }
     }
 }

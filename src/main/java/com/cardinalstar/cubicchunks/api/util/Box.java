@@ -33,6 +33,8 @@ import com.google.common.collect.AbstractIterator;
 @ParametersAreNonnullByDefault
 public class Box implements Iterable<Vector3ic> {
 
+    public static final Box CUBE = new Box(0, 0, 0, 15, 15, 15);
+
     protected int x1, y1, z1;
     protected int x2, y2, z2;
 
@@ -43,6 +45,10 @@ public class Box implements Iterable<Vector3ic> {
         this.x2 = Math.max(x1, x2);
         this.y2 = Math.max(y1, y2);
         this.z2 = Math.max(z1, z2);
+    }
+
+    public Box(int x, int y, int z, int radius) {
+        this(x - radius, y - radius, z - radius, x + radius, y + radius, z + radius);
     }
 
     public int getX1() {
@@ -69,6 +75,18 @@ public class Box implements Iterable<Vector3ic> {
         return z2;
     }
 
+    public int getSizeX() {
+        return x2 - x1;
+    }
+
+    public int getSizeY() {
+        return y2 - y1;
+    }
+
+    public int getSizeZ() {
+        return z2 - z1;
+    }
+
     public boolean contains(Box other) {
         return x1 <= other.x1 && x2 >= other.x2 && y1 <= other.y1 && y2 >= other.y2 && z1 <= other.z1 && z2 >= other.z2;
     }
@@ -77,8 +95,8 @@ public class Box implements Iterable<Vector3ic> {
         return x1 <= xmin && x2 >= xmax && y1 <= ymin && y2 >= ymax && z1 <= zmin && z2 >= zmax;
     }
 
-    public boolean containsCube(int cubeX, int cubeY, int cubeZ) {
-        return contains(cubeX * 16, cubeY * 16, cubeZ * 16, cubeX * 16 + 15, cubeY * 16 + 15, cubeZ * 16 + 15);
+    public boolean contains(int x, int y, int z) {
+        return x1 <= x && x <= x2 && y1 <= y && y <= y2 && z1 <= z && z <= z2;
     }
 
     public void forEachPoint(XYZFunction function) {
@@ -241,6 +259,6 @@ public class Box implements Iterable<Vector3ic> {
     }
 
     public static Box horizontalChunkSlice(int startY, int heightY) {
-        return new Box(0, startY, 0, 16, startY + heightY, 16);
+        return new Box(0, startY, 0, 15, startY + heightY, 15);
     }
 }
