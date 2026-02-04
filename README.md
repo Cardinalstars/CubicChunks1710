@@ -2,8 +2,9 @@
 
 A port of https://github.com/OpenCubicChunks/CubicChunks targeting 1.7.10.
 
-Huge thanks to contributors 
+EXPECT MANY BUGS WITH CURRENT BUILDS, AND NO COMPAT TESTING HAS BEEN DONE YET.
 
+Huge thanks to contributors:
 RecursivePineapple
 DarkShadow44
 
