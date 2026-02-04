@@ -54,8 +54,8 @@ public abstract class MixinChunk_Cubes implements IColumn {
     private ExtendedBlockStorage[] storageArrays;
     /*
      * WARNING: WHEN YOU RENAME ANY OF THESE 3 FIELDS RENAME CORRESPONDING
-     * FIELDS IN "cubicchunks.asm.mixin.core.common.MixinChunk_Cubes" and
-     * "cubicchunks.asm.mixin.core.common.MixinChunk_Columns".
+     * FIELDS IN "cubicchunks.mixin.early.common.MixinChunk_Cubes" and
+     * "cubicchunks.mixin.early.common.MixinChunk_Columns".
      */
     private CubeMap cubeMap;
     private IHeightMap opacityIndex;

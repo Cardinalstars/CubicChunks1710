@@ -154,7 +154,6 @@ public class SpawnCubes implements ITicket {
             }
         });
         CubicChunks.LOGGER.info("Preparing spawn area: 100%");
-
     }
 
     private void forEachCube(int spawnCubeX, int spawnCubeY, int spawnCubeZ, int r, int ry, XYZConsumer action) {

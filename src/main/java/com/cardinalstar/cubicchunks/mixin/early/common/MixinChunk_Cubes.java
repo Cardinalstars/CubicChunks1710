@@ -135,7 +135,7 @@ public abstract class MixinChunk_Cubes {
     /*
      * WARNING: WHEN YOU RENAME ANY OF THESE 3 FIELDS RENAME CORRESPONDING
      * FIELDS IN "cubicchunks.asm.mixin.core.client.MixinChunk_Cubes" and
-     * "cubicchunks.asm.mixin.core.common.MixinChunk_Columns".
+     * "cubicchunks.mixin.early.common.MixinChunk_Columns".
      */
     @Unique
     private CubeMap cubeMap;
