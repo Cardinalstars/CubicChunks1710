@@ -60,8 +60,8 @@ public abstract class MixinChunk_Column {
 
     /*
      * WARNING: WHEN YOU RENAME ANY OF THESE 3 FIELDS RENAME CORRESPONDING
-     * FIELDS IN "cubicchunks.asm.mixin.core.common.MixinChunk_Cubes" and
-     * "cubicchunks.asm.mixin.core.client.MixinChunk_Cubes".
+     * FIELDS IN "cubicchunks.mixin.early.common.MixinChunk_Cubes" and
+     * "cubicchunks.mixin.early.client.MixinChunk_Columns".
      */
     private CubeMap cubeMap;
     private IHeightMap opacityIndex;

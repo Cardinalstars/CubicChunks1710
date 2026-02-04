@@ -95,11 +95,17 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
     }
 
     public Chunk loadChunk(int cubeX, int cubeZ, @Nullable Consumer<Chunk> init) {
-        Chunk column = new Chunk((World) this.world, cubeX, cubeZ); // make a new one
-        ((IColumnInternal) column).setColumn(true);
+        long packedCoords = ChunkCoordIntPair.chunkXZ2Int(cubeX, cubeZ);
 
-        ((IChunkProviderClient) this).getChunkMapping()
-            .add(ChunkCoordIntPair.chunkXZ2Int(cubeX, cubeZ), column);
+        Chunk column = (Chunk) ((IChunkProviderClient) this).getChunkMapping()
+            .getValueByKey(packedCoords);
+        if (column == null) {
+            column = new Chunk((World) this.world, cubeX, cubeZ); // make a new one
+            ((IColumnInternal) column).setColumn(true);
+
+            ((IChunkProviderClient) this).getChunkMapping()
+                .add(packedCoords, column);
+        }
 
         if (init != null) init.accept(column);
 
