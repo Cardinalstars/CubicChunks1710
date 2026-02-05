@@ -414,11 +414,6 @@ public abstract class MixinChunk_Cubes {
         }
     }
 
-    // private void checkSkylightNeighborHeight(int x, int zPosition, int maxValue) - shouldn't be used by anyone
-
-    // private void updateSkylightNeighborHeight(int x, int zPosition, int startY, int endY) - shouldn't be used by
-    // anyone
-
     // ==============================================
     // relightBlock
     // ==============================================
@@ -447,7 +442,7 @@ public abstract class MixinChunk_Cubes {
         if (isColumn && ((IColumn) this).getCube(blockToCube(localY))
             .isInitialLightingDone()) {
             if (oldHeightValue == localY + 1) { // oldHeightValue is the previous block Y above the top block, so this
-                                                // is the "removing to block" case
+                                                // is the "removing a block" case
                 getWorldObj().getLightingManager()
                     .doOnBlockSetLightUpdates(
                         (Chunk) (Object) this,
@@ -457,7 +452,7 @@ public abstract class MixinChunk_Cubes {
                         localZ);
             } else {
                 getWorldObj().getLightingManager()
-                    .doOnBlockSetLightUpdates((Chunk) (Object) this, localX, oldHeightValue, localY, localZ);
+                    .doOnBlockSetLightUpdates((Chunk) (Object) this, localX, oldHeightValue, localY + 1, localZ);
             }
         }
     }
@@ -501,14 +496,6 @@ public abstract class MixinChunk_Cubes {
     // getBlock
     // ==============================================
 
-    // This check isn't made in 1.7.10
-    // @ModifyConstant(method = "getBlock(III)Lnet/minecraft/block/Block;",
-    // constant = @Constant(expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO),
-    // require = 1)
-    // private int getBlockState_getMinHeight(int zero) {
-    // return isColumn ? Integer.MIN_VALUE : getWorldObj().getMinHeight(); // this one is in block coords, max is in
-    // cube coords. Mojang logic.
-    // }
     @Redirect(
         method = "getBlock(III)Lnet/minecraft/block/Block;",
         at = @At(
@@ -576,7 +563,7 @@ public abstract class MixinChunk_Cubes {
         if (cube.isSurfaceTracked()) {
             opacityIndex.onOpacityChange(blockToLocal(x), y, blockToLocal(z), block.getLightOpacity());
             getWorldObj().getLightingManager()
-                .onHeightUpdate(x, y, z);
+                .onHeightUpdate(x + 16 * this.xPosition, y, z + 16 * this.zPosition);
         } else {
             stagingHeightMap.onOpacityChange(blockToLocal(x), y, blockToLocal(z), block.getLightOpacity());
         }
@@ -640,7 +627,7 @@ public abstract class MixinChunk_Cubes {
         if (cube.isSurfaceTracked()) {
             opacityIndex.onOpacityChange(blockToLocal(x), y, blockToLocal(z), block.getLightOpacity());
             getWorldObj().getLightingManager()
-                .onHeightUpdate(x, y, z);
+                .onHeightUpdate(x + 16 * this.xPosition, y, z + 16 * this.zPosition);
         } else {
             stagingHeightMap.onOpacityChange(blockToLocal(x), y, blockToLocal(z), block.getLightOpacity());
         }
@@ -655,32 +642,6 @@ public abstract class MixinChunk_Cubes {
     private ExtendedBlockStorage setBlockMetadata_CubicChunks_EBSGetRedirect(ExtendedBlockStorage[] array, int index) {
         return getEBS_CubicChunks(index);
     }
-
-    // TODO Not sure how these got here.
-
-    // @Redirect(method = "setBlockMetadata", at = @At(
-    // value = "FIELD",
-    // target =
-    // "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-    // args = "array=set"
-    // ))
-    // private void setBlockMetadata_CubicChunks_EBSSetRedirect(ExtendedBlockStorage[] array, int index,
-    // ExtendedBlockStorage val) {
-    // setEBS_CubicChunks(index, val);
-    // }
-    //
-    // @Inject(method = "setBlockMetadata", at = @At(
-    // value = "FIELD",
-    // target =
-    // "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;",
-    // args = "array=set"
-    // ), cancellable = true)
-    // private void setBlockMetadata_CubicChunks_EBSSetInject(int x, int y, int z, Block block, int meta,
-    // CallbackInfoReturnable<Boolean> cir) {
-    // if (isColumn && getWorldObj().getCubeCache().getLoadedCube(CubePos.fromBlockCoords(x, y, z)) == null) {
-    // cir.setReturnValue(null);
-    // }
-    // }
 
     @Redirect(
         method = "setBlockMetadata",

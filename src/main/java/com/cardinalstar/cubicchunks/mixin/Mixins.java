@@ -43,7 +43,7 @@ public enum Mixins implements IMixins {
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
     MIXIN_WORLD_GEN_CANOPY_TREE(
-        new MixinBuilder("Allowing generation and growing of dark oak saplings above 256 adn below 0.")
+        new MixinBuilder("Allowing generation and growing of dark oak saplings above 256 and below 0.")
             .addCommonMixins("common.MixinWorldGenCanopyTree")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
@@ -64,7 +64,7 @@ public enum Mixins implements IMixins {
         new MixinBuilder("Allowing lilypads to stay above 256 adn below 0.").addCommonMixins("common.MixinBlockLilyPad")
             .setPhase(Phase.EARLY)
             .setApplyIf(() -> true)),
-    MIXIN_S01PACKET_JOIN_GAME(new MixinBuilder("Giving the packet info to initailize cubicWorlds for clients.")
+    MIXIN_S01PACKET_JOIN_GAME(new MixinBuilder("Giving the packet info to initialize cubicWorlds for clients.")
         .addCommonMixins("common.vanillaclient.MixinS01PacketJoinGame")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
@@ -82,6 +82,15 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.AccessorS23PacketBlockChange")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_S23_HEIGHTLIMITS(new MixinBuilder("Changing packet S23 for reading and writing ints to Y values")
+        .addCommonMixins("common.MixinS23PacketBlockChange")
+        .setPhase(Phase.LATE)
+        .addExcludedMod(Mods.ChunkAPI)
+        .setApplyIf(() -> true)),
+    MIXIN_BIOME_GEN_BASE(
+        new MixinBuilder("Removes bedrock for pure cubic worlds.").addCommonMixins("common.MixinBiomeGenBase")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
 
     // CHUNK
     MIXIN_CHUNK_COLUMN(
@@ -284,11 +293,16 @@ public enum Mixins implements IMixins {
     // =============================================================
     // Mod Mixins
     // =============================================================
-    MIXIN_COORD_PACKER(new MixinBuilder("Overwrite GTNHLib CoordinatePacker algorithm with a CC-compatible one")
-        .addCommonMixins("common.MixinCoordinatePacker")
+    MIXIN_COORD_PACKER_HODGE(new MixinBuilder("Overwrite GTNHLib CoordinatePacker algorithm with a CC-compatible one")
+        .addCommonMixins("mod.MixinCoordinatePacker")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-
+    MIXIN_COORD_PACKER_CHUNKAPI(
+        new MixinBuilder("Overwrite ChunkAPI CoordiantePacker algorithm with a CC-compatible one")
+            .addCommonMixins("mod.MixinBlockPosUtil")
+            .setPhase(Phase.LATE)
+            .addRequiredMod(Mods.ChunkAPI)
+            .setApplyIf(() -> true))
     //
     ;
 

@@ -80,8 +80,12 @@ class WorldEncoder {
     static void encodeCubes(CCPacketBuffer out, Collection<Cube> cubes) {
         final boolean capi = Mods.ChunkAPI.isModLoaded();
 
-        byte[] buffer = new byte[0]; // getBuffer(DataRegistryImpl.maxPacketSizeCubic());
-
+        byte[] buffer;
+        if (capi) {
+            buffer = getBuffer(DataRegistryImpl.maxPacketSizeCubic());
+        } else {
+            buffer = new byte[0];
+        }
         for (Cube cube : cubes) {
             ExtendedBlockStorage storage = cube.getStorage();
 
@@ -124,9 +128,9 @@ class WorldEncoder {
             cube.writeBiomeArray(out);
 
             if (!empty && capi) {
-                // int written = DataRegistryImpl.writeToBufferCubic(cube.getColumn(), storage, buffer);
+                int written = DataRegistryImpl.writeToBufferCubic(cube.getColumn(), storage, buffer);
 
-                // out.writeByteArray(buffer, 0, written);
+                out.writeByteArray(buffer, 0, written);
             }
         }
     }
@@ -147,7 +151,12 @@ class WorldEncoder {
 
         int[] oldHeights = new int[Cube.SIZE * Cube.SIZE];
 
-        byte[] buffer = new byte[0]; // getBuffer(DataRegistryImpl.maxPacketSizeCubic());
+        byte[] buffer;
+        if (capi) {
+            buffer = getBuffer(DataRegistryImpl.maxPacketSizeCubic());
+        } else {
+            buffer = new byte[0];
+        }
 
         for (int i = 0; i < cubes.size(); i++) {
             Cube cube = cubes.get(i);
@@ -226,7 +235,7 @@ class WorldEncoder {
 
             if (!empty && capi) {
                 try {
-                    // DataRegistryImpl.readFromBufferCubic(cube.getColumn(), storage, in.readByteArray(buffer));
+                    DataRegistryImpl.readFromBufferCubic(cube.getColumn(), storage, in.readByteArray(buffer));
                 } catch (Throwable t) {
                     CubicChunks.LOGGER
                         .error("Error decoding ChunkAPI data ({},{},{})", cube.getX(), cube.getY(), cube.getZ(), t);

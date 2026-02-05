@@ -53,14 +53,13 @@ public class WorldGenerators {
     }
 
     private static void initVanillaPopulation() {
-        // CUBIC_VANILLA.population()
-        // .addObject("biomes", new CaveBiomePopulator());
+        // CUBIC_VANILLA.population().addObject("biomes", new CaveBiomePopulator());
     }
 
     @Optional.Method(modid = Mods.ModIDs.ET_FUTURUM_REQUIEM)
     private static void initEFRPopulation() {
         CUBIC_VANILLA.population()
-            .addObject("low-deepslate", new DeepslateCubePopulator(), "requires:biomes");
+            .addObject("low-deepslate", new DeepslateCubePopulator() /* , "requires:biomes" */ );
     }
 
     private static final double CHOOSER_SCALE = 0.01;
