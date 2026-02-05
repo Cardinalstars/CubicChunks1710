@@ -29,21 +29,4 @@ public class MixinBiomeGenBase {
         }
         return original;
     }
-
-    // @Redirect(
-    // method = "genBiomeTerrain",
-    // at = @At(
-    // value = "INVOKE",
-    // target = "Ljava/util/Random;nextInt(I)I",
-    // args = "5",
-    // ordinal = 0
-    // ),
-    // require = 1
-    // )
-    // private int cubicChunks$redirectBedrockRandom(Random rand, int bound, @Local(argsOnly = true) World world) {
-    // if (world.getWorldInfo().getTerrainType() == VanillaCubicWorldType.INSTANCE) {
-    // return -1;
-    // }
-    // return rand.nextInt(bound);
-    // }
 }
