@@ -1,13 +1,14 @@
 package com.cardinalstar.cubicchunks.mixin.early.mod;
 
-import com.cardinalstar.cubicchunks.util.Coords;
-import com.falsepattern.chunk.internal.BlockPosUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
+import com.cardinalstar.cubicchunks.util.Coords;
+import com.falsepattern.chunk.internal.BlockPosUtil;
+
 @Mixin(BlockPosUtil.class)
-public class MixinBlockPosUtil
-{
+public class MixinBlockPosUtil {
+
     /**
      * @author Cardinalstar16
      * @reason Performance

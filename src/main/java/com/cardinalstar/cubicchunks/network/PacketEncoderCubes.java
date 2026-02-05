@@ -116,9 +116,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
         buffer.writeByteArray(packet.data);
 
-        buffer.writeList(
-            packet.tileEntityTags,
-            (buf2, list) -> buf2.writeList(list, CCPacketBuffer::writeCompoundTag));
+        buffer.writeList(packet.tileEntityTags, (buf2, list) -> buf2.writeList(list, CCPacketBuffer::writeCompoundTag));
     }
 
     @Override

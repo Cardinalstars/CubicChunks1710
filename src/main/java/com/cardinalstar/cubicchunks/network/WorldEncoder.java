@@ -81,12 +81,9 @@ class WorldEncoder {
         final boolean capi = Mods.ChunkAPI.isModLoaded();
 
         byte[] buffer;
-        if (capi)
-        {
+        if (capi) {
             buffer = getBuffer(DataRegistryImpl.maxPacketSizeCubic());
-        }
-        else
-        {
+        } else {
             buffer = new byte[0];
         }
         for (Cube cube : cubes) {
@@ -131,9 +128,9 @@ class WorldEncoder {
             cube.writeBiomeArray(out);
 
             if (!empty && capi) {
-                 int written = DataRegistryImpl.writeToBufferCubic(cube.getColumn(), storage, buffer);
+                int written = DataRegistryImpl.writeToBufferCubic(cube.getColumn(), storage, buffer);
 
-                 out.writeByteArray(buffer, 0, written);
+                out.writeByteArray(buffer, 0, written);
             }
         }
     }
@@ -155,12 +152,9 @@ class WorldEncoder {
         int[] oldHeights = new int[Cube.SIZE * Cube.SIZE];
 
         byte[] buffer;
-        if (capi)
-        {
+        if (capi) {
             buffer = getBuffer(DataRegistryImpl.maxPacketSizeCubic());
-        }
-        else
-        {
+        } else {
             buffer = new byte[0];
         }
 

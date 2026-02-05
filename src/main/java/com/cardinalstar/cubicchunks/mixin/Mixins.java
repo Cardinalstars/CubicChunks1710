@@ -4,7 +4,6 @@ import javax.annotation.Nonnull;
 
 import com.cardinalstar.cubicchunks.util.Mods;
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
-import com.gtnewhorizon.gtnhmixins.builders.ITargetMod;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
 
 public enum Mixins implements IMixins {
@@ -88,10 +87,10 @@ public enum Mixins implements IMixins {
         .setPhase(Phase.LATE)
         .addExcludedMod(Mods.ChunkAPI)
         .setApplyIf(() -> true)),
-    MIXIN_BIOME_GEN_BASE(new MixinBuilder("Removes bedrock for pure cubic worlds.")
-        .addCommonMixins("common.MixinBiomeGenBase")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_BIOME_GEN_BASE(
+        new MixinBuilder("Removes bedrock for pure cubic worlds.").addCommonMixins("common.MixinBiomeGenBase")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
 
     // CHUNK
     MIXIN_CHUNK_COLUMN(
@@ -298,11 +297,12 @@ public enum Mixins implements IMixins {
         .addCommonMixins("mod.MixinCoordinatePacker")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_COORD_PACKER_CHUNKAPI(new MixinBuilder("Overwrite ChunkAPI CoordiantePacker algorithm with a CC-compatible one")
-        .addCommonMixins("mod.MixinBlockPosUtil")
-        .setPhase(Phase.LATE)
-        .addRequiredMod(Mods.ChunkAPI)
-        .setApplyIf(() -> true))
+    MIXIN_COORD_PACKER_CHUNKAPI(
+        new MixinBuilder("Overwrite ChunkAPI CoordiantePacker algorithm with a CC-compatible one")
+            .addCommonMixins("mod.MixinBlockPosUtil")
+            .setPhase(Phase.LATE)
+            .addRequiredMod(Mods.ChunkAPI)
+            .setApplyIf(() -> true))
     //
     ;
 
