@@ -1,0 +1,50 @@
+package com.cardinalstar.cubicchunks.mixin.early.common;
+
+import com.cardinalstar.cubicchunks.api.worldtype.VanillaCubicWorldType;
+import com.llamalad7.mixinextras.expression.Definition;
+import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.world.World;
+import net.minecraft.world.biome.BiomeGenBase;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
+
+import java.util.Random;
+
+@Mixin(BiomeGenBase.class)
+public class MixinBiomeGenBase
+{
+
+    @Definition(id = "l1", local = @Local(name = "l1", type = int.class))
+    @Definition(id = "rand", local = @Local(argsOnly = true, ordinal = 0, name = "p_150560_2_"), type = Random.class)
+    @Definition(id = "nextInt", method = "Ljava/util/Random;nextInt(I)I")
+    @Expression("l1 <= ?")
+    @ModifyExpressionValue(method = "genBiomeTerrain", at = @At(value = "MIXINEXTRAS:EXPRESSION", ordinal = 0))
+    boolean RemoveBedrockForCubicGen(boolean original, @Local(argsOnly = true) World world)
+    {
+        if (world.getWorldInfo().getTerrainType() == VanillaCubicWorldType.INSTANCE)
+        {
+            return false;
+        }
+        return original;
+    }
+
+//    @Redirect(
+//        method = "genBiomeTerrain",
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Ljava/util/Random;nextInt(I)I",
+//            args = "5",
+//            ordinal = 0
+//        ),
+//        require = 1
+//    )
+//    private int cubicChunks$redirectBedrockRandom(Random rand, int bound, @Local(argsOnly = true) World world) {
+//        if (world.getWorldInfo().getTerrainType() == VanillaCubicWorldType.INSTANCE) {
+//            return -1;
+//        }
+//        return rand.nextInt(bound);
+//    }
+}

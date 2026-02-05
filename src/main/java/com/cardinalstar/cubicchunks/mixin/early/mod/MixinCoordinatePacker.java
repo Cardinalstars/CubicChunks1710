@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.mixin.early.common;
+package com.cardinalstar.cubicchunks.mixin.early.mod;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;

@@ -431,6 +431,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         }
     }
 
+    // Note these arguments are in global block coordinates
     public void heightUpdated(int x, int z) {
         WatchedColumn column = watchedColumns.get(x >> 4, z >> 4);
 

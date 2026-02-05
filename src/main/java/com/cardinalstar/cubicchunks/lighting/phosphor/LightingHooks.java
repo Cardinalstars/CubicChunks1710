@@ -69,7 +69,7 @@ public class LightingHooks {
         final int yMinCube = blockToCube(yMin);
         final int yMaxCube = blockToCube(yMax);
 
-        Iterable<? extends ICube> cubes = ((IColumn) chunk).getLoadedCubes(yMaxCube, yMinCube);
+         Iterable<? extends ICube> cubes = ((IColumn) chunk).getLoadedCubes(yMaxCube, yMinCube);
 
         int posX;
         int posY;

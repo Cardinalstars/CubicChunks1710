@@ -118,7 +118,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
         buffer.writeList(
             packet.tileEntityTags,
-            (buf2, list) -> { buf2.writeList(list, CCPacketBuffer::writeCompoundTag); });
+            (buf2, list) -> buf2.writeList(list, CCPacketBuffer::writeCompoundTag));
     }
 
     @Override
@@ -128,7 +128,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
         byte[] data = buf.readByteArray();
 
         List<List<NBTTagCompound>> tileEntityTags = buf
-            .readList(buf2 -> { return buf2.readList(CCPacketBuffer::readCompoundTag); });
+            .readList(buf2 -> buf2.readList(CCPacketBuffer::readCompoundTag));
 
         return new PacketCubes(cubePos, data, tileEntityTags);
     }
