@@ -38,77 +38,18 @@ dependencies {
     implementation("com.github.GTNewHorizons:GTNHLib:0.8.15:dev")
     implementation("com.github.GTNewHorizons:RegionLib:v0.1.0-GTNH:dev")
 
-    // ========================= Test Deps ========================= //
-    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.40-GTNH:dev")
-
-    devOnlyNonPublishable("com.falsepattern:chunkapi-mc1.7.10:0.8.0:dev")
-    devOnlyNonPublishable("com.falsepattern:endlessids-mc1.7.10:1.7.0:dev")
-
     compileOnly("org.jetbrains:annotations:26.0.2")
-
     compileOnly('org.projectlombok:lombok:1.18.34')
     annotationProcessor('org.projectlombok:lombok:1.18.34')
 
-    devOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.2.21-GTNH-daily:dev")
-    // devOnlyNonPublishable("com.github.GTNewHorizons:Angelica:1.0.0-beta68:dev")
+    // ========================= Compat Deps ========================= //
 
-    devOnlyNonPublishable rfg.deobf("curse.maven:biomes-o-plenty-220318:2499612")
+    compileOnly("com.falsepattern:chunkapi-mc1.7.10:0.8.0:dev")
+    compileOnly("com.falsepattern:endlessids-mc1.7.10:1.7.0:dev")
+    compileOnly("ganymedes01.etfuturum:Et-Futurum-Requiem:2.6.2.21-GTNH-daily:dev")
 
-    devOnlyNonPublishable("com.github.GTNewHorizons:Realistic-World-Gen:1.4.0")
-
-//    devOnlyNonPublishable('com.github.GTNewHorizons:CodeChickenCore:1.4.8:dev')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:Railcraft:9.17.6:dev')
-
-    // Adds various useful features
-//    devOnlyNonPublishable("com.github.GTNewHorizons:EnderCore:0.5.0:dev")
-
-//    devOnlyNonPublishable('com.github.GTNewHorizons:ThaumicBoots:1.5.2:dev') {
-//        exclude module: "witchery"
-//        exclude module: "TCNEIAdditions"
-//    }
-//    devOnlyNonPublishable('com.github.GTNewHorizons:ThaumicBases:1.9.5:dev') {exclude module: "Baubles" }
-//    devOnlyNonPublishable('com.github.GTNewHorizons:ForgeMultipart:1.7.0:dev')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:Botania:1.13.6-GTNH:api')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:MagicBees:2.10.2-GTNH:api')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:TinkersConstruct:1.14.12-GTNH:dev')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:Baubles-Expanded:2.2.2-GTNH:dev')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:ForbiddenMagic:0.9.7-GTNH:dev') {exclude module: "Baubles" }
-//    devOnlyNonPublishable('com.github.GTNewHorizons:twilightforest:2.7.13:dev')
-//    devOnlyNonPublishable(rfg.deobf('thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev'))
-//    devOnlyNonPublishable(rfg.deobf('curse.maven:witchery-69673:2234410'))
-
-//    devOnlyNonPublishable("com.github.GTNewHorizons:DuraDisplay:1.4.0:dev")
-//    devOnlyNonPublishable('com.github.GTNewHorizons:EnderIO:2.10.5:dev')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:MatterManipulator:0.1.3-GTNH:dev')
-
-//    devOnlyNonPublishable("com.github.GTNewHorizons:GT5-Unofficial:5.09.52.127:dev") { transitive=false }
-
-//    devOnlyNonPublishable("com.github.GTNewHorizons:Galacticraft:3.4.7-GTNH:dev") {
-//        exclude group: "com.github.GTNewHorizons", module: "GT5-Unofficial"
-//    }
-
-//    devOnlyNonPublishable('com.github.GTNewHorizons:NotEnoughIds:2.1.10:dev')
-
-//    devOnlyNonPublishable rfg.deobf("curse.maven:extra-utilities-225561:2264384")
-//    devOnlyNonPublishable("com.github.GTNewHorizons:Mobs-Info:0.5.8-GTNH:dev")
-//
-//    devOnlyNonPublishable("com.github.GTNewHorizons:ForestryMC:4.11.2:dev")
-//    devOnlyNonPublishable('com.github.GTNewHorizons:neiaddons:1.17.0:dev')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:MagicBees:2.10.2-GTNH:dev')
-//    devOnlyNonPublishable('com.github.GTNewHorizons:Binnie:2.6.0:dev')
-//
-//    devOnlyNonPublishable("com.github.GTNewHorizons:TinkersConstruct:1.14.12-GTNH:dev")
-//
-//    devOnlyNonPublishable("com.github.GTNewHorizons:StructureLib:1.4.24:dev")
-//    devOnlyNonPublishable("net.industrial-craft:industrialcraft-2:2.2.828-experimental:dev")
-//    devOnlyNonPublishable("com.github.GTNewHorizons:ModularUI:1.3.1:dev")
-//    devOnlyNonPublishable("com.github.GTNewHorizons:ModularUI2:2.3.18-1.7.10:dev")
-//    devOnlyNonPublishable("com.github.GTNewHorizons:waila:1.9.15:dev")
-//    devOnlyNonPublishable("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-749-GTNH:dev")
-//    devOnlyNonPublishable("com.github.GTNewHorizons:AE2FluidCraft-Rework:1.5.26-gtnh:dev")
-//    devOnlyNonPublishable('com.github.GTNewHorizons:Yamcl:0.7.1:dev')
-//    devOnlyNonPublishable("com.github.GTNewHorizons:Postea:1.1.3:dev")
-
+    // ========================= Test Deps ========================= //
+    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.40-GTNH:dev")
     testImplementation(platform('org.junit:junit-bom:5.9.2'))
     testImplementation('org.junit.jupiter:junit-jupiter')
 }
