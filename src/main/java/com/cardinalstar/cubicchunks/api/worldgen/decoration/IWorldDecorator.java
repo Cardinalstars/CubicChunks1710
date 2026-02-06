@@ -1,6 +1,5 @@
 package com.cardinalstar.cubicchunks.api.worldgen.decoration;
 
-import com.cardinalstar.cubicchunks.api.worldgen.impl.StandardWorldDecorator;
 import net.minecraft.world.World;
 
 import com.cardinalstar.cubicchunks.util.CubePos;
