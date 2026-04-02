@@ -3,6 +3,7 @@ package com.cardinalstar.cubicchunks.world.worldgen.data;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import net.minecraft.world.World;
 
@@ -18,7 +19,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.gtnewhorizon.gtnhlib.hash.Fnv1a64;
-
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -58,7 +58,7 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
 
                     NoiseData data = getData();
 
-                    compute3d(task.samplers, task.x << 4, task.y << 4, task.z << 4, data);
+                    compute(task.samplers, task.x << 4, task.y << 4, task.z << 4, data);
 
                     cache.put(task, data);
 
@@ -120,6 +120,12 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
         TaskPool.submit(this.noiseTaskExecutor, task);
     }
 
+    public void submitPrecalculate(World world, int cubeX, int cubeY, int cubeZ, Consumer<NoiseData> callback) {
+        TaskKey task = new TaskKey(getSamplers(world), world.provider.dimensionId, cubeX, cubeY, cubeZ);
+
+        TaskPool.submit(this.noiseTaskExecutor, task, callback);
+    }
+
     public NoiseData takeSampler(World world, int cubeX, int cubeY, int cubeZ) {
         TaskKey key = new TaskKey(null, world.provider.dimensionId, cubeX, cubeY, cubeZ);
 
@@ -129,20 +135,30 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
         if (data == null) {
             data = getData();
 
-            compute3d(getSamplers(world), cubeX << 4, cubeY << 4, cubeZ << 4, data);
+            compute(getSamplers(world), cubeX << 4, cubeY << 4, cubeZ << 4, data);
         }
 
         return data;
     }
 
-    private void compute3d(EnumMap<TLayer, NoiseSampler> samplers, int wx, int wy, int wz, NoiseData data) {
+    private void compute(EnumMap<TLayer, NoiseSampler> samplers, int wx, int wy, int wz, NoiseData data) {
         samplers.forEach((layer, sampler) -> {
-            for (int z = 0; z < 16; z++) {
+            if (layer.is3D()) {
+                for (int z = 0; z < 16; z++) {
+                    for (int y = 0; y < 16; y++) {
+                        for (int x = 0; x < 16; x++) {
+                            double value = sampler.sample(wx + x, wy + y, wz + z);
+
+                            data.put(layer, x, y, z, value);
+                        }
+                    }
+                }
+            } else {
                 for (int y = 0; y < 16; y++) {
                     for (int x = 0; x < 16; x++) {
-                        double value = sampler.sample(wx + x, wy + y, wz + z);
+                        double value = sampler.sample(wx + x, wy + y, wz);
 
-                        data.put(layer, x, y, z, value);
+                        data.put(layer, x, y, value);
                     }
                 }
             }
@@ -162,14 +178,23 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
 
     public class NoiseData {
 
-        private final double[] data = new double[16 * 16 * 16 * layerCount];
+        private final double[][] data = new double[layerCount][];
+
+        public NoiseData() {
+            TLayer[] enumConstants = layers.getEnumConstants();
+            for (int i = 0, enumConstantsLength = enumConstants.length; i < enumConstantsLength; i++) {
+                TLayer layer = enumConstants[i];
+
+                data[i] = new double[layer.is3D() ? 16 * 16 * 16 : 16 * 16];
+            }
+        }
 
         final void put(TLayer layer, int x, int y, double value) {
-            data[index(layer, x, y, 0)] = value;
+            data[layer.ordinal()][index(x, y, 0)] = value;
         }
 
         final void put(TLayer layer, int x, int y, int z, double value) {
-            data[index(layer, x, y, z)] = value;
+            data[layer.ordinal()][index(x, y, z)] = value;
         }
 
         public final double sample(TLayer layer, int x, int y) {
@@ -177,11 +202,11 @@ public class NoisePrecalculator<TLayer extends Enum<TLayer> & SamplerFactory> {
         }
 
         public final double sample(TLayer layer, int x, int y, int z) {
-            return data[index(layer, x, y, z)];
+            return data[layer.ordinal()][index(x, y, z)];
         }
 
-        private static <TLayer extends Enum<TLayer>> int index(TLayer layer, int x, int y, int z) {
-            return x | (y << 4) | (z << 8) | (layer.ordinal() << 12);
+        private static int index(int x, int y, int z) {
+            return x | (y << 4) | (z << 8);
         }
     }
 }

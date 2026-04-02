@@ -1,4 +1,4 @@
-package com.cardinalstar.cubicchunks.world.worldgen.modern;
+package com.cardinalstar.cubicchunks.world.worldgen.caves.modern;
 
 import java.util.Random;
 
@@ -10,35 +10,43 @@ import com.cardinalstar.cubicchunks.api.worldgen.decoration.ICubeGenerator;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.blockview.CubeBlockView;
+import com.cardinalstar.cubicchunks.world.worldgen.WorldGenerators;
 import com.cardinalstar.cubicchunks.world.worldgen.data.NoisePrecalculator;
 import com.cardinalstar.cubicchunks.world.worldgen.data.SamplerFactory;
 import com.cardinalstar.cubicchunks.world.worldgen.noise.NoiseSampler;
 import com.cardinalstar.cubicchunks.world.worldgen.noise.OctavesSampler;
 import com.cardinalstar.cubicchunks.world.worldgen.noise.ScaledNoise;
 
-public class SpaghettiCaveGenerator implements ICubeGenerator {
+public class NoodleCaveGenerator implements ICubeGenerator {
 
-    private static final double CARVE_THRESHOLD = 0.01;
-    private static final double SCALE = 0.01;
+    private static final double CARVE_THRESHOLD = 0.25;
+    private static final double SCALE = 0.04;
 
     private enum Layers implements SamplerFactory {
+        Chooser {
+
+            @Override
+            public NoiseSampler createSampler(Random rng) {
+                return WorldGenerators.caveChooser(rng);
+            }
+        },
         A {
 
             @Override
             public NoiseSampler createSampler(Random rng) {
-                return new ScaledNoise(new OctavesSampler(rng, 3), SCALE);
+                return new ScaledNoise(new OctavesSampler(rng, 1), SCALE);
             }
         },
         B {
 
             @Override
             public NoiseSampler createSampler(Random rng) {
-                return new ScaledNoise(new OctavesSampler(rng, 3), SCALE);
+                return new ScaledNoise(new OctavesSampler(rng, 2), SCALE);
             }
         };
     }
 
-    private final NoisePrecalculator<Layers> noise = new NoisePrecalculator<>(Layers.class, 5);
+    private final NoisePrecalculator<Layers> noise = new NoisePrecalculator<>(Layers.class, 2);
 
     @Override
     public void pregenerate(World world, CubePos pos) {
@@ -58,6 +66,9 @@ public class SpaghettiCaveGenerator implements ICubeGenerator {
 
                     if (existing != Blocks.stone) continue;
 
+                    double cave = data.sample(Layers.Chooser, x, y, z);
+                    if (!WorldGenerators.NOODLE_CAVES.contains(cave)) continue;
+
                     double a = data.sample(Layers.A, x, y, z);
                     double b = data.sample(Layers.B, x, y, z);
 
@@ -69,7 +80,5 @@ public class SpaghettiCaveGenerator implements ICubeGenerator {
                 }
             }
         }
-
-        noise.releaseData(data);
     }
 }

@@ -31,3 +31,18 @@ cubicchunks.config.optimizations=Optimizations
 cubicchunks.config.optimizations.background_threads=Background Threads
 
 generator.VanillaCubic=Vanilla + Cubic
+
+cc.blocks.stone-type.smooth=%s
+cc.blocks.stone-type.smooth_top=%s
+cc.blocks.stone-type.smooth_mossy=Mossy %s
+cc.blocks.stone-type.cobble=%s Cobblestone
+cc.blocks.stone-type.cobble_mossy=Mossy %s Cobblestone
+cc.blocks.stone-type.bricks=%s Bricks
+cc.blocks.stone-type.bricks_mossy=Mossy %s Bricks
+cc.blocks.stone-type.bricks_cracked=Cracked %s Bricks
+cc.blocks.stone-type.bricks_polished=Polished %s
+
+cc.blocks.cave-stone.travertine=Travertine
+cc.blocks.cave-stone.phyllite=Phyllite
+cc.blocks.cave-stone.schist=Schist
+cc.blocks.cave-stone.gneiss=Gneiss

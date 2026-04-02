@@ -43,6 +43,7 @@ import com.cardinalstar.cubicchunks.api.world.storage.ICubicStorage;
 import com.cardinalstar.cubicchunks.api.world.storage.StorageFormatFactory;
 import com.cardinalstar.cubicchunks.api.worldtype.VanillaCubicWorldType;
 import com.cardinalstar.cubicchunks.async.TaskPool;
+import com.cardinalstar.cubicchunks.common.blocks.stone.BlockCaveStone;
 import com.cardinalstar.cubicchunks.event.handlers.ClientEventHandler;
 import com.cardinalstar.cubicchunks.event.handlers.CommonEventHandler;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldSettings;
@@ -159,6 +160,11 @@ public class CubicChunks {
         holder.testVanillaAcceptance();
         WorldGenerators.init();
         TaskPool.init();
+
+        BlockCaveStone.TRAVERTINE.register();
+        BlockCaveStone.PHYLLITE.register();
+        BlockCaveStone.SCHIST.register();
+        BlockCaveStone.GNEISS.register();
     }
 
     @Mod.EventHandler

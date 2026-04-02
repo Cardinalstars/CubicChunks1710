@@ -7,4 +7,8 @@ import com.cardinalstar.cubicchunks.world.worldgen.noise.NoiseSampler;
 public interface SamplerFactory {
 
     NoiseSampler createSampler(Random rng);
+
+    default boolean is3D() {
+        return true;
+    }
 }

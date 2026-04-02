@@ -3,6 +3,8 @@ package com.cardinalstar.cubicchunks.world.worldgen.noise;
 import java.util.Random;
 import java.util.function.Supplier;
 
+import it.unimi.dsi.fastutil.doubles.DoubleDoubleImmutablePair;
+
 public class OctavesSampler implements NoiseSampler {
 
     private final NoiseSampler[] octaves;
@@ -21,6 +23,22 @@ public class OctavesSampler implements NoiseSampler {
     }
 
     public OctavesSampler(Random rng, int octaves) {
+        this(() -> new SimplexNoiseSampler(rng), octaves);
+    }
+
+    public OctavesSampler(Supplier<NoiseSampler> samplers, DoubleDoubleImmutablePair... octaves) {
+        this.octaves = new NoiseSampler[octaves.length];
+        this.amplitudes = new double[octaves.length];
+        this.scales = new double[octaves.length];
+
+        for (int i = 0; i < octaves.length; i++) {
+            this.octaves[i] = samplers.get();
+            this.amplitudes[i] = octaves[i].leftDouble();
+            this.scales[i] = octaves[i].rightDouble();
+        }
+    }
+
+    public OctavesSampler(Random rng, DoubleDoubleImmutablePair... octaves) {
         this(() -> new SimplexNoiseSampler(rng), octaves);
     }
 

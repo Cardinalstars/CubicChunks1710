@@ -11,7 +11,7 @@ import com.cardinalstar.cubicchunks.util.biome3d.NaiveCompression.NaiveCompressi
 /// the data to a [ReferenceBiomeArray].
 public class DynamicBiomeArray implements BiomeArray {
 
-    private BiomeArray backing = new PalettizedBiomeArray();
+    private BiomeArray backing = new StaticBiomeArray();
 
     @Override
     public boolean isEmpty() {
@@ -20,17 +20,30 @@ public class DynamicBiomeArray implements BiomeArray {
 
     @Override
     public void clear() {
-        backing.clear();
+        BiomeGenBase def = backing.defaultReturnValue();
+
+        backing = new StaticBiomeArray();
+        backing.defaultReturnValue(def);
     }
 
     @Override
     public BiomeGenBase put(int key, BiomeGenBase value) {
+        if (backing instanceof StaticBiomeArray && backing.defaultReturnValue() != value) {
+            BiomeGenBase def = backing.defaultReturnValue();
+
+            backing = new PalettizedBiomeArray();
+
+            backing.defaultReturnValue(def);
+        }
+
         try {
             // Try to insert the biome value into the storage
             backing.put(key, value);
         } catch (PaletteFullError e) {
             // If we're using a palette array and its palette is full, migrate the data
             BiomeArray reference = new ReferenceBiomeArray();
+
+            reference.defaultReturnValue(backing.defaultReturnValue());
 
             int size = size();
 

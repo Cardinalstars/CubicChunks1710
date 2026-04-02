@@ -349,6 +349,13 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     }
 
     @Override
+    public BiomeGenBase getBiome3D(int blockX, int blockY, int blockZ) {
+        Cube cube = getCubeFromBlockCoords(blockX, blockY, blockZ);
+
+        return cube == null ? null : cube.getBiome(blockX & 0xF, blockY & 0xF, blockZ & 0xF);
+    }
+
+    @Override
     public int getEffectiveHeight(int blockX, int blockZ) {
         return this.chunkProvider.provideChunk(blockToCube(blockX), blockToCube(blockZ))
             .getHeightValue(blockToLocal(blockX), blockToLocal(blockZ));

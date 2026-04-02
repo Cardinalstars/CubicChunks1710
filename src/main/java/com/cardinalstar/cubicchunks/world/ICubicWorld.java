@@ -30,6 +30,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.BiomeGenBase;
 
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.util.NotCubicChunksWorldException;
@@ -226,6 +227,8 @@ public interface ICubicWorld extends IMinMaxHeight {
     ICube getCubeFromBlockCoords(int x, int y, int z);
 
     ICube getCubeFromBlockCoords(BlockPos pos);
+
+    BiomeGenBase getBiome3D(int blockX, int blockY, int blockZ);
 
     int getEffectiveHeight(int blockX, int blockZ);
 

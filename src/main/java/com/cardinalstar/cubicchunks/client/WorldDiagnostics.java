@@ -19,21 +19,23 @@ public class WorldDiagnostics {
         final Minecraft mc = Minecraft.getMinecraft();
         if (mc.gameSettings.showDebugInfo) {
 
-            int cX = Coords.blockToCube(MathHelper.floor_double(mc.thePlayer.posX));
-            int cY = Coords.blockToCube(MathHelper.floor_double(mc.thePlayer.posY));
-            int cZ = Coords.blockToCube(MathHelper.floor_double(mc.thePlayer.posZ));
+            int bX = MathHelper.floor_double(mc.thePlayer.posX);
+            int bY = MathHelper.floor_double(mc.thePlayer.posY);
+            int bZ = MathHelper.floor_double(mc.thePlayer.posZ);
+
+            int cX = Coords.blockToCube(bX);
+            int cY = Coords.blockToCube(bY);
+            int cZ = Coords.blockToCube(bZ);
 
             Cube cube = (Cube) ((ICubicWorld) mc.theWorld).getCubeFromCubeCoords(cX, cY, cZ);
-
-            event.left.add("");
 
             event.left.add("Cube X: " + cX);
             event.left.add("Cube Y: " + cY);
             event.left.add("Cube Z: " + cZ);
 
-            event.left.add("");
-
             event.left.add("Cube: " + cube);
+
+            event.left.add("Cubic Biome: " + ((ICubicWorld) mc.theWorld).getBiome3D(bX, bY, bZ));
         }
     }
 }
