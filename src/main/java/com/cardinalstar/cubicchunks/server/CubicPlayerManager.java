@@ -23,11 +23,10 @@ package com.cardinalstar.cubicchunks.server;
 import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
 import static net.minecraft.util.MathHelper.clamp_int;
 
-import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -43,13 +42,12 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.ForgeModContainer;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3ic;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.MetaContainer;
+import com.cardinalstar.cubicchunks.api.MetaKey;
 import com.cardinalstar.cubicchunks.api.XYZMap;
-import com.cardinalstar.cubicchunks.api.XZMap;
 import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal.Server;
@@ -70,17 +68,12 @@ import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.CubeStatusVisualizer;
 import com.cardinalstar.cubicchunks.util.CubeStatusVisualizer.CubeStatus;
-import com.cardinalstar.cubicchunks.util.XZAddressable;
 import com.cardinalstar.cubicchunks.visibility.CuboidalCubeSelector;
+import com.cardinalstar.cubicchunks.visibility.WorldVisibilityChange;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
-
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 
@@ -92,6 +85,14 @@ import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 @ParametersAreNonnullByDefault
 public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallback {
 
+    private static final MetaKey<CubeChanges> CUBE_CHANGES = new MetaKey<>() {
+
+    };
+
+    private static final MetaKey<ColumnChanges> COLUMN_CHANGES = new MetaKey<>() {
+
+    };
+
     /**
      * Mapping of entityId to PlayerCubeMap.PlayerWrapper objects.
      */
@@ -99,11 +100,11 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
     private final CubeProviderServer provider;
 
-    private final XYZMap<WatchedCube> watchedCubes = new XYZMap<>();
-    private final Set<WatchedCube> dirtyCubes = new ObjectOpenHashSet<>();
+    private final XYZMap<EagerCubeLoadRequest> cubeLoadRequests = new XYZMap<>();
 
-    private final XZMap<WatchedColumn> watchedColumns = new XZMap<>();
-    private final Set<WatchedColumn> dirtyColumns = new ObjectOpenHashSet<>();
+    private final Set<Cube> deferredCubeSyncs = new ObjectOpenHashSet<>();
+
+    private final Set<Chunk> deferredColumnSyncs = new ObjectOpenHashSet<>();
 
     private int horizontalViewDistance;
     private int verticalViewDistance;
@@ -131,70 +132,15 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     }
 
     public Collection<Chunk> getColumns() {
-        return new AbstractCollection<>() {
-
-            @Override
-            public @NotNull Iterator<Chunk> iterator() {
-                return new AbstractIterator<>() {
-
-                    final Iterator<WatchedColumn> iter = watchedColumns.iterator();
-
-                    @Override
-                    protected Chunk computeNext() {
-                        while (iter.hasNext()) {
-                            WatchedColumn column = iter.next();
-
-                            if (column.column == null) continue;
-
-                            return column.column;
-                        }
-
-                        return this.endOfData();
-                    }
-                };
-            }
-
-            @Override
-            public int size() {
-                return watchedColumns.getSize();
-            }
-        };
+        return Collections.emptyList();
     }
 
     public Collection<Cube> getCubes() {
-        return new AbstractCollection<>() {
-
-            @Override
-            public @NotNull Iterator<Cube> iterator() {
-                return new AbstractIterator<>() {
-
-                    final Iterator<WatchedCube> iter = watchedCubes.iterator();
-
-                    @Override
-                    protected Cube computeNext() {
-                        while (iter.hasNext()) {
-                            WatchedCube cube = iter.next();
-
-                            if (cube.cube == null) continue;
-
-                            return cube.cube;
-                        }
-
-                        return this.endOfData();
-                    }
-                };
-            }
-
-            @Override
-            public int size() {
-                return watchedCubes.getSize();
-            }
-        };
+        return Collections.emptyList();
     }
 
     /**
-     * Updates all CubeWatchers and ColumnWatchers.
-     * Also sends packets to clients.
+     * Updates all CubeWatchers and ColumnWatchers. Also sends packets to clients.
      */
     // CHECKED: 1.10.2-12.18.1.2092
     @Override
@@ -210,6 +156,8 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         }
 
         pendingPlayerAddToCubeMap.removeIf(e -> e.addedToChunk);
+
+        players.values().forEach(WatchingPlayer::flushCubes);
 
         syncColumns();
         syncCubes();
@@ -240,143 +188,208 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         this.lastWorldTime = now;
 
-        for (WatchedColumn column : dirtyColumns) {
-            if (column.column == null) continue;
+        for (Chunk column : deferredColumnSyncs) {
+            column.inhabitedTime += delta;
 
-            column.column.inhabitedTime += delta;
+            ColumnChanges changes = ((MetaContainer) column).getMeta(COLUMN_CHANGES);
 
-            switch (column.dirty) {
+            switch (changes.dirty) {
                 case None -> {
                     // whar?
                 }
                 case Partial -> {
-                    column.syncPartial();
+                    var packet = PacketEncoderHeightMapUpdate.createPacket(changes.dirtyColumns, column);
+
+                    for (WatchingPlayer player : changes.watchingPlayers) {
+                        packet.sendToPlayer(player.player);
+                    }
                 }
                 case Full -> {
-                    column.syncFull();
+                    var packet = PacketEncoderColumn.createPacket(column);
+
+                    for (var player : changes.watchingPlayers) {
+                        packet.sendToPlayer(player.player);
+                    }
                 }
             }
 
-            column.clean();
+            changes.clean();
         }
 
-        dirtyColumns.clear();
+        deferredColumnSyncs.clear();
     }
 
     private void syncCubes() {
         ((ICubicWorldInternal) getWorldServer()).getLightingManager()
-            .onSendCubes(() -> Iterators.transform(dirtyCubes.iterator(), c -> c.cube));
+            .onSendCubes();
 
-        List<WatchedCube> fullSync = new ObjectArrayList<>();
+        for (Cube cube : deferredCubeSyncs) {
+            CubeChanges changes = cube.getMeta(CUBE_CHANGES);
 
-        List<WatchedCube> notReady = new ArrayList<>();
-
-        for (WatchedCube cube : dirtyCubes) {
-            if (cube.cube == null) continue;
-
-            switch (cube.dirty) {
+            switch (changes.dirty) {
                 case None -> {
                     // huh?
                 }
                 case Partial -> {
-                    cube.syncPartial();
-                    cube.clean();
+                    sendPartialSync(cube, changes);
                 }
                 case Full -> {
-                    WatchedColumn col = watchedColumns.get(cube.getX(), cube.getZ());
-
-                    if (col == null || col.column == null) {
-                        notReady.add(cube);
-                        continue;
+                    for (var player : changes.watchingPlayers) {
+                        player.queueCube(cube);
                     }
-
-                    fullSync.add(cube);
                 }
             }
 
-            cube.dirty = Dirtiness.None;
+            changes.clean();
         }
 
-        dirtyCubes.clear();
-        dirtyCubes.addAll(notReady);
+        deferredCubeSyncs.clear();
 
-        for (WatchedCube cube : fullSync) {
-            for (WatchingPlayer player : cube.watchingPlayers) {
-                player.queueCube(cube.cube);
+        this.players.values()
+            .forEach(WatchingPlayer::flushCubes);
+    }
+
+    private void sendPartialSync(Cube cube, CubeChanges changes) {
+        // send all the dirty blocks
+
+        short[] dirtyBlocks = changes.dirtyBlocks.toShortArray();
+        var cubePacket = PacketEncoderCubeBlockChange.createPacket(cube, dirtyBlocks);
+
+        List<Packet> tiles = new ArrayList<>(0);
+
+        int blockX = cube.getX() << 4;
+        int blockY = cube.getY() << 4;
+        int blockZ = cube.getZ() << 4;
+
+        for (short localAddress : dirtyBlocks) {
+            int x = AddressTools.getLocalX(localAddress);
+            int y = AddressTools.getLocalY(localAddress);
+            int z = AddressTools.getLocalZ(localAddress);
+
+            TileEntity te = getWorldServer().getTileEntity(blockX + x, blockY + y, blockZ + z);
+
+            if (te == null) continue;
+
+            Packet packet = te.getDescriptionPacket();
+
+            if (packet != null) tiles.add(packet);
+        }
+
+        for (WatchingPlayer player : changes.watchingPlayers) {
+            cubePacket.sendToPlayer(player.player);
+
+            for (Packet tilePacket : tiles) {
+                player.player.playerNetServerHandler.sendPacket(tilePacket);
             }
-
-            cube.clean();
-        }
-
-        for (WatchingPlayer player : this.players.values()) {
-            player.flushCubes();
         }
     }
 
     @Override
     public void onColumnLoaded(Chunk column) {
-        WatchedColumn watcher = this
-            .getOrCreateWatchedColumn(new ChunkCoordIntPair(column.xPosition, column.zPosition));
+        var changes = new ColumnChanges(column);
+        ((MetaContainer) column).setMeta(COLUMN_CHANGES, changes);
 
-        if (watcher != null) {
-            watcher.setColumn(column);
+        for (var player : players.values()) {
+            boolean visible = CuboidalCubeSelector.INSTANCE.contains(
+                CubePos.fromEntity(player.player),
+                horizontalViewDistance,
+                verticalViewDistance,
+                column.xPosition, column.zPosition);
+
+            if (visible) {
+                changes.watchingPlayers.add(player);
+
+                PacketEncoderColumn.createPacket(column)
+                    .sendToPlayer(player.player);
+            }
         }
     }
 
     @Override
     public void onColumnUnloaded(Chunk column) {
-        WatchedColumn watcher = this.watchedColumns.remove(column.xPosition, column.zPosition);
+        var changes = ((MetaContainer) column).getMeta(COLUMN_CHANGES);
 
-        if (watcher != null) {
-            PacketUnloadColumn packet = PacketEncoderUnloadColumn.createPacket(column.xPosition, column.zPosition);
+        PacketUnloadColumn packet = PacketEncoderUnloadColumn.createPacket(column.xPosition, column.zPosition);
 
-            for (WatchingPlayer player : watcher.watchingPlayers) {
-                packet.sendToPlayer(player.player);
-            }
+        for (WatchingPlayer player : changes.watchingPlayers) {
+            packet.sendToPlayer(player.player);
         }
     }
 
     @Override
     public void onCubeLoaded(Cube cube) {
-        WatchedCube watcher = this.getOrCreateCubeWatcher(cube.getCoords());
-
-        watcher.setCube(cube);
-
-        CubeStatusVisualizer.put(cube.getCoords(), switch (cube.getInitLevel()) {
-            case None -> CubeStatus.None;
-            case Generated -> CubeStatus.Generated;
-            case Populated -> CubeStatus.Populated;
-            case Lit -> CubeStatus.Lit;
-        });
+        onCubeGenerated(cube, cube.getInitLevel());
     }
 
     @Override
     public void onCubeGenerated(Cube cube, CubeInitLevel newLevel) {
-        WatchedCube watcher = this.getOrCreateCubeWatcher(cube.getCoords());
+        var changes = getChanges(cube);
 
-        watcher.setCube(cube);
+        if (newLevel == CubeInitLevel.Lit) {
+            for (var player : players.values()) {
+                boolean visible = CuboidalCubeSelector.INSTANCE.contains(
+                    CubePos.fromEntity(player.player),
+                    horizontalViewDistance + 2,
+                    verticalViewDistance + 2,
+                    cube.getX(),
+                    cube.getY(),
+                    cube.getZ());
 
-        CubeStatusVisualizer.put(cube.getCoords(), switch (cube.getInitLevel()) {
-            case None -> CubeStatus.None;
-            case Generated -> CubeStatus.Generated;
-            case Populated -> CubeStatus.Populated;
-            case Lit -> CubeStatus.Lit;
-        });
+                if (visible) {
+                    changes.watchingPlayers.add(player);
+                    player.queueCube(cube);
+                }
+            }
+
+            var request = cubeLoadRequests.remove(cube);
+
+            if (request != null) {
+                request.cancel();
+            }
+        }
+
+        CubeStatusVisualizer.put(
+            cube.getCoords(), switch (newLevel) {
+                case None -> CubeStatus.None;
+                case Generated -> CubeStatus.Generated;
+                case Populated -> CubeStatus.Populated;
+                case Lit -> CubeStatus.Lit;
+            });
     }
 
     @Override
     public void onCubeUnloaded(Cube cube) {
-        WatchedCube watcher = this.watchedCubes.remove(cube);
+        var changes = getChanges(cube);
 
-        if (watcher != null && watcher.cube != null) {
-            PacketUnloadCube packet = PacketEncoderUnloadCube.createPacket(cube.getCoords());
+        PacketUnloadCube packet = PacketEncoderUnloadCube.createPacket(cube.getCoords());
 
-            for (WatchingPlayer player : watcher.watchingPlayers) {
-                packet.sendToPlayer(player.player);
-            }
+        for (var player : changes.watchingPlayers) {
+            packet.sendToPlayer(player.player);
         }
 
         CubeStatusVisualizer.remove(cube.getCoords());
+    }
+
+    private CubeChanges getChanges(Cube cube) {
+        var changes = cube.getMeta(CUBE_CHANGES);
+
+        if (changes == null) {
+            changes = new CubeChanges(cube);
+            cube.setMeta(CUBE_CHANGES, changes);
+        }
+
+        return changes;
+    }
+
+    private ColumnChanges getChanges(Chunk column) {
+        var changes = ((MetaContainer) column).getMeta(COLUMN_CHANGES);
+
+        if (changes == null) {
+            changes = new ColumnChanges(column);
+            ((MetaContainer) column).setMeta(COLUMN_CHANGES, changes);
+        }
+
+        return changes;
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
@@ -385,58 +398,22 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         return isColumnWatched(columnX, columnZ);
     }
 
-    // TODO WATCH
-    // // CHECKED: 1.10.2-12.18.1.2092
-    // @Override
-    // public ColumnWatcher getEntry(int cubeX, int cubeZ) {
-    // return this.columnWatchers.get(cubeX, cubeZ);
-    // }
-
-    /**
-     * Returns existing CubeWatcher or creates new one if it doesn't exist.
-     * Attempts to load the cube and send it to client.
-     * If it can't load it or send it to client - adds it to cubesToGenerate/cubesToSendToClients
-     */
-    private WatchedCube getOrCreateCubeWatcher(CubePos cubePos) {
-        WatchedCube cubeWatcher = this.watchedCubes.get(cubePos.getX(), cubePos.getY(), cubePos.getZ());
-
-        if (cubeWatcher == null) {
-            this.watchedCubes.put(cubeWatcher = new WatchedCube(cubePos.getX(), cubePos.getY(), cubePos.getZ()));
-        }
-
-        return cubeWatcher;
-    }
-
-    /**
-     * Returns existing ColumnWatcher or creates new one if it doesn't exist.
-     * Always creates the Column.
-     */
-    private WatchedColumn getOrCreateWatchedColumn(ChunkCoordIntPair chunkPos) {
-        WatchedColumn watchedColumn = this.watchedColumns.get(chunkPos.chunkXPos, chunkPos.chunkZPos);
-
-        if (watchedColumn == null) {
-            this.watchedColumns.put(watchedColumn = new WatchedColumn(chunkPos.chunkXPos, chunkPos.chunkZPos));
-        }
-
-        return watchedColumn;
-    }
-
     // CHECKED: 1.10.2-12.18.1.2092
     @Override
     public void markBlockForUpdate(int x, int y, int z) {
-        WatchedCube cube = watchedCubes.get(x >> 4, y >> 4, z >> 4);
+        Cube cube = provider.getLoadedCube(x >> 4, y >> 4, z >> 4);
 
         if (cube != null) {
-            cube.markDirty(x, y, z);
+            getChanges(cube).markDirty(x, y, z);
         }
     }
 
     // Note these arguments are in global block coordinates
     public void heightUpdated(int x, int z) {
-        WatchedColumn column = watchedColumns.get(x >> 4, z >> 4);
+        Chunk column = provider.getLoadedColumn(x, z);
 
         if (column != null) {
-            column.markDirty(x, z);
+            getChanges(column).markDirty(x, z);
         }
     }
 
@@ -462,14 +439,17 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         CubePos playerCubePos = CubePos.fromEntity(player);
 
-        CuboidalCubeSelector.INSTANCE
-            .forAllVisibleFrom(playerCubePos, horizontalViewDistance, verticalViewDistance, (currentPos) -> {
-                // create cubeWatcher and chunkWatcher
-                // order is important
+        CuboidalCubeSelector.INSTANCE.forAllVisibleCubes(
+            playerCubePos,
+            horizontalViewDistance,
+            verticalViewDistance,
+            pos -> onPlayerStartedViewingCube(watchingPlayer, pos));
 
-                getOrCreateWatchedColumn(currentPos.chunkPos()).addPlayer(watchingPlayer);
-                getOrCreateCubeWatcher(currentPos).addPlayer(watchingPlayer);
-            });
+        CuboidalCubeSelector.INSTANCE.forAllVisibleColumns(
+            playerCubePos,
+            horizontalViewDistance,
+            verticalViewDistance,
+            pos -> onPlayerStartedViewingColumn(watchingPlayer, pos));
 
         watchingPlayer.flushCubes();
 
@@ -487,35 +467,22 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         // Minecraft does something evil there: this method is called *after* changing the player's position
         // so we need to use managedPosition there
-        CubePos playerCubePos = CubePos
-            .fromEntityCoords(player.managedPosX, watchingPlayer.managedPosY, player.managedPosZ);
+        CubePos playerCubePos = CubePos.fromEntityCoords(
+            player.managedPosX,
+            watchingPlayer.managedPosY,
+            player.managedPosZ);
 
-        // send unload columns later so that they get unloaded after their corresponding cubes
-        ObjectSet<WatchedColumn> unloadedColumns = new ObjectOpenHashSet<>(
-            (horizontalViewDistance * 2 + 1) * (horizontalViewDistance * 2 + 1));
+        CuboidalCubeSelector.INSTANCE.forAllVisibleCubes(
+            playerCubePos,
+            horizontalViewDistance,
+            verticalViewDistance,
+            pos -> onPlayerStoppedViewingCube(watchingPlayer, pos));
 
-        CuboidalCubeSelector.INSTANCE
-            .forAllVisibleFrom(playerCubePos, horizontalViewDistance, verticalViewDistance, (cubePos) -> {
-                // get the watcher
-                WatchedCube cube = watchedCubes.get(cubePos);
-
-                if (cube != null) {
-                    // Cube will be GC'd if it isn't watched by a player
-                    cube.removePlayer(watchingPlayer);
-                }
-
-                // remove column watchers if needed
-                WatchedColumn column = watchedColumns.get(cubePos.getX(), cubePos.getZ());
-
-                if (column != null) {
-                    // Column will be GC'd if it isn't watched by a player
-                    unloadedColumns.add(column);
-                }
-            });
-
-        for (WatchedColumn watcher : unloadedColumns) {
-            watcher.removePlayer(watchingPlayer);
-        }
+        CuboidalCubeSelector.INSTANCE.forAllVisibleColumns(
+            playerCubePos,
+            horizontalViewDistance,
+            verticalViewDistance,
+            pos -> onPlayerStoppedViewingColumn(watchingPlayer, pos));
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
@@ -563,60 +530,78 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             .doGC();
     }
 
+    private void onPlayerStartedViewingColumn(WatchingPlayer player, ChunkCoordIntPair pos) {
+        Chunk column = provider.getLoadedColumn(pos.chunkXPos, pos.chunkZPos);
+
+        if (column != null) {
+            var changes = ((MetaContainer) column).getMeta(COLUMN_CHANGES);
+
+            changes.watchingPlayers.add(player);
+
+            PacketEncoderColumn.createPacket(column)
+                .sendToPlayer(player.player);
+        }
+    }
+
+    private void onPlayerStoppedViewingColumn(WatchingPlayer player, ChunkCoordIntPair pos) {
+        Chunk column = provider.getLoadedColumn(pos.chunkXPos, pos.chunkZPos);
+
+        if (column != null) {
+            var changes = ((MetaContainer) column).getMeta(COLUMN_CHANGES);
+
+            changes.watchingPlayers.remove(player);
+        }
+    }
+
+    private void onPlayerStartedViewingCube(WatchingPlayer player, CubePos pos) {
+        Cube cube = provider.getLoadedCube(pos);
+
+        if (cube != null) {
+            var changes = cube.getMeta(CUBE_CHANGES);
+
+            changes.watchingPlayers.add(player);
+            player.queueCube(cube);
+        } else {
+            var request = cubeLoadRequests.get(pos);
+
+            if (request == null || request.isCompleted()) {
+                cubeLoadRequests.put(provider.loadCubeEagerly(pos.getX(), pos.getY(), pos.getZ(), Requirement.LIGHT));
+            }
+        }
+    }
+
+    private void onPlayerStoppedViewingCube(WatchingPlayer player, CubePos pos) {
+        Cube cube = provider.getLoadedCube(pos);
+
+        if (cube != null) {
+            var changes = cube.getMeta(CUBE_CHANGES);
+
+            changes.watchingPlayers.remove(player);
+
+            if (changes.watchingPlayers.isEmpty()) {
+                var request = cubeLoadRequests.remove(pos);
+
+                if (request != null) {
+                    request.cancel();
+                }
+            }
+        }
+    }
+
     private void updatePlayer(WatchingPlayer player, CubePos oldPos, CubePos newPos) {
         getWorldServer().theProfiler.startSection("updateMovedPlayer");
 
-        Set<CubePos> cubesToRemove = new HashSet<>();
-        Set<CubePos> cubesToLoad = new HashSet<>();
-        Set<ChunkCoordIntPair> columnsToRemove = new HashSet<>();
-        Set<ChunkCoordIntPair> columnsToLoad = new HashSet<>();
-
         getWorldServer().theProfiler.startSection("findChanges");
 
-        // calculate new visibility
-        CuboidalCubeSelector.INSTANCE.findChanged(
+        var delta = CuboidalCubeSelector.INSTANCE.findChanged(
             oldPos,
             newPos,
             horizontalViewDistance,
             verticalViewDistance,
-            cubesToRemove,
-            cubesToLoad,
-            columnsToRemove,
-            columnsToLoad);
+            horizontalViewDistance,
+            verticalViewDistance);
 
-        // order is important, columns first
-
-        getWorldServer().theProfiler.endStartSection("createColumns");
-        columnsToLoad.forEach(
-            pos -> {
-                this.getOrCreateWatchedColumn(pos)
-                    .addPlayer(player);
-            });
-
-        getWorldServer().theProfiler.endStartSection("createCubes");
-        cubesToLoad.forEach(
-            pos -> {
-                this.getOrCreateCubeWatcher(pos)
-                    .addPlayer(player);
-            });
-
-        getWorldServer().theProfiler.endStartSection("removeCubes");
-        cubesToRemove.forEach(pos -> {
-            WatchedCube cube = watchedCubes.get(pos);
-
-            if (cube != null) {
-                cube.removePlayer(player);
-            }
-        });
-
-        getWorldServer().theProfiler.endStartSection("removeColumns");
-        columnsToRemove.forEach(pos -> {
-            WatchedColumn column = watchedColumns.get(pos.chunkXPos, pos.chunkZPos);
-
-            if (column != null) {
-                column.removePlayer(player);
-            }
-        });
+        applyWorldVisibilityChanges(player, delta);
 
         getWorldServer().theProfiler.endStartSection("Immediate nearby cube loading");
 
@@ -632,31 +617,25 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     }
 
     public boolean isColumnWatched(int columnX, int columnZ) {
-        WatchedColumn column = watchedColumns.get(columnX, columnZ);
+        Chunk column = provider.getLoadedColumn(columnX, columnZ);
 
-        return column != null && !column.watchingPlayers.isEmpty();
-    }
-
-    public boolean isCubeWatched(int cubeX, int cubeY, int cubeZ) {
-        WatchedCube cube = watchedCubes.get(cubeX, cubeY, cubeZ);
-
-        return cube != null && !cube.watchingPlayers.isEmpty();
+        return column != null && !getChanges(column).watchingPlayers.isEmpty();
     }
 
     public boolean isCubeWatchedAndPresent(int cubeX, int cubeY, int cubeZ) {
-        WatchedCube cube = watchedCubes.get(cubeX, cubeY, cubeZ);
+        Cube cube = provider.getLoadedCube(cubeX, cubeY, cubeZ);
 
-        return cube != null && cube.cube != null && !cube.watchingPlayers.isEmpty();
+        return cube != null && !getChanges(cube).watchingPlayers.isEmpty();
     }
 
     // CHECKED: 1.10.2-12.18.1.2092
     @Override
     public boolean isPlayerWatchingChunk(EntityPlayerMP player, int cubeX, int cubeZ) {
-        WatchedColumn column = watchedColumns.get(cubeX, cubeZ);
+        Chunk column = provider.getLoadedColumn(cubeX, cubeZ);
 
-        if (column == null || column.column == null) return false;
+        if (column == null) return false;
 
-        for (WatchingPlayer watchingPlayer : column.watchingPlayers) {
+        for (WatchingPlayer watchingPlayer : getChanges(column).watchingPlayers) {
             if (watchingPlayer.player == player) return true;
         }
 
@@ -664,11 +643,11 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     }
 
     public boolean isPlayerWatchingCube(EntityPlayerMP player, int cubeX, int cubeY, int cubeZ) {
-        WatchedCube cube = watchedCubes.get(cubeX, cubeY, cubeZ);
+        Cube cube = provider.getLoadedCube(cubeX, cubeY, cubeZ);
 
-        if (cube == null || cube.cube == null) return false;
+        if (cube == null) return false;
 
-        for (WatchingPlayer watchingPlayer : cube.watchingPlayers) {
+        for (WatchingPlayer watchingPlayer : getChanges(cube).watchingPlayers) {
             if (watchingPlayer.player == player) return true;
         }
 
@@ -697,60 +676,37 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             && newVerticalViewDistance == this.verticalViewDistance) {
             return;
         }
+
         int oldHorizontalViewDistance = this.horizontalViewDistance;
         int oldVerticalViewDistance = this.verticalViewDistance;
 
-        // Somehow the view distances went in opposite directions
-        if ((newHorizontalViewDistance < oldHorizontalViewDistance && newVerticalViewDistance > oldVerticalViewDistance)
-            || (newHorizontalViewDistance > oldHorizontalViewDistance
-                && newVerticalViewDistance < oldVerticalViewDistance)) {
-            // Adjust the values separately to avoid imploding
-            setPlayerViewDistance(newHorizontalViewDistance, oldVerticalViewDistance);
-            setPlayerViewDistance(newHorizontalViewDistance, newVerticalViewDistance);
-            return;
-        }
-
         for (WatchingPlayer watchingPlayer : this.players.values()) {
 
-            EntityPlayerMP player = watchingPlayer.player;
             CubePos playerPos = watchingPlayer.getManagedCubePos();
 
-            if (newHorizontalViewDistance > oldHorizontalViewDistance
-                || newVerticalViewDistance > oldVerticalViewDistance) {
-                // if newRadius is bigger, we only need to load new cubes
-                CuboidalCubeSelector.INSTANCE
-                    .forAllVisibleFrom(playerPos, newHorizontalViewDistance, newVerticalViewDistance, pos -> {
-                        getOrCreateWatchedColumn(pos.chunkPos()).addPlayer(watchingPlayer);
-                        getOrCreateCubeWatcher(pos).addPlayer(watchingPlayer);
-                    });
-            } else {
-                // either both got smaller or only one of them changed
-                Set<CubePos> cubesToUnload = new HashSet<>();
-                Set<ChunkCoordIntPair> columnsToUnload = new HashSet<>();
-                CuboidalCubeSelector.INSTANCE.findAllUnloadedOnViewDistanceDecrease(
-                    playerPos,
-                    oldHorizontalViewDistance,
-                    newHorizontalViewDistance,
-                    oldVerticalViewDistance,
-                    newVerticalViewDistance,
-                    cubesToUnload,
-                    columnsToUnload);
+            var delta = CuboidalCubeSelector.INSTANCE.findChanged(
+                playerPos,
+                playerPos,
+                oldHorizontalViewDistance,
+                oldVerticalViewDistance,
+                newHorizontalViewDistance,
+                newVerticalViewDistance);
 
-                cubesToUnload.forEach(pos -> {
-                    WatchedCube cube = watchedCubes.get(pos);
-
-                    if (cube != null) cube.removePlayer(watchingPlayer);
-                });
-                columnsToUnload.forEach(pos -> {
-                    WatchedColumn column = watchedColumns.get(pos.chunkXPos, pos.chunkZPos);
-
-                    if (column != null) column.removePlayer(watchingPlayer);
-                });
-            }
+            applyWorldVisibilityChanges(watchingPlayer, delta);
         }
 
         this.horizontalViewDistance = newHorizontalViewDistance;
         this.verticalViewDistance = newVerticalViewDistance;
+    }
+
+    private void applyWorldVisibilityChanges(WatchingPlayer player, WorldVisibilityChange delta) {
+        delta.columnsToLoad.forEach(col -> onPlayerStartedViewingColumn(player, col));
+        delta.cubesToLoad.forEach(pos -> onPlayerStartedViewingCube(player, pos));
+
+        delta.cubesToUnload.forEach(pos -> onPlayerStoppedViewingCube(player, pos));
+        delta.columnsToUnload.forEach(col -> onPlayerStoppedViewingColumn(player, col));
+
+        player.flushCubes();
     }
 
     private static class WatchingPlayer {
@@ -809,56 +765,24 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         }
     }
 
-    enum Dirtiness {
+    public enum Dirtiness {
         None,
         Partial,
         Full
     }
 
-    private class WatchedColumn extends ChunkCoordIntPair implements XZAddressable {
+    private class ColumnChanges {
 
-        public Chunk column;
-        public final BooleanArray2D dirtyColumns = new BooleanArray2D(16, 16);
-        public final ReferenceOpenHashSet<WatchingPlayer> watchingPlayers = new ReferenceOpenHashSet<>(4);
-        public long lastInhabitedTime;
+        public final Chunk column;
 
         public Dirtiness dirty = Dirtiness.None;
 
-        public WatchedColumn(int x, int z) {
-            super(x, z);
+        public final BooleanArray2D dirtyColumns = new BooleanArray2D(16, 16);
 
-            setColumn(provider.getLoadedColumn(x, z));
-        }
+        public final ReferenceOpenHashSet<WatchingPlayer> watchingPlayers = new ReferenceOpenHashSet<>(1);
 
-        public void setColumn(@Nullable Chunk column) {
-            if (column != null) {
-                this.column = column;
-                this.lastInhabitedTime = column.inhabitedTime;
-
-                requestFullSync();
-            }
-        }
-
-        public void addPlayer(WatchingPlayer player) {
-            if (watchingPlayers.contains(player)) return;
-
-            watchingPlayers.add(player);
-
-            if (column != null) {
-                PacketEncoderColumn.createPacket(column)
-                    .sendToPlayer(player.player);
-            }
-        }
-
-        public void removePlayer(WatchingPlayer player) {
-            if (!watchingPlayers.contains(player)) return;
-
-            watchingPlayers.remove(player);
-
-            if (column != null) {
-                PacketEncoderUnloadColumn.createPacket(chunkXPos, chunkZPos)
-                    .sendToPlayer(player.player);
-            }
+        public ColumnChanges(Chunk column) {
+            this.column = column;
         }
 
         public void markDirty(int blockX, int blockZ) {
@@ -871,76 +795,31 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
             if (this.dirty == Dirtiness.None) {
                 this.dirty = Dirtiness.Partial;
-                CubicPlayerManager.this.dirtyColumns.add(this);
             } else if (dirtyColumns.cardinality() >= ForgeModContainer.clumpingThreshold) {
-                requestFullSync();
+                this.dirty = Dirtiness.Full;
+                dirtyColumns.clear();
             }
-        }
 
-        public void requestFullSync() {
-            this.dirty = Dirtiness.Full;
-            dirtyColumns.clear();
-            CubicPlayerManager.this.dirtyColumns.add(this);
+            CubicPlayerManager.this.deferredColumnSyncs.add(column);
         }
 
         public void clean() {
             this.dirtyColumns.clear();
             this.dirty = Dirtiness.None;
         }
-
-        private void syncFull() {
-            var packet = PacketEncoderColumn.createPacket(column);
-
-            for (WatchingPlayer player : this.watchingPlayers) {
-                packet.sendToPlayer(player.player);
-            }
-        }
-
-        private void syncPartial() {
-            var packet = PacketEncoderHeightMapUpdate.createPacket(dirtyColumns, column);
-
-            for (WatchingPlayer player : this.watchingPlayers) {
-                packet.sendToPlayer(player.player);
-            }
-        }
-
-        @Override
-        public int getX() {
-            return chunkXPos;
-        }
-
-        @Override
-        public int getZ() {
-            return chunkZPos;
-        }
     }
 
-    private class WatchedCube extends CubePos {
+    private class CubeChanges {
 
-        public EagerCubeLoadRequest request;
-        public Cube cube;
+        public final Cube cube;
+
+        public Dirtiness dirty = Dirtiness.None;
         public final ShortArrayList dirtyBlocks = new ShortArrayList(8);
-        public final ArrayList<WatchingPlayer> watchingPlayers = new ArrayList<>(1);
 
-        private Dirtiness dirty = Dirtiness.None;
+        public final ReferenceOpenHashSet<WatchingPlayer> watchingPlayers = new ReferenceOpenHashSet<>(1);
 
-        public WatchedCube(int cubeX, int cubeY, int cubeZ) {
-            super(cubeX, cubeY, cubeZ);
-
-            setCube(provider.getLoadedCube(cubeX, cubeY, cubeZ));
-        }
-
-        public void setCube(@Nullable Cube cube) {
-            if (cube != null && cube.getInitLevel() == CubeInitLevel.Lit) {
-                this.cube = cube;
-
-                requestFullSync();
-
-                if (this.request != null) {
-                    if (!this.request.isCompleted()) this.request.cancel();
-                    this.request = null;
-                }
-            }
+        public CubeChanges(Cube cube) {
+            this.cube = cube;
         }
 
         public void markDirty(int blockX, int blockY, int blockZ) {
@@ -954,85 +833,20 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
             if (this.dirty == Dirtiness.None) {
                 this.dirty = Dirtiness.Partial;
-                CubicPlayerManager.this.dirtyCubes.add(this);
             } else if (dirtyBlocks.size() >= ForgeModContainer.clumpingThreshold) {
-                requestFullSync();
+                this.dirty = Dirtiness.Full;
+                this.dirtyBlocks.clear();
             }
 
-            CubeStatusVisualizer.put(new CubePos(this), CubeStatus.Dirty);
-        }
+            CubicPlayerManager.this.deferredCubeSyncs.add(cube);
 
-        public void requestFullSync() {
-            this.dirty = Dirtiness.Full;
-            dirtyBlocks.clear();
-            CubicPlayerManager.this.dirtyCubes.add(this);
-        }
-
-        public void addPlayer(WatchingPlayer player) {
-            if (watchingPlayers.contains(player)) return;
-
-            watchingPlayers.add(player);
-
-            if (cube != null) {
-                player.queueCube(cube);
-            } else {
-                if (request == null || request.isCompleted()) {
-                    request = provider.loadCubeEagerly(getX(), getY(), getZ(), Requirement.LIGHT);
-                }
-            }
-        }
-
-        public void removePlayer(WatchingPlayer player) {
-            if (!watchingPlayers.contains(player)) return;
-
-            watchingPlayers.remove(player);
-
-            if (cube != null) {
-                PacketEncoderUnloadCube.createPacket(cube.getCoords())
-                    .sendToPlayer(player.player);
-            }
-
-            if (watchingPlayers.isEmpty() && this.request != null) this.request.cancel();
+            CubeStatusVisualizer.put(cube.getCoords(), CubeStatus.Dirty);
         }
 
         public void clean() {
             this.dirtyBlocks.clear();
             this.dirty = Dirtiness.None;
-            CubeStatusVisualizer.put(new CubePos(this), CubeStatus.Synced);
-        }
-
-        private void syncPartial() {
-            // send all the dirty blocks
-            short[] dirtyBlocks = this.dirtyBlocks.toShortArray();
-            var cubePacket = PacketEncoderCubeBlockChange.createPacket(this.cube, dirtyBlocks);
-
-            List<Packet> tiles = new ArrayList<>(0);
-
-            int blockX = this.cube.getX() << 4;
-            int blockY = this.cube.getY() << 4;
-            int blockZ = this.cube.getZ() << 4;
-
-            for (short localAddress : dirtyBlocks) {
-                int x = AddressTools.getLocalX(localAddress);
-                int y = AddressTools.getLocalY(localAddress);
-                int z = AddressTools.getLocalZ(localAddress);
-
-                TileEntity te = getWorldServer().getTileEntity(blockX + x, blockY + y, blockZ + z);
-
-                if (te == null) continue;
-
-                Packet packet = te.getDescriptionPacket();
-
-                if (packet != null) tiles.add(packet);
-            }
-
-            for (WatchingPlayer player : this.watchingPlayers) {
-                cubePacket.sendToPlayer(player.player);
-
-                for (Packet tilePacket : tiles) {
-                    player.player.playerNetServerHandler.sendPacket(tilePacket);
-                }
-            }
+            CubeStatusVisualizer.put(cube.getCoords(), CubeStatus.Synced);
         }
     }
 }

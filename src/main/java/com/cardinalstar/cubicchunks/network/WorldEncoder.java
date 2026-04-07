@@ -25,6 +25,7 @@ import java.util.List;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
@@ -37,6 +38,7 @@ import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.Mods;
+import com.cardinalstar.cubicchunks.util.biome3d.DynamicBiomeArray;
 import com.cardinalstar.cubicchunks.world.core.ClientHeightMap;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
@@ -146,7 +148,7 @@ class WorldEncoder {
         return buffer;
     }
 
-    static void decodeCube(CCPacketBuffer in, List<Cube> cubes) {
+    static void decodeCube(CCPacketBuffer in, List<Cube> cubes, World world) {
         final boolean capi = Mods.ChunkAPI.isModLoaded();
 
         int[] oldHeights = new int[Cube.SIZE * Cube.SIZE];
@@ -161,13 +163,31 @@ class WorldEncoder {
         for (int i = 0; i < cubes.size(); i++) {
             Cube cube = cubes.get(i);
 
-            if (cube == null) continue;
-
-            cube.setClientCube();
-
             byte flags = in.readByte();
 
             boolean empty = (flags & 0b1) != 0;
+
+            if (cube == null) {
+                // The column doesn't exist on the client yet (out-of-order packet).
+                // We still must consume all bytes for this cube to keep the buffer
+                // aligned for the cubes that follow.
+                if (!empty && !capi) {
+                    in.skipBytes(4096); // block LSB array
+                    if (in.readBoolean()) in.skipBytes(2048); // optional block MSB array
+                    in.skipBytes(2048); // metadata
+                    in.skipBytes(2048); // block light
+                    if (!world.provider.hasNoSky) in.skipBytes(2048); // sky light
+                }
+                if (!empty) {
+                    in.skipBytes(Cube.SIZE * Cube.SIZE * 4); // heightmap (256 ints)
+                }
+                // biome: boolean flag + optional compressed stream
+                if (in.readBoolean()) new DynamicBiomeArray().read(in);
+                if (!empty && capi) in.readByteArray(buffer); // length-prefixed CAPI data
+                continue;
+            }
+
+            cube.setClientCube();
 
             ExtendedBlockStorage storage = null;
 

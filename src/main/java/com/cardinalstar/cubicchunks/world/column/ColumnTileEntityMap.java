@@ -25,7 +25,6 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -99,13 +98,12 @@ public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
         }
         ChunkPosition pos = (ChunkPosition) o;
         int y = Coords.blockToCube(pos.chunkPosY);
-        // when something other than CHECK is passed into Chunk.getTileEntity, then if the current TE is null
-        // it will try to create a new one. To do that it will get a block which will load the cube
-        // with the already existing TE. But the "create new TE" code will continue not knowing the TE just got loaded
-        // and will replace the newly loaded one
-        // so load the cube here to avoid problems. Other places use getCube() for consistency
-        ICube cube = column.getCube(y);
-        return cube.getTileEntityMap()
+        
+        // Use getLoadedCube to avoid loading or generating cubes.
+        // You almost never want to load chunks with this method, and you definitely never want to generate chunks with this method.
+        ICube cube = column.getLoadedCube(y);
+
+        return cube == null ? null : cube.getTileEntityMap()
             .get(o);
     }
 

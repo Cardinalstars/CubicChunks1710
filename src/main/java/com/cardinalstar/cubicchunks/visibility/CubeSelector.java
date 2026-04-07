@@ -20,26 +20,28 @@
  */
 package com.cardinalstar.cubicchunks.visibility;
 
-import java.util.Set;
 import java.util.function.Consumer;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.world.ChunkCoordIntPair;
 
+import com.cardinalstar.cubicchunks.api.XYZAddressable;
 import com.cardinalstar.cubicchunks.util.CubePos;
 
 @ParametersAreNonnullByDefault
-public abstract class CubeSelector {
+public interface CubeSelector {
 
-    public abstract void forAllVisibleFrom(CubePos cubePos, int horizontalViewDistance, int verticalViewDistance,
-        Consumer<CubePos> consumer);
+    void forAllVisibleCubes(CubePos cubePos, int horizontalViewDistance, int verticalViewDistance,
+        Consumer<CubePos> fn);
 
-    public abstract void findChanged(CubePos oldAddress, CubePos newAddress, int horizontalViewDistance,
-        int verticalViewDistance, Set<CubePos> cubesToRemove, Set<CubePos> cubesToLoad,
-        Set<ChunkCoordIntPair> columnsToRemove, Set<ChunkCoordIntPair> columnsToLoad);
+    void forAllVisibleColumns(CubePos cubePos, int horizontalViewDistance, int verticalViewDistance,
+        Consumer<ChunkCoordIntPair> fn);
 
-    public abstract void findAllUnloadedOnViewDistanceDecrease(CubePos playerAddress, int oldHorizontalViewDistance,
-        int newHorizontalViewDistance, int oldVerticalViewDistance, int newVerticalViewDistance,
-        Set<CubePos> cubesToUnload, Set<ChunkCoordIntPair> columnsToUnload);
+    WorldVisibilityChange findChanged(CubePos oldPos, CubePos newPos, int oldHorizonalView, int oldVerticalView,
+        int newHorizontalView, int newVerticalView);
+
+    boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance, int x, int y, int z);
+
+    boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance, int x, int z);
 }

@@ -347,7 +347,7 @@ public class CubeLoaderServer implements ICubeLoader {
                     .getChunkCoordIntPair()))
                 continue;
 
-            if (playerManager.isCubeWatched(cube.getX(), cube.getY(), cube.getZ())) continue;
+            if (playerManager.isCubeWatchedAndPresent(cube.getX(), cube.getY(), cube.getZ())) continue;
 
             if (cube.getTickets()
                 .canUnload()) {
