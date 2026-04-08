@@ -20,6 +20,7 @@
  */
 package com.cardinalstar.cubicchunks.util;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -29,7 +30,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
-import com.google.common.collect.Lists;
 
 @ParametersAreNonnullByDefault
 public class TicketList {
@@ -37,7 +37,7 @@ public class TicketList {
     private final Cube cube;
     private int tickRefs = 0;
     @Nonnull
-    private List<ITicket> tickets = Lists.newArrayListWithCapacity(1);
+    private final List<ITicket> tickets = new ArrayList<>(0);
 
     // null cube means it's "BlankCube"
     public TicketList(@Nullable Cube cube) {
@@ -75,8 +75,9 @@ public class TicketList {
             return; // we already have that ticket
         }
         tickets.add(ticket);
-        tickRefs += ticket.shouldTick() ? 1 : 0; // keep track of the number of tickets that want to tick
         if (ticket.shouldTick()) {
+            // keep track of the number of tickets that want to tick
+            tickRefs++;
             assert tickRefs > 0;
             if (tickRefs == 1) { // if it just got increased from zero
                 ((ICubicWorldInternal.Server) cube.getWorld()).addForcedCube(cube);

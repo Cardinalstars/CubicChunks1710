@@ -30,8 +30,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.function.BooleanSupplier;
 
 import javax.annotation.Detainted;
 import javax.annotation.Nonnull;
@@ -68,7 +66,6 @@ import com.cardinalstar.cubicchunks.world.cube.ICubeProviderInternal;
 import com.cardinalstar.cubicchunks.world.savedata.WorldFormatSavedData;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
-
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.ints.IntComparator;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -297,26 +294,14 @@ public class CubeProviderServer extends ChunkProviderServer
     }
 
     public void registerCallback(CubeLoaderCallback callback) {
-        if (callback != null) this.callbacks.add(callback);
+        this.callbacks.add(callback);
     }
 
     public void removeCallback(CubeLoaderCallback callback) {
-        if (callback != null) this.callbacks.remove(callback);
+        this.callbacks.remove(callback);
     }
 
     public void tick() {
-        long start = System.currentTimeMillis();
-        Random rand = this.worldObj.rand;
-        BooleanSupplier tickFaster = () -> System.currentTimeMillis() - start > 40;
-
-        profiler.startSection("Tick cubes");
-
-        for (Cube cube : getTickableCubes()) {
-            cube.tickCubeServer(tickFaster, rand);
-        }
-
-        profiler.endSection();
-
         getCubeLoader().setNow(worldObj.getTotalWorldTime());
 
         doEagerLoading();

@@ -46,6 +46,7 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
@@ -95,6 +96,11 @@ public class EmptyColumn extends Chunk implements IColumn {
     // @Override
     public Collection<? extends ICube> getLoadedCubes() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public ExtendedBlockStorage[] getTickableStorages() {
+        return new ExtendedBlockStorage[0];
     }
 
     // @Override

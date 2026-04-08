@@ -178,6 +178,10 @@ public abstract class MixinChunk_Column {
         return this.cubeMap.all();
     }
 
+    public ExtendedBlockStorage[] chunk$getTickableStorages() {
+        return this.cubeMap.getTickableStorages();
+    }
+
     public Iterable<? extends ICube> chunk$getLoadedCubes(int startY, int endY) {
         return this.cubeMap.cubes(startY, endY);
     }
