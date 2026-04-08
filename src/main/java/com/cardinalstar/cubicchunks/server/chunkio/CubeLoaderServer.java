@@ -347,7 +347,7 @@ public class CubeLoaderServer implements ICubeLoader {
                     .getChunkCoordIntPair()))
                 continue;
 
-            if (playerManager.isCubeWatchedAndPresent(cube.getX(), cube.getY(), cube.getZ())) continue;
+            if (playerManager.isCubeWatched(cube.getX(), cube.getY(), cube.getZ())) continue;
 
             if (cube.getTickets()
                 .canUnload()) {
@@ -404,7 +404,7 @@ public class CubeLoaderServer implements ICubeLoader {
         cubeIO.close();
     }
 
-    private void handleSideEffects(GenerationResult<?> result, int colX, int colZ, boolean doColumns, boolean doCubes) {
+    private void handleSideEffects(GenerationResult<?> result, boolean doColumns, boolean doCubes) {
         if (doColumns) {
             for (Chunk column : result.columnSideEffects) {
                 ColumnInfo info = columns.get(column.xPosition, column.zPosition);
@@ -507,7 +507,7 @@ public class CubeLoaderServer implements ICubeLoader {
 
             cubeIO.saveColumn(pos, column);
 
-            handleSideEffects(result, column.xPosition, column.zPosition, true, true);
+            handleSideEffects(result, true, true);
 
             return true;
         }
@@ -721,7 +721,7 @@ public class CubeLoaderServer implements ICubeLoader {
                 cube.setMeta(CUBE_INFO, this);
 
                 // Inject the columns, if any were generated.
-                handleSideEffects(result, getX(), getZ(), true, false);
+                handleSideEffects(result, true, false);
 
                 // You can't generate a cube without also generating a column. Fetch it here if it's missing.
                 ensureColumn(Requirement.GET_CACHED);
@@ -735,7 +735,7 @@ public class CubeLoaderServer implements ICubeLoader {
                 onCubeLoaded();
 
                 // Inject the other cubes in this column
-                handleSideEffects(result, getX(), getZ(), false, true);
+                handleSideEffects(result, false, true);
             }
 
             boolean generated = isInitedTo(CubeInitLevel.Generated);

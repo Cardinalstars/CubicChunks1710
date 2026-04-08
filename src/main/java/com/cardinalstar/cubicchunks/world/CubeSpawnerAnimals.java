@@ -120,7 +120,7 @@ public class CubeSpawnerAnimals implements ISpawnerAnimals {
                 cubeCount++;
 
                 boolean valid = ((CubicPlayerManager) world.getPlayerManager())
-                    .isCubeWatchedAndPresent(v.x(), v.y(), v.z());
+                    .isCubeWatched(v.x(), v.y(), v.z());
 
                 if (valid) {
                     possibleCubes.add(v.x(), v.y(), v.z());

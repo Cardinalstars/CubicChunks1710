@@ -42,6 +42,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.ForgeModContainer;
 
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3ic;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
@@ -286,8 +287,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
     @Override
     public void onColumnLoaded(Chunk column) {
-        var changes = new ColumnChanges(column);
-        ((MetaContainer) column).setMeta(COLUMN_CHANGES, changes);
+        var changes = getChanges(column);
 
         for (var player : players.values()) {
             boolean visible = CuboidalCubeSelector.INSTANCE.contains(
@@ -619,12 +619,20 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     public boolean isColumnWatched(int columnX, int columnZ) {
         Chunk column = provider.getLoadedColumn(columnX, columnZ);
 
+        return isColumnWatched(column);
+    }
+
+    public boolean isColumnWatched(@Nullable Chunk column) {
         return column != null && !getChanges(column).watchingPlayers.isEmpty();
     }
 
-    public boolean isCubeWatchedAndPresent(int cubeX, int cubeY, int cubeZ) {
+    public boolean isCubeWatched(int cubeX, int cubeY, int cubeZ) {
         Cube cube = provider.getLoadedCube(cubeX, cubeY, cubeZ);
 
+        return isCubeWatched(cube);
+    }
+
+    public boolean isCubeWatched(@Nullable Cube cube) {
         return cube != null && !getChanges(cube).watchingPlayers.isEmpty();
     }
 
