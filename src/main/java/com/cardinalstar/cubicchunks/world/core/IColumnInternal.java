@@ -34,9 +34,9 @@ public interface IColumnInternal extends IColumn {
 
     void setColumn(boolean isColumn);
 
-    Block[] getCompatGenerationBlockArray();
+    Block[] takeCompatGenerationBlockArray();
 
-    byte[] getCompatGenerationByteArray();
+    byte[] takeCompatGenerationByteArray();
 
     void removeFromStagingHeightmap(ICube cube);
 

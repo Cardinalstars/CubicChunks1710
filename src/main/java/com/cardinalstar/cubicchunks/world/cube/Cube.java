@@ -79,8 +79,7 @@ import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
-
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 
 /**
  * A cube is our extension of minecraft's chunk system to three dimensions. Each cube encloses a cubic area in the world
@@ -847,7 +846,7 @@ public class Cube implements ICube {
         return forcedLoadReasons;
     }
 
-    private final Object2ObjectArrayMap<MetaKey<?>, Object> meta = new Object2ObjectArrayMap<>();
+    private final Reference2ReferenceArrayMap<MetaKey<?>, Object> meta = new Reference2ReferenceArrayMap<>();
 
     @Override
     public <T> T getMeta(MetaKey<T> key) {

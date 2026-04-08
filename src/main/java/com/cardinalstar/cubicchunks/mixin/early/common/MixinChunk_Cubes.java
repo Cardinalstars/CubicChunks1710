@@ -80,6 +80,7 @@ import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.llamalad7.mixinextras.expression.Definition;
 import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
@@ -307,12 +308,16 @@ public abstract class MixinChunk_Cubes {
         this.isColumn = isColumn;
     }
 
-    public Block[] chunk_internal$getCompatGenerationBlockArray() {
-        return compatGenerationBlockArray;
+    public Block[] chunk_internal$takeCompatGenerationBlockArray() {
+        Block[] array = compatGenerationBlockArray;
+        compatGenerationBlockArray = null;
+        return array;
     }
 
-    public byte[] chunk_internal$getCompatGenerationByteArray() {
-        return compatGenerationByteArray;
+    public byte[] chunk_internal$takeCompatGenerationByteArray() {
+        byte[] array = compatGenerationByteArray;
+        compatGenerationByteArray = null;
+        return array;
     }
 
     // this method can't be saved by just redirecting EBS access
@@ -657,17 +662,18 @@ public abstract class MixinChunk_Cubes {
     // getLightFor
     // ==============================================
 
-    @Inject(method = "getSavedLightValue", at = @At("HEAD"), cancellable = true)
-    private void replacedGetSavedLightValueForCC(EnumSkyBlock type, int x, int y, int z,
-        CallbackInfoReturnable<Integer> cir) {
+    @WrapMethod(method = "getSavedLightValue")
+    private int replacedGetSavedLightValueForCC(EnumSkyBlock type, int x, int y, int z, Operation<Integer> original) {
         if (!isColumn) {
-            return;
+            return original.call(type, x, y, z);
         }
+
         if (((ICubicWorldInternal) worldObj).getLightingManager() != null) {
             ((ICubicWorldInternal) worldObj).getLightingManager()
                 .onGetLight(type, x, y, z);
         }
-        cir.setReturnValue(((Cube) ((IColumn) this).getCube(blockToCube(y))).getCachedLightFor(type, x, y, z));
+
+        return ((Cube) ((IColumn) this).getCube(blockToCube(y))).getCachedLightFor(type, x, y, z);
     }
 
     @Nullable
