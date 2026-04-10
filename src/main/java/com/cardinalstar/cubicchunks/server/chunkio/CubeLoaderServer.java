@@ -34,6 +34,7 @@ import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 
+import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Setter;
 
@@ -50,6 +51,7 @@ public class CubeLoaderServer implements ICubeLoader {
     private final XZMap<ColumnInfo> columns = new XZMap<>();
 
     private int pauseLoadCalls;
+    private final List<Pair<Cube, CubeInitLevel>> pendingCubeGenerates = new ArrayList<>();
     private final List<Cube> pendingCubeLoads = new ArrayList<>();
     private final List<Chunk> pendingColumnLoads = new ArrayList<>();
 
@@ -89,6 +91,12 @@ public class CubeLoaderServer implements ICubeLoader {
             }
 
             pendingCubeLoads.clear();
+
+            for (var p : pendingCubeGenerates) {
+                callback.onCubeGenerated(p.left(), p.right());
+            }
+
+            pendingCubeGenerates.clear();
         }
     }
 
@@ -209,7 +217,7 @@ public class CubeLoaderServer implements ICubeLoader {
             cubes.remove(cubeInfo);
         } else {
             if (success && changed) {
-                callback.onCubeGenerated(cubeInfo.cube, cubeInfo.getInitLevel());
+                invokeGenerateCallback(cubeInfo.cube, cubeInfo.getInitLevel());
             }
         }
 
@@ -231,7 +239,7 @@ public class CubeLoaderServer implements ICubeLoader {
         if (cubeInfo == null) return;
 
         if (cubeInfo.updateInitLevel()) {
-            callback.onCubeGenerated(cubeInfo.cube, cubeInfo.getInitLevel());
+            invokeGenerateCallback(cubeInfo.cube, cubeInfo.getInitLevel());
         }
     }
 
@@ -404,6 +412,30 @@ public class CubeLoaderServer implements ICubeLoader {
         cubeIO.close();
     }
 
+    private void invokeLoadCallback(Chunk column) {
+        if (pauseLoadCalls > 0) {
+            pendingColumnLoads.add(column);
+        } else {
+            callback.onColumnLoaded(column);
+        }
+    }
+
+    private void invokeLoadCallback(Cube cube) {
+        if (pauseLoadCalls > 0) {
+            pendingCubeLoads.add(cube);
+        } else {
+            callback.onCubeLoaded(cube);
+        }
+    }
+
+    private void invokeGenerateCallback(Cube cube, CubeInitLevel level) {
+        if (pauseLoadCalls > 0) {
+            pendingCubeGenerates.add(Pair.of(cube, level));
+        } else {
+            callback.onCubeGenerated(cube, level);
+        }
+    }
+
     private void handleSideEffects(GenerationResult<?> result, boolean doColumns, boolean doCubes) {
         if (doColumns) {
             for (Chunk column : result.columnSideEffects) {
@@ -449,7 +481,6 @@ public class CubeLoaderServer implements ICubeLoader {
                 info.ensureColumn(Requirement.GET_CACHED);
 
                 info.onCubeLoaded();
-                callback.onCubeGenerated(cube, cube.getInitLevel());
             }
         }
     }
@@ -545,6 +576,14 @@ public class CubeLoaderServer implements ICubeLoader {
         }
 
         public void onColumnLoaded() {
+            if (this.column.xPosition != this.getX()) {
+                throw new IllegalStateException("Expected column to be at X=" + getX() + " but it was at X=" + this.column.xPosition + " (" + this.column + ", " + world + ")");
+            }
+
+            if (this.column.zPosition != this.getZ()) {
+                throw new IllegalStateException("Expected column to be at Z=" + getZ() + " but it was at Z=" + this.column.zPosition + " (" + this.column + ", " + world + ")");
+            }
+
             column.lastSaveTime = world.getTotalWorldTime();
 
             ((IColumnInternal) column).setColumn(true);
@@ -553,11 +592,7 @@ public class CubeLoaderServer implements ICubeLoader {
 
             CubeLoaderServer.this.generator.recreateStructures(column);
 
-            if (pauseLoadCalls == 0) {
-                callback.onColumnLoaded(column);
-            } else {
-                pendingColumnLoads.add(column);
-            }
+            invokeLoadCallback(column);
         }
 
         public void onColumnUnloaded() {
@@ -772,6 +807,18 @@ public class CubeLoaderServer implements ICubeLoader {
                 throw new IllegalStateException("Loaded a cube without giving it a column reference: this is a bug");
             }
 
+            if (this.cube.getX() != this.getX()) {
+                throw new IllegalStateException("Expected column to be at X=" + getX() + " but it was at X=" + this.cube.getX() + " (" + this.column + ", " + world + ")");
+            }
+
+            if (this.cube.getY() != this.getY()) {
+                throw new IllegalStateException("Expected column to be at Y=" + getY() + " but it was at Y=" + this.cube.getY() + " (" + this.column + ", " + world + ")");
+            }
+
+            if (this.cube.getZ() != this.getZ()) {
+                throw new IllegalStateException("Expected column to be at Z=" + getZ() + " but it was at Z=" + this.cube.getZ() + " (" + this.column + ", " + world + ")");
+            }
+
             updateInitLevel();
 
             ((IColumn) column.column).addCube(cube);
@@ -781,11 +828,7 @@ public class CubeLoaderServer implements ICubeLoader {
 
             CubeLoaderServer.this.generator.recreateStructures(cube);
 
-            if (pauseLoadCalls == 0) {
-                callback.onCubeLoaded(cube);
-            } else {
-                pendingCubeLoads.add(cube);
-            }
+            invokeLoadCallback(cube);
         }
 
         public boolean updateInitLevel() {

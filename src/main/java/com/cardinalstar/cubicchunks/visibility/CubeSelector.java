@@ -26,7 +26,6 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 import net.minecraft.world.ChunkCoordIntPair;
 
-import com.cardinalstar.cubicchunks.api.XYZAddressable;
 import com.cardinalstar.cubicchunks.util.CubePos;
 
 @ParametersAreNonnullByDefault
@@ -43,5 +42,5 @@ public interface CubeSelector {
 
     boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance, int x, int y, int z);
 
-    boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance, int x, int z);
+    boolean contains(CubePos playerPos, int horizontalViewDistance, int x, int z);
 }

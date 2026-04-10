@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -390,14 +389,6 @@ public class CubeProviderServer extends ChunkProviderServer
         }
 
         profiler.endSection();
-    }
-
-    public Collection<Chunk> getTickableChunks() {
-        return ((CubicPlayerManager) worldServer.getPlayerManager()).getColumns();
-    }
-
-    public Collection<Cube> getTickableCubes() {
-        return ((CubicPlayerManager) worldServer.getPlayerManager()).getCubes();
     }
 
     @Override

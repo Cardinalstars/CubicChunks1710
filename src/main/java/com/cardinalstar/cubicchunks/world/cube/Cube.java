@@ -859,6 +859,20 @@ public class Cube implements ICube {
         meta.put(key, value);
     }
 
+    @Override
+    public String toString() {
+        return "Cube{"
+            + "object id="
+            + System.identityHashCode(this)
+            + ", coords="
+            + coords
+            + ", isCubeLoaded="
+            + isCubeLoaded
+            + ", populationStatus="
+            + Integer.toBinaryString(populationStatus)
+            + '}';
+    }
+
     public interface ICubeLightTrackingInfo {
 
         boolean needsSaving(ICube cube);

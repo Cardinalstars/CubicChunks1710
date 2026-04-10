@@ -109,42 +109,15 @@ public class CuboidalCubeSelector implements CubeSelector {
     }
 
     @Override
-    public boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance,
-        int x, int y, int z) {
-        return isPointWithinCubeVolume(
-            playerPos.getX(),
-            playerPos.getY(),
-            playerPos.getZ(),
-            x, y, z,
-            horizontalViewDistance,
-            verticalViewDistance);
+    public boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance, int x, int y, int z) {
+        return Math.abs(playerPos.getX() - x) <= horizontalViewDistance
+            && Math.abs(playerPos.getY() - y) <= verticalViewDistance
+            && Math.abs(playerPos.getZ() - z) <= horizontalViewDistance;
     }
 
     @Override
-    public boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance,
-        int x, int z) {
-        return isPointWithinCubeVolume(
-            playerPos.getX(),
-            playerPos.getY(),
-            playerPos.getZ(),
-            x,
-            // reuse player pos intentionally since this is the x+z/column overload
-            playerPos.getY(),
-            z,
-            horizontalViewDistance,
-            verticalViewDistance);
-    }
-
-    private boolean isPointWithinCubeVolume(int cubeX, int cubeY, int cubeZ, int pointX, int pointY, int pointZ,
-        int horizontal, int vertical) {
-        int dx = cubeX - pointX;
-        int dy = cubeY - pointY;
-        int dz = cubeZ - pointZ;
-        return dx >= -horizontal
-            && dx <= horizontal
-            && dy >= -vertical
-            && dy <= vertical
-            && dz >= -horizontal
-            && dz <= horizontal;
+    public boolean contains(CubePos playerPos, int horizontalViewDistance, int x, int z) {
+        return Math.abs(playerPos.getX() - x) <= horizontalViewDistance
+            && Math.abs(playerPos.getZ() - z) <= horizontalViewDistance;
     }
 }

@@ -1,0 +1,174 @@
+package com.cardinalstar.cubicchunks.server;
+
+import java.util.Iterator;
+
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.chunk.Chunk;
+
+import com.cardinalstar.cubicchunks.CubicChunks;
+import com.cardinalstar.cubicchunks.api.XYZAddressable;
+import com.cardinalstar.cubicchunks.network.PacketEncoderColumn;
+import com.cardinalstar.cubicchunks.network.PacketEncoderColumn.PacketColumn;
+import com.cardinalstar.cubicchunks.network.PacketEncoderCubeBlockChange;
+import com.cardinalstar.cubicchunks.network.PacketEncoderHeightMapUpdate;
+import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadColumn;
+import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadColumn.PacketUnloadColumn;
+import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadCube;
+import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadCube.PacketUnloadCube;
+import com.cardinalstar.cubicchunks.server.CubicPlayerManager.WatchingPlayer;
+import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
+import com.cardinalstar.cubicchunks.util.AddressTools;
+import com.cardinalstar.cubicchunks.util.BlockPosMap;
+import com.cardinalstar.cubicchunks.util.BlockPosSet;
+import com.cardinalstar.cubicchunks.util.BooleanArray2D;
+import com.cardinalstar.cubicchunks.util.ChunkMap;
+import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.cube.Cube;
+import it.unimi.dsi.fastutil.shorts.ShortArrayList;
+
+public class WorldSyncStateMachine {
+
+    private final CubeProviderServer provider;
+
+    public WatchingPlayer[] players = new WatchingPlayer[0];
+
+    private static class ColumnData {
+        public int syncedCubeCount;
+    }
+
+    private final ChunkMap<ColumnData> syncedColumns = new ChunkMap<>();
+    private final BlockPosSet syncedCubes = new BlockPosSet();
+
+    private final BlockPosSet dirtyCubes = new BlockPosSet();
+    private final BlockPosMap<ShortArrayList> dirtyBlocks = new BlockPosMap<>();
+    private final ChunkMap<BooleanArray2D> dirtyHeightCols = new ChunkMap<>();
+
+    public WorldSyncStateMachine(CubeProviderServer provider) {
+        this.provider = provider;
+    }
+
+    public void flush() {
+        Iterator<XYZAddressable> cubeIter = dirtyCubes.fastIterator();
+
+        while (cubeIter.hasNext()) {
+            var pos = cubeIter.next();
+
+            Cube cube = provider.getLoadedCube(pos.getX(), pos.getY(), pos.getZ());
+
+            boolean wasCubeSynced = syncedCubes.contains(pos);
+
+            if ((cube == null || !cube.isInitializedToLevel(CubeInitLevel.Lit)) && wasCubeSynced) {
+                PacketUnloadCube packet = PacketEncoderUnloadCube.createPacket(new CubePos(pos));
+
+                for (var player : players) {
+                    if (player.isWatchingCube(pos.getX(), pos.getY(), pos.getZ())) {
+                        packet.sendToPlayer(player.player);
+                    }
+                }
+
+                syncedCubes.remove(pos);
+
+                ColumnData columnData = syncedColumns.get(pos.getX(), pos.getZ());
+
+                columnData.syncedCubeCount--;
+
+                if (columnData.syncedCubeCount <= 0) {
+                    syncedColumns.remove(pos.getX(), pos.getZ());
+
+                    PacketUnloadColumn packet2 = PacketEncoderUnloadColumn.createPacket(pos.getX(), pos.getZ());
+
+                    for (var player : players) {
+                        if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
+                            packet2.sendToPlayer(player.player);
+                        }
+                    }
+                }
+            } else if (cube != null && cube.isInitializedToLevel(CubeInitLevel.Lit) && !wasCubeSynced) {
+                ColumnData columnData = syncedColumns.get(pos.getX(), pos.getZ());
+
+                if (columnData == null) {
+                    columnData = new ColumnData();
+                    syncedColumns.put(pos.getX(), pos.getZ(), columnData);
+
+                    PacketColumn packet = PacketEncoderColumn.createPacket(cube.getColumn());
+
+                    for (var player : players) {
+                        if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
+                            packet.sendToPlayer(player.player);
+                        }
+                    }
+                }
+
+                columnData.syncedCubeCount++;
+                syncedCubes.add(pos);
+
+                for (var player : players) {
+                    if (player.isWatchingCube(pos.getX(), pos.getY(), pos.getZ())) {
+                        player.queueCube(cube);
+                    }
+                }
+            }
+        }
+
+        for (var player : players) {
+            player.flushCubes();
+        }
+
+        for (var e : dirtyBlocks.fastEntryIterable()) {
+            if (!syncedCubes.contains(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
+                CubicChunks.LOGGER.error("Tried to sync {} block updates to a cube at {} which was not synced",
+                    e.getValue().size(),
+                    new CubePos(e.getBlockX(), e.getBlockY(), e.getBlockZ()));
+
+                continue;
+            }
+
+            Cube cube = provider.getLoadedCube(e.getBlockX(), e.getBlockY(), e.getBlockZ());
+
+            var packet = PacketEncoderCubeBlockChange.createPacket(cube, e.getValue());
+
+            for (var player : players) {
+                if (player.isWatchingCube(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
+                    packet.sendToPlayer(player.player);
+                }
+            }
+        }
+
+        for (var e : dirtyHeightCols.fastEntryIterable()) {
+            if (!syncedColumns.containsKey(e.getChunkX(), e.getChunkZ())) {
+                CubicChunks.LOGGER.error("Tried to sync {} height map updates to a column at {} which was not synced",
+                    e.getValue().size(),
+                    new ChunkCoordIntPair(e.getChunkX(), e.getChunkZ()));
+
+                continue;
+            }
+
+            Chunk column = provider.getLoadedColumn(e.getChunkX(), e.getChunkZ());
+
+            var packet = PacketEncoderHeightMapUpdate.createPacket(e.getValue(), column);
+
+            for (var player : players) {
+                if (player.isWatchingColumn(e.getChunkX(), e.getChunkZ())) {
+                    packet.sendToPlayer(player.player);
+                }
+            }
+        }
+
+        dirtyCubes.clear();
+        dirtyBlocks.clear();
+        dirtyHeightCols.clear();
+    }
+
+    public void onCubeStatusChanged(int x, int y, int z) {
+        dirtyCubes.add(x, y, z);
+    }
+
+    public void onHeightChanged(int x, int z) {
+        dirtyHeightCols.computeIfAbsent(x >> 4, z >> 4, (x1, z1) -> new BooleanArray2D(16, 16)).set(x & 0xF, z & 0xF);
+    }
+
+    public void onBlockChanged(int x, int y, int z) {
+        dirtyBlocks.computeIfAbsent(x >> 4, y >> 4, z >> 4, (x1, y1, z1) -> new ShortArrayList())
+            .add((short) AddressTools.getLocalAddress(x, y, z));
+    }
+}
