@@ -1,5 +1,6 @@
 package com.cardinalstar.cubicchunks.server;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import net.minecraft.world.ChunkCoordIntPair;
@@ -10,6 +11,7 @@ import com.cardinalstar.cubicchunks.api.XYZAddressable;
 import com.cardinalstar.cubicchunks.network.PacketEncoderColumn;
 import com.cardinalstar.cubicchunks.network.PacketEncoderColumn.PacketColumn;
 import com.cardinalstar.cubicchunks.network.PacketEncoderCubeBlockChange;
+import com.cardinalstar.cubicchunks.network.PacketEncoderCubes;
 import com.cardinalstar.cubicchunks.network.PacketEncoderHeightMapUpdate;
 import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadColumn;
 import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadColumn.PacketUnloadColumn;
@@ -30,7 +32,7 @@ public class WorldSyncStateMachine {
 
     private final CubeProviderServer provider;
 
-    public WatchingPlayer[] players = new WatchingPlayer[0];
+    private final WatchingPlayer player;
 
     private static class ColumnData {
         public int syncedCubeCount;
@@ -43,8 +45,11 @@ public class WorldSyncStateMachine {
     private final BlockPosMap<ShortArrayList> dirtyBlocks = new BlockPosMap<>();
     private final ChunkMap<BooleanArray2D> dirtyHeightCols = new ChunkMap<>();
 
-    public WorldSyncStateMachine(CubeProviderServer provider) {
+    private final ArrayList<Cube> cubeSendQueue = new ArrayList<>(20);
+
+    public WorldSyncStateMachine(CubeProviderServer provider, WatchingPlayer player) {
         this.provider = provider;
+        this.player = player;
     }
 
     public void flush() {
@@ -60,10 +65,8 @@ public class WorldSyncStateMachine {
             if ((cube == null || !cube.isInitializedToLevel(CubeInitLevel.Lit)) && wasCubeSynced) {
                 PacketUnloadCube packet = PacketEncoderUnloadCube.createPacket(new CubePos(pos));
 
-                for (var player : players) {
-                    if (player.isWatchingCube(pos.getX(), pos.getY(), pos.getZ())) {
-                        packet.sendToPlayer(player.player);
-                    }
+                if (player.isWatchingCube(pos.getX(), pos.getY(), pos.getZ())) {
+                    packet.sendToPlayer(player.player);
                 }
 
                 syncedCubes.remove(pos);
@@ -77,10 +80,8 @@ public class WorldSyncStateMachine {
 
                     PacketUnloadColumn packet2 = PacketEncoderUnloadColumn.createPacket(pos.getX(), pos.getZ());
 
-                    for (var player : players) {
-                        if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
-                            packet2.sendToPlayer(player.player);
-                        }
+                    if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
+                        packet2.sendToPlayer(player.player);
                     }
                 }
             } else if (cube != null && cube.isInitializedToLevel(CubeInitLevel.Lit) && !wasCubeSynced) {
@@ -92,27 +93,21 @@ public class WorldSyncStateMachine {
 
                     PacketColumn packet = PacketEncoderColumn.createPacket(cube.getColumn());
 
-                    for (var player : players) {
-                        if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
-                            packet.sendToPlayer(player.player);
-                        }
+                    if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
+                        packet.sendToPlayer(player.player);
                     }
                 }
 
                 columnData.syncedCubeCount++;
                 syncedCubes.add(pos);
 
-                for (var player : players) {
-                    if (player.isWatchingCube(pos.getX(), pos.getY(), pos.getZ())) {
-                        player.queueCube(cube);
-                    }
+                if (player.isWatchingCube(pos.getX(), pos.getY(), pos.getZ())) {
+                    queueCube(cube);
                 }
             }
         }
 
-        for (var player : players) {
-            player.flushCubes();
-        }
+        flushCubes();
 
         for (var e : dirtyBlocks.fastEntryIterable()) {
             if (!syncedCubes.contains(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
@@ -127,10 +122,8 @@ public class WorldSyncStateMachine {
 
             var packet = PacketEncoderCubeBlockChange.createPacket(cube, e.getValue());
 
-            for (var player : players) {
-                if (player.isWatchingCube(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
-                    packet.sendToPlayer(player.player);
-                }
+            if (player.isWatchingCube(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
+                packet.sendToPlayer(player.player);
             }
         }
 
@@ -147,16 +140,30 @@ public class WorldSyncStateMachine {
 
             var packet = PacketEncoderHeightMapUpdate.createPacket(e.getValue(), column);
 
-            for (var player : players) {
-                if (player.isWatchingColumn(e.getChunkX(), e.getChunkZ())) {
-                    packet.sendToPlayer(player.player);
-                }
+            if (player.isWatchingColumn(e.getChunkX(), e.getChunkZ())) {
+                packet.sendToPlayer(player.player);
             }
         }
 
         dirtyCubes.clear();
         dirtyBlocks.clear();
         dirtyHeightCols.clear();
+    }
+
+    public void queueCube(Cube cube) {
+        cubeSendQueue.add(cube);
+
+        if (cubeSendQueue.size() >= 20) {
+            flushCubes();
+        }
+    }
+
+    public void flushCubes() {
+        if (!cubeSendQueue.isEmpty()) {
+            PacketEncoderCubes.createPacket(cubeSendQueue)
+                .sendToPlayer(player.player);
+            cubeSendQueue.clear();
+        }
     }
 
     public void onCubeStatusChanged(int x, int y, int z) {
