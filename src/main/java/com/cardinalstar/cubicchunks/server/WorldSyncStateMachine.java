@@ -116,7 +116,7 @@ public class WorldSyncStateMachine {
 
         for (var e : dirtyBlocks.fastEntryIterable()) {
             if (!syncedCubes.contains(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
-                CubicChunks.LOGGER.error("Tried to sync {} block updates to a cube at {} which was not synced",
+                CubicChunks.LOGGER.trace("Tried to sync {} block updates to a cube at {} which was not synced",
                     e.getValue().size(),
                     new CubePos(e.getBlockX(), e.getBlockY(), e.getBlockZ()));
 
@@ -136,7 +136,7 @@ public class WorldSyncStateMachine {
 
         for (var e : dirtyHeightCols.fastEntryIterable()) {
             if (!syncedColumns.containsKey(e.getChunkX(), e.getChunkZ())) {
-                CubicChunks.LOGGER.error("Tried to sync {} height map updates to a column at {} which was not synced",
+                CubicChunks.LOGGER.trace("Tried to sync {} height map updates to a column at {} which was not synced",
                     e.getValue().size(),
                     new ChunkCoordIntPair(e.getChunkX(), e.getChunkZ()));
 

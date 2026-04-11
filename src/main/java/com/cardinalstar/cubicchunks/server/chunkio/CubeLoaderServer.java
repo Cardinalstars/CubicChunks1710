@@ -391,7 +391,7 @@ public class CubeLoaderServer implements ICubeLoader {
             unloadColumn(column);
         }
 
-        CubicChunks.LOGGER.info(
+        CubicChunks.LOGGER.trace(
             "Garbage collected {} columns ({} -> {}) and {} cubes ({} -> {}). Removed {} columns automatically because they were empty.",
             pendingColumnUnloads.size(),
             startCols,

@@ -106,6 +106,9 @@ public class CubeProviderServer extends ChunkProviderServer
 
     private static final int MAX_NS_SPENT_LOADING = 10_000_000;
 
+    private int loadedColumns, loadedCubes;
+    private long lastTickEnd = 0, loadTimeAccumulator;
+
     private final ListMultimap<ChunkCoordIntPair, Runnable> pendingAsyncChunkLoads = MultimapBuilder.hashKeys()
         .arrayListValues()
         .build();
@@ -162,6 +165,8 @@ public class CubeProviderServer extends ChunkProviderServer
                 .forEach(Runnable::run);
 
             callbacks.forEach(c -> c.onColumnLoaded(column));
+
+            loadedColumns++;
         }
 
         @Override
@@ -176,6 +181,7 @@ public class CubeProviderServer extends ChunkProviderServer
         @Override
         public void onCubeLoaded(Cube cube) {
             callbacks.forEach(c -> c.onCubeLoaded(cube));
+            loadedCubes++;
         }
 
         @Override
@@ -374,14 +380,37 @@ public class CubeProviderServer extends ChunkProviderServer
             }
         }
 
-        long delta = System.nanoTime() - start;
+        long end = System.nanoTime();
+        long delta = end - start;
+
+        loadTimeAccumulator += delta;
+
+        if ((loadedColumns > 0 || loadedCubes > 0) && lastTickEnd > 0 && (end - lastTickEnd) > 10e9) {
+            double colPerSecPrecise = loadedColumns / (double) loadTimeAccumulator;
+            double colPerSecReal = loadedColumns / (double) (end - lastTickEnd);
+
+            double cubePerSecPrecise = loadedCubes / (double) loadTimeAccumulator;
+            double cubePerSecReal = loadedCubes / (double) (end - lastTickEnd);
+
+            CubicChunks.LOGGER.info(
+                "Columns per second: {} (precise: {}). Cubes per second: {} (precise: {}).",
+                String.format("%,f", colPerSecReal * 1e9),
+                String.format("%,f", colPerSecPrecise * 1e9),
+                String.format("%,.2f", cubePerSecReal * 1e9),
+                String.format("%,.2f", cubePerSecPrecise * 1e9));
+
+            loadedColumns = 0;
+            loadedCubes = 0;
+            lastTickEnd = end;
+            loadTimeAccumulator = 0;
+        }
 
         if (delta > MAX_NS_SPENT_LOADING * 2) {
             CubicChunks.LOGGER.warn("Spent {} ms loading the world this tick", delta / 1e6);
         }
 
         if (processed > 0) {
-            CubicChunks.LOGGER.info(
+            CubicChunks.LOGGER.trace(
                 "Processed {} eager load requests this tick ({} -> {} columns)",
                 processed,
                 startCols,

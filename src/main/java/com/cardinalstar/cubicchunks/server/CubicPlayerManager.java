@@ -36,9 +36,11 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3ic;
 
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.XYZMap;
+import com.cardinalstar.cubicchunks.api.util.Box;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal.Server;
 import com.cardinalstar.cubicchunks.network.PacketEncoderCubes;
@@ -86,7 +88,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
     // (player respawn packet?)
     private final Set<EntityPlayerMP> pendingPlayerAddToCubeMap = new HashSet<>();
 
-    private final WorldSyncStateMachine sync;
+    public final WorldSyncStateMachine sync;
 
     public CubicPlayerManager(WorldServer worldServer) {
         super(worldServer);
@@ -139,16 +141,6 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         getWorldServer().theProfiler.endSection();// sendCubes
         getWorldServer().theProfiler.endSection();// playerCubeMapUpdatePlayerInstances
-    }
-
-    @Override
-    public void onColumnLoaded(Chunk column) {
-
-    }
-
-    @Override
-    public void onColumnUnloaded(Chunk column) {
-
     }
 
     @Override
@@ -293,20 +285,29 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         getWorldServer().theProfiler.startSection("updateMovedPlayer");
 
         CubePos oldPos = watchingPlayer.getManagedCubePos();
-
         watchingPlayer.updateManagedPos();
+        CubePos newPos = watchingPlayer.getManagedCubePos();
 
         var delta = CuboidalCubeSelector.INSTANCE.findChanged(
             oldPos,
-            watchingPlayer.getManagedCubePos(),
-            horizontalViewDistance + 2,
-            verticalViewDistance + 2,
-            horizontalViewDistance + 2,
-            verticalViewDistance + 2);
+            newPos,
+            horizontalViewDistance,
+            verticalViewDistance,
+            horizontalViewDistance,
+            verticalViewDistance);
 
         applyWorldVisibilityChanges(delta);
 
-        getWorldServer().theProfiler.endSection();// updateMovedPlayer
+        getWorldServer().theProfiler.endStartSection("Immediate nearby cube loading");// updateMovedPlayer
+
+        CubeProviderServer cubeCache = ((Server) getWorldServer()).getCubeCache();
+
+        // Force load the cube the player is in along with its 26 neighbours
+        for (Vector3ic v : new Box(-1, -1, -1, 1, 1, 1)) {
+            cubeCache.getCube(newPos.getX() + v.x(), newPos.getY() + v.y(), newPos.getZ() + v.z(), Requirement.LIGHT);
+        }
+
+        getWorldServer().theProfiler.endSection();// Immediate nearby cube loading
 
         // With ChunkGc being separate from PlayerCubeMap, there are 2 issues:
         // Problem 0: Sometimes, a chunk can be generated after CubeWatcher's chunk load callback returns with a null
@@ -480,14 +481,14 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         }
 
         public boolean isWatchingColumn(int x, int z) {
-            return true || CuboidalCubeSelector.INSTANCE.contains(
+            return CuboidalCubeSelector.INSTANCE.contains(
                 managedCubePos,
                 horizontalViewDistance,
                 x, z);
         }
 
         public boolean isWatchingCube(int x, int y, int z) {
-            return true || CuboidalCubeSelector.INSTANCE.contains(
+            return CuboidalCubeSelector.INSTANCE.contains(
                 managedCubePos,
                 horizontalViewDistance,
                 verticalViewDistance,
