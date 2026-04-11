@@ -67,6 +67,7 @@ import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.Mods;
 import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
@@ -121,6 +122,9 @@ public abstract class MixinChunk_Cubes {
     @Shadow
     @Final
     private int[] heightMap;
+    @Shadow
+    @Final
+    private int[] precipitationHeightMap;
     @Shadow
     @Final
     private World worldObj;
@@ -428,6 +432,43 @@ public abstract class MixinChunk_Cubes {
             return generateSkylight;
         }
         return false;
+    }
+
+    @Definition(
+        id = "precipitationHeightMap",
+        field = "Lnet/minecraft/world/chunk/Chunk;precipitationHeightMap:[I")
+    @Expression("this.precipitationHeightMap[?]")
+    @WrapOperation(method = "func_150807_a", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private int setBlockState_CubicChunks_precipitationHeightMapGet(int[] array, int index,
+        Operation<Integer> original) {
+        if (!isColumn) {
+            return original.call(array, index);
+        }
+        return ((IColumn) this).getHeightValue(AddressTools.getLocalX(index), 0, AddressTools.getLocalZ(index));
+    }
+
+    @Definition(
+        id = "precipitationHeightMap",
+        field = "Lnet/minecraft/world/chunk/Chunk;precipitationHeightMap:[I")
+    @Expression("this.precipitationHeightMap[?] = ?")
+    @WrapOperation(method = "func_150807_a", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private void setBlockState_CubicChunks_precipitationHeightMapSet(int[] array, int index, int value,
+        Operation<Void> original) {
+        if (!isColumn) {
+            original.call(array, index, value);
+        }
+    }
+
+    @Definition(
+        id = "heightMap",
+        field = "Lnet/minecraft/world/chunk/Chunk;heightMap:[I")
+    @Expression("this.heightMap[?]")
+    @WrapOperation(method = "func_150807_a", at = @At("MIXINEXTRAS:EXPRESSION"))
+    private int setBlockState_CubicChunks_heightMapGet(int[] array, int index, Operation<Integer> original) {
+        if (!isColumn) {
+            return original.call(array, index);
+        }
+        return ((IColumn) this).getHeightValue(AddressTools.getLocalX(index), 0, AddressTools.getLocalZ(index));
     }
 
     @Inject(
