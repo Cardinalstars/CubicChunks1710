@@ -68,7 +68,8 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
      */
     private final Int2ObjectOpenHashMap<WatchingPlayer> players = new Int2ObjectOpenHashMap<>();
 
-    private WatchingPlayer[] playerArray = new WatchingPlayer[0];
+    private static final WatchingPlayer[] EMPTY_PLAYER_ARRAY = new WatchingPlayer[0];
+    private WatchingPlayer[] playerArray = EMPTY_PLAYER_ARRAY;
 
     private final CubeProviderServer provider;
 
@@ -247,7 +248,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         this.players.put(player.getEntityId(), watchingPlayer);
 
-        playerArray = players.values().toArray(playerArray);
+        playerArray = players.values().toArray(EMPTY_PLAYER_ARRAY);
 
         CuboidalCubeSelector.INSTANCE.forAllVisibleCubes(
             watchingPlayer.getManagedCubePos(),
@@ -277,7 +278,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             verticalViewDistance,
             this::onPlayerStoppedViewingCube);
 
-        playerArray = players.values().toArray(playerArray);
+        playerArray = players.values().toArray(EMPTY_PLAYER_ARRAY);
 
         watchingPlayer.sync.flush();
     }
