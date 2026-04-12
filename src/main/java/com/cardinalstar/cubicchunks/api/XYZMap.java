@@ -40,9 +40,9 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 @ParametersAreNonnullByDefault
 public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
 
-    Long2ObjectOpenHashMap<T> items = new Long2ObjectOpenHashMap<>();
+    final Long2ObjectOpenHashMap<T> items = new Long2ObjectOpenHashMap<>();
 
-    public T remove(int x, int y, int z) {
+    public synchronized T remove(int x, int y, int z) {
         if (x < -2097152 || x > 2097151) return null;
         if (y < -2097152 || y > 2097151) return null;
         if (z < -2097152 || z > 2097151) return null;
@@ -50,7 +50,7 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
         return items.remove(Coords.key(x, y, z));
     }
 
-    public final T get(int x, int y, int z) {
+    public final synchronized T get(int x, int y, int z) {
         if (x < -2097152 || x > 2097151) return null;
         if (y < -2097152 || y > 2097151) return null;
         if (z < -2097152 || z > 2097151) return null;
@@ -58,11 +58,11 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
         return items.get(Coords.key(x, y, z));
     }
 
-    public final T get(XYZAddressable xyz) {
+    public final synchronized T get(XYZAddressable xyz) {
         return get(xyz.getX(), xyz.getY(), xyz.getZ());
     }
 
-    public final T put(T item) {
+    public final synchronized T put(T item) {
         if (item.getX() < -2097152 || item.getX() > 2097151) return null;
         if (item.getY() < -2097152 || item.getY() > 2097151) return null;
         if (item.getZ() < -2097152 || item.getZ() > 2097151) return null;
@@ -70,18 +70,18 @@ public class XYZMap<T extends XYZAddressable> implements Iterable<T> {
         return items.put(Coords.key(item.getX(), item.getY(), item.getZ()), item);
     }
 
-    public final <T2 extends XYZAddressable> T remove(T2 key) {
+    public final synchronized <T2 extends XYZAddressable> T remove(T2 key) {
         return remove(key.getX(), key.getY(), key.getZ());
     }
 
     @Override
     @Nonnull
-    public Iterator<T> iterator() {
+    public synchronized Iterator<T> iterator() {
         return items.values()
             .iterator();
     }
 
-    public int getSize() {
+    public synchronized int getSize() {
         return items.size();
     }
 }
