@@ -96,6 +96,22 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
         return getMaxHeight();
     }
 
+    // getBlock
+    @ModifyConstant(
+        method = "getBlock",
+        constant = @Constant(
+            expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO,
+            intValue = 0,
+            ordinal = 0))
+    private int getBlock_heightLimits_min(int original) {
+        return getMinHeight();
+    }
+
+    @ModifyConstant(method = "getBlock", constant = @Constant(intValue = 256, ordinal = 0))
+    private int getBlock_heightLimits_max(int original) {
+        return getMaxHeight();
+    }
+
     @Definition(id = "chunkExists", method = "Lnet/minecraft/world/World;chunkExists(II)Z")
     @Expression("this.chunkExists(?, ?)")
     @Redirect(method = "blockExists", at = @At("MIXINEXTRAS:EXPRESSION"))
