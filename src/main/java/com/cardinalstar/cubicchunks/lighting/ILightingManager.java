@@ -80,6 +80,8 @@ public interface ILightingManager {
 
     boolean hasPendingLightUpdates(ICube cube);
 
+    int getCachedLightFor(ICube cube, EnumSkyBlock lightType, int x, int y, int z);
+
     void onHeightUpdate(int x, int y, int z);
 
     void onTrackCubeSurface(ICube cube);

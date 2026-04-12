@@ -274,6 +274,7 @@ public enum Mods implements IMod, ITargetMod {
     JourneyMap(ModIDs.JOURNEY_MAP),
     Morpheus(ModIDs.MORPHEUS),
     PamsHarvestTheNether(ModIDs.PAMS_HARVEST_THE_NETHER),
+    Supernova(ModIDs.SUPERNOVA),
     TC4Tweaks(ModIDs.T_C_4_TWEAKS),
     ThaumcraftNEIPlugin(ModIDs.THAUMCRAFT_N_E_I_PLUGIN),
     Thaumcraft(ModIDs.THAUMCRAFT),
@@ -571,6 +572,7 @@ public enum Mods implements IMod, ITargetMod {
         public static final String JOURNEY_MAP = "journeymap";
         public static final String MORPHEUS = "Morpheus";
         public static final String PAMS_HARVEST_THE_NETHER = "harvestthenether";
+        public static final String SUPERNOVA = "supernova";
         public static final String T_C_4_TWEAKS = "tc4tweak";
         public static final String THAUMCRAFT_N_E_I_PLUGIN = "thaumcraftneiplugin";
         public static final String THAUMCRAFT = "Thaumcraft";

@@ -29,6 +29,7 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.util.Mods;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
@@ -53,13 +54,18 @@ public class LightingManager implements ILightingManager {
 
     public static final int MAX_CLIENT_LIGHT_SCAN_DEPTH = 64;
     private final World world;
-    private final PhosphorLightEngine lightEngine;
+    private final ICubicChunkLightingEngine lightEngine;
     @Nullable
     private final FirstLightProcessor firstLightProcessor;
 
     public LightingManager(World world) {
         this.world = world;
-        this.lightEngine = new PhosphorLightEngine(world);
+        if (Mods.Supernova.isModLoaded()) {
+            this.lightEngine = new SupernovaLightEngine(world);
+        } else {
+            this.lightEngine = new PhosphorLightEngine(world);
+        }
+
         if (!world.isRemote) {
             this.firstLightProcessor = new FirstLightProcessor();
         } else {
@@ -84,6 +90,7 @@ public class LightingManager implements ILightingManager {
         if (CubicChunksConfig.disableLighting) {
             return;
         }
+        this.lightEngine.onCubeLoad(cube);
         LightingHooks.scheduleRelightChecksForCubeBoundaries(world, cube);
         tryScheduleOnLoadHeightChangeRelight(cube);
     }
@@ -167,6 +174,11 @@ public class LightingManager implements ILightingManager {
             return false;
         }
         return lightEngine.hasLightUpdates();
+    }
+
+    @Override
+    public int getCachedLightFor(ICube cube, EnumSkyBlock lightType, int x, int y, int z) {
+        return lightEngine.getSavedLightValue(cube, lightType, x, y, z);
     }
 
     @Override

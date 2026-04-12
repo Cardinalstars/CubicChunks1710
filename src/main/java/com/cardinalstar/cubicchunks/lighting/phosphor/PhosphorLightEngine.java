@@ -27,6 +27,7 @@ import static com.cardinalstar.cubicchunks.util.Coords.blockToLocal;
 
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.cardinalstar.cubicchunks.lighting.ICubicChunkLightingEngine;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.profiler.Profiler;
@@ -45,7 +46,7 @@ import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.ICubeProvider;
 
-public class PhosphorLightEngine {
+public class PhosphorLightEngine implements ICubicChunkLightingEngine {
 
     public static final boolean ENABLE_ILLEGAL_THREAD_ACCESS_WARNINGS = true;
 
@@ -140,6 +141,7 @@ public class PhosphorLightEngine {
      * @param y         the y position to update
      * @param z         the z position to update
      */
+    @Override
     public void scheduleLightUpdate(final EnumSkyBlock lightType, final int x, final int y, final int z) {
         this.acquireLock();
 
@@ -166,14 +168,34 @@ public class PhosphorLightEngine {
         }
     }
 
+    @Override
     public boolean hasLightUpdates() {
         return !this.queuedLightUpdates[0].isEmpty() || !this.queuedLightUpdates[1].isEmpty();
+    }
+
+    @Override
+    public int getSavedLightValue(ICube cube, EnumSkyBlock type, int x, int posY, int z) {
+        ExtendedBlockStorage storage = cube == null ? null : cube.getStorage();
+        if (storage == null) {
+            return 0;
+        }
+
+        if (type == EnumSkyBlock.Sky) {
+            return storage.getExtSkylightValue(x, posY & 0xF, x);
+        }
+        return storage.getExtBlocklightValue(x, posY & 0xF, z);
+    }
+
+    @Override
+    public void onCubeLoad(ICube cube) {
+        // Nothing to do
     }
 
     /**
      * Calls {@link #processLightUpdatesForType(EnumSkyBlock)} for both light types
      *
      */
+    @Override
     public void processLightUpdates() {
         this.processLightUpdatesForType(EnumSkyBlock.Sky);
         this.processLightUpdatesForType(EnumSkyBlock.Block);

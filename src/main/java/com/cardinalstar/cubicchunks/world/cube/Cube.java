@@ -41,6 +41,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.lighting.ILightingManager;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.crash.CrashReport;
@@ -324,7 +325,6 @@ public class Cube implements ICube {
 
     public int getCachedLightFor(EnumSkyBlock type, int xPos, int yPos, int zPos) {
         int x = blockToLocal(xPos);
-        int y = blockToLocal(yPos);
         int z = blockToLocal(zPos);
         ExtendedBlockStorage storage = this.storage;
 
@@ -335,13 +335,13 @@ public class Cube implements ICube {
             if (storage == null) {
                 return yPos > ((IColumnInternal) column).getTopYWithStaging(x, z) ? type.defaultLightValue : 0;
             }
-            return storage.getExtSkylightValue(x, y, z);
         } else {
             if (storage == null) {
                 return 0;
             }
-            return storage.getExtBlocklightValue(x, y, z);
         }
+        ILightingManager lightmanager = ((ICubicWorldInternal) this.world).getLightingManager();
+        return lightmanager.getCachedLightFor(this, type, x, yPos, z);
     }
 
     @Override
