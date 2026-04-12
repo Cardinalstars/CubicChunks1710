@@ -274,7 +274,7 @@ public enum Mods implements IMod, ITargetMod {
     JourneyMap(ModIDs.JOURNEY_MAP),
     Morpheus(ModIDs.MORPHEUS),
     PamsHarvestTheNether(ModIDs.PAMS_HARVEST_THE_NETHER),
-    Supernova(ModIDs.SUPERNOVA),
+    Supernova(ModIDs.SUPERNOVA, "com.mitchej123.supernova.core.SupernovaCore"),
     TC4Tweaks(ModIDs.T_C_4_TWEAKS),
     ThaumcraftNEIPlugin(ModIDs.THAUMCRAFT_N_E_I_PLUGIN),
     Thaumcraft(ModIDs.THAUMCRAFT),

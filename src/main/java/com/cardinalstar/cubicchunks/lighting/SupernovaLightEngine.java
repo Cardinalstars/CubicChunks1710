@@ -54,7 +54,7 @@ public class SupernovaLightEngine implements ICubicChunkLightingEngine {
             return 0;
         }
 
-        SupernovaChunk chunk = cube.getColumn();
+        SupernovaChunk chunk = (SupernovaChunk) cube.getColumn();
         if (type == EnumSkyBlock.Sky) {
             return ChunkLightHelper.getSkyLight(chunk.getSkyNibblesR(), chunk.getSkyNibblesG(), chunk.getSkyNibblesB(), x, posY, z);
         }

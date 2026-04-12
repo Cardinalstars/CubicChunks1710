@@ -101,6 +101,11 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinChunk_Cubes")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_CHUNK_LIGHTING(new MixinBuilder("Mixin to redirect lighting function to cubes.")
+        .addCommonMixins("common.MixinChunk_Lighting")
+        .setPhase(Phase.EARLY)
+        .addExcludedMod(Mods.Supernova)
+        .setApplyIf(() -> true)),
     MIXIN_CHUNK_CACHE_HEIGHT_LIMITS(new MixinBuilder("Mixin to fix height limits in ChunkCache")
         .addCommonMixins("common.MixinChunkCache_HeightLimits")
         .setPhase(Phase.EARLY)

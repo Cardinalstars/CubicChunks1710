@@ -23,6 +23,7 @@ package com.cardinalstar.cubicchunks.world.core;
 
 import net.minecraft.block.Block;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
@@ -33,6 +34,12 @@ import com.cardinalstar.cubicchunks.world.cube.Cube;
 public interface IColumnInternal extends IColumn {
 
     void setColumn(boolean isColumn);
+
+    boolean isColumn();
+
+    ExtendedBlockStorage getEBS_CubicChunks(int index);
+
+    void setEBS_CubicChunks(int index, ExtendedBlockStorage ebs);
 
     Block[] getCompatGenerationBlockArray();
 
