@@ -217,7 +217,7 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
     // Note these arguments are in global block coordinates
     public void heightUpdated(int x, int z) {
-        Chunk column = provider.getLoadedColumn(x, z);
+        Chunk column = provider.getLoadedColumn(x >> 4, z >> 4);
 
         if (column != null) {
             for (var player : playerArray) {
