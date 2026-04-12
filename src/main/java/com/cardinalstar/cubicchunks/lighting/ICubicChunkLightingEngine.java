@@ -13,4 +13,6 @@ public interface ICubicChunkLightingEngine {
     int getSavedLightValue(ICube cube, EnumSkyBlock type, int x, int y, int z);
 
     void onCubeLoad(ICube cube);
+
+    default void onCubeUnload(ICube cube) {}
 }

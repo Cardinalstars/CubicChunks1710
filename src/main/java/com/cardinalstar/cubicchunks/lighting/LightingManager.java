@@ -79,7 +79,7 @@ public class LightingManager implements ILightingManager {
 
     @Override
     public void updateLightBetween(Chunk column, int localX, int y1, int y2, int localZ) {
-        if (CubicChunksConfig.disableLighting) {
+        if (CubicChunksConfig.disableLighting || Mods.Supernova.isModLoaded()) {
             return;
         }
         LightingHooks.relightSkylightColumn(this.world, column, localX, localZ, y1, y2);
@@ -91,13 +91,25 @@ public class LightingManager implements ILightingManager {
             return;
         }
         this.lightEngine.onCubeLoad(cube);
-        LightingHooks.scheduleRelightChecksForCubeBoundaries(world, cube);
-        tryScheduleOnLoadHeightChangeRelight(cube);
+        if (!Mods.Supernova.isModLoaded()) {
+            LightingHooks.scheduleRelightChecksForCubeBoundaries(world, cube);
+            tryScheduleOnLoadHeightChangeRelight(cube);
+        }
+    }
+
+    @Override
+    public void onCubeUnload(ICube cube) {
+        if (CubicChunksConfig.disableLighting) {
+            return;
+        }
+        this.lightEngine.onCubeUnload(cube);
     }
 
     @Override
     public void onCreateCubeStorage(ICube cube, ExtendedBlockStorage storage) {
-        LightingHooks.initSkylightForSection(world, cube.getColumn(), storage);
+        if (!Mods.Supernova.isModLoaded()) {
+            LightingHooks.initSkylightForSection(world, cube.getColumn(), storage);
+        }
     }
 
     @Override
@@ -132,6 +144,7 @@ public class LightingManager implements ILightingManager {
 
     @Override
     public void writeToNbt(ICube cube, NBTTagCompound lightingInfo) {
+        if (Mods.Supernova.isModLoaded()) return;
         int[] lastHeightmap = cube.getColumn().heightMap;
         lightingInfo.setIntArray("LastHeightMap", lastHeightmap);
         LightingHooks.writeNeighborLightChecksToNBT(cube, lightingInfo);
@@ -139,6 +152,7 @@ public class LightingManager implements ILightingManager {
 
     @Override
     public void readFromNbt(ICube cube, NBTTagCompound lightingInfo) {
+        if (Mods.Supernova.isModLoaded()) return;
         CubeLightData lightData = getLightData(cube);
         lightData.lastHeightMap = lightingInfo.hasKey("LastHeightMap") ? lightingInfo.getIntArray("LastHeightMap")
             : null;
@@ -208,13 +222,15 @@ public class LightingManager implements ILightingManager {
 
                 if (playerManager != null) playerManager.heightUpdated(pos.getX(), pos.getZ());
             }
-            tryScheduleOnLoadHeightChangeRelight(cube);
+            if (!Mods.Supernova.isModLoaded()) {
+                tryScheduleOnLoadHeightChangeRelight(cube);
+            }
         }
     }
 
     @Override
     public void doFirstLight(ICube cube) {
-        if (CubicChunksConfig.disableLighting) {
+        if (CubicChunksConfig.disableLighting || Mods.Supernova.isModLoaded()) {
             return;
         }
         assert firstLightProcessor != null;
