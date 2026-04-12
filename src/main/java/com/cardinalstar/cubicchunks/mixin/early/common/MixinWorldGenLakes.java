@@ -24,7 +24,8 @@ public class MixinWorldGenLakes {
     }
 
     @ModifyVariable(method = "generate", at = @At("LOAD"), ordinal = 1, argsOnly = true)
-    public int fixHeight(int value, @Local(argsOnly = true) World world, @Local(argsOnly = true, ordinal = 0) int x, @Local(argsOnly = true, ordinal = 2) int z) {
+    public int fixHeight(int value, @Local(argsOnly = true) World world, @Local(argsOnly = true, ordinal = 0) int x,
+        @Local(argsOnly = true, ordinal = 2) int z) {
         for (int i = 0; i < 16; i++) {
             if (!world.isAirBlock(x, value, z)) {
                 return value;
@@ -39,7 +40,8 @@ public class MixinWorldGenLakes {
     @Definition(id = "y", local = @Local(argsOnly = true, type = int.class, ordinal = 1))
     @Expression("y <= 4")
     @WrapOperation(method = "generate", at = @At("MIXINEXTRAS:EXPRESSION"))
-    public boolean noopHeightCheck(int y, int four, Operation<Boolean> original, @Local(argsOnly = true) World world, @Local(argsOnly = true, ordinal = 0) int x, @Local(argsOnly = true, ordinal = 2) int z) {
+    public boolean noopHeightCheck(int y, int four, Operation<Boolean> original, @Local(argsOnly = true) World world,
+        @Local(argsOnly = true, ordinal = 0) int x, @Local(argsOnly = true, ordinal = 2) int z) {
         return world.isAirBlock(x, y, z);
     }
 }

@@ -441,7 +441,8 @@ public abstract class MixinChunk_Cubes {
         ExtendedBlockStorage ebs, boolean createdNewEbsAboveTop, int globalX, int globalZ, int oldOpacity,
         int newOpacity) {
 
-        if (isColumn && ((IColumn) this).getCube(blockToCube(localY)).isInitialLightingDone()) {
+        if (isColumn && ((IColumn) this).getCube(blockToCube(localY))
+            .isInitialLightingDone()) {
             // oldHeightValue is the previous block Y above the top block, so this is the "removing a block" case
             if (oldHeightValue == localY + 1) {
                 getWorldObj().getLightingManager()
@@ -523,10 +524,11 @@ public abstract class MixinChunk_Cubes {
     // ==============================================
 
     @Redirect(
-        method = "getBlockMetadata(III)I", at = @At(
-        value = "FIELD",
-        args = "array=length",
-        target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
+        method = "getBlockMetadata(III)I",
+        at = @At(
+            value = "FIELD",
+            args = "array=length",
+            target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private int getBlockMetadata_getMaxHeight(ExtendedBlockStorage[] ebs) {
         // Always return MAX_VALUE to no-op comparison, and rely on getBlockMetadata_getStorage to detect cube presence
         return Integer.MAX_VALUE;

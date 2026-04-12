@@ -103,11 +103,11 @@ public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
         int y = Coords.blockToCube(pos.chunkPosY);
 
         // Use getLoadedCube to avoid loading or generating cubes.
-        // You almost never want to load chunks with this method, and you definitely never want to generate chunks with this method.
+        // You almost never want to load chunks with this method, and you definitely never want to generate chunks with
+        // this method.
         ICube cube = column.getLoadedCube(y);
 
-        return cube == null
-            ? null
+        return cube == null ? null
             : cube.getTileEntityMap()
                 .get(o);
     }
@@ -129,8 +129,7 @@ public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
         ChunkPosition pos = (ChunkPosition) o;
         int y = Coords.blockToCube(pos.chunkPosY);
         ICube cube = column.getLoadedCube(y);
-        return cube == null
-            ? null
+        return cube == null ? null
             : cube.getTileEntityMap()
                 .remove(pos);
     }
@@ -229,8 +228,7 @@ public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
 
                     Iterator<? extends ICube> cubes = column.getLoadedCubes()
                         .iterator();
-                    Iterator<TileEntity> curIt = !cubes.hasNext()
-                        ? null
+                    Iterator<TileEntity> curIt = !cubes.hasNext() ? null
                         : cubes.next()
                             .getTileEntityMap()
                             .values()
@@ -316,8 +314,7 @@ public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
 
                     Iterator<? extends ICube> cubes = column.getLoadedCubes()
                         .iterator();
-                    Iterator<Entry<ChunkPosition, TileEntity>> curIt = !cubes.hasNext()
-                        ? null
+                    Iterator<Entry<ChunkPosition, TileEntity>> curIt = !cubes.hasNext() ? null
                         : cubes.next()
                             .getTileEntityMap()
                             .entrySet()

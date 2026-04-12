@@ -321,7 +321,8 @@ public abstract class MixinWorld implements ICubicWorldInternal {
         for (int cubeX = minCubeX; cubeX <= maxCubeX; cubeX++) {
             for (int cubeY = minCubeY; cubeY <= maxCubeY; cubeY++) {
                 for (int cubeZ = minCubeZ; cubeZ <= maxCubeZ; cubeZ++) {
-                    Cube cube = this.getCubeCache().getLoadedCube(cubeX, cubeY, cubeZ);
+                    Cube cube = this.getCubeCache()
+                        .getLoadedCube(cubeX, cubeY, cubeZ);
                     if (!test.test(cube)) {
                         return false;
                     }

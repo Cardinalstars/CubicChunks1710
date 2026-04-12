@@ -79,6 +79,7 @@ import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
+
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 
 /**
@@ -266,18 +267,17 @@ public class Cube implements ICube {
     /**
      * Constructor to be used from subclasses to provide all field values
      *
-     * @param tickets            cube ticket list
-     * @param world              the world instance
-     * @param column             the column this cube belongs to
-     * @param coords             position of this cube
-     * @param storage            block storage
-     * @param entities           entity container
-     * @param tileEntityMap      tile entity storage
-     * @param cubeLightData      cube light tracking data
+     * @param tickets       cube ticket list
+     * @param world         the world instance
+     * @param column        the column this cube belongs to
+     * @param coords        position of this cube
+     * @param storage       block storage
+     * @param entities      entity container
+     * @param tileEntityMap tile entity storage
+     * @param cubeLightData cube light tracking data
      */
     protected Cube(TicketList tickets, World world, Chunk column, CubePos coords, ExtendedBlockStorage storage,
-        List<Entity> entities,
-        Map<ChunkPosition, TileEntity> tileEntityMap, ICubeLightTrackingInfo cubeLightData) {
+        List<Entity> entities, Map<ChunkPosition, TileEntity> tileEntityMap, ICubeLightTrackingInfo cubeLightData) {
         this.tickets = tickets;
         this.world = world;
         this.column = column;
@@ -333,7 +333,7 @@ public class Cube implements ICube {
      * @param y y position where the tile entity should be placed
      * @param z zPosition position where the tile entity should be placed
      * @return the created tile entity, or <code>null</code> if the block at that position does not provide tile
-     * entities
+     *         entities
      */
     @Override
     @Nullable
@@ -360,13 +360,12 @@ public class Cube implements ICube {
             } catch (Throwable throwable) {
                 CrashReport crashreport = CrashReport.makeCrashReport(throwable, "Getting block");
                 CrashReportCategory crashreportcategory = crashreport.makeCategory("Block being got");
-                crashreportcategory.addCrashSectionCallable(
-                    "Location", new Callable() {
+                crashreportcategory.addCrashSectionCallable("Location", new Callable() {
 
-                        public String call() {
-                            return CrashReportCategory.getLocationInfo(x, y, z);
-                        }
-                    });
+                    public String call() {
+                        return CrashReportCategory.getLocationInfo(x, y, z);
+                    }
+                });
                 throw new ReportedException(crashreport);
             }
         }
@@ -510,8 +509,7 @@ public class Cube implements ICube {
 
     @Override
     public boolean containsCoordinate(int x, int y, int z) {
-        return this.coords.getX() == blockToCube(x)
-            && this.coords.getY() == blockToCube(y)
+        return this.coords.getX() == blockToCube(x) && this.coords.getY() == blockToCube(y)
             && this.coords.getZ() == blockToCube(z);
     }
 
@@ -861,8 +859,7 @@ public class Cube implements ICube {
 
     @Override
     public String toString() {
-        return "Cube{"
-            + "object id="
+        return "Cube{" + "object id="
             + System.identityHashCode(this)
             + ", coords="
             + coords

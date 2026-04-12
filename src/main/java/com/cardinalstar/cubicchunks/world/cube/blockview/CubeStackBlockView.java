@@ -7,6 +7,7 @@ import net.minecraft.world.chunk.Chunk;
 import org.jetbrains.annotations.NotNull;
 
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 
 public class CubeStackBlockView implements IMutableBlockView {
@@ -61,8 +62,7 @@ public class CubeStackBlockView implements IMutableBlockView {
     public @NotNull Block getBlock(int x, int y, int z) {
         Cube cube = cubes.get(y >> 4);
 
-        return cube == null || cube.getStorage() == null
-            ? Blocks.air
+        return cube == null || cube.getStorage() == null ? Blocks.air
             : cube.getStorage()
                 .getBlockByExtId(x & 0xF, y & 0xF, z & 0xF);
     }
@@ -71,8 +71,7 @@ public class CubeStackBlockView implements IMutableBlockView {
     public int getBlockMetadata(int x, int y, int z) {
         Cube cube = cubes.get(y >> 4);
 
-        return cube == null || cube.getStorage() == null
-            ? 0
+        return cube == null || cube.getStorage() == null ? 0
             : cube.getStorage()
                 .getExtBlockMetadata(x & 0xF, y & 0xF, z & 0xF);
     }

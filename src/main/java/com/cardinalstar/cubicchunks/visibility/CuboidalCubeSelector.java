@@ -66,7 +66,8 @@ public class CuboidalCubeSelector implements CubeSelector {
     }
 
     @Override
-    public WorldVisibilityChange findChanged(CubePos oldPos, CubePos newPos, int oldHorizonalView, int oldVerticalView, int newHorizontalView, int newVerticalView) {
+    public WorldVisibilityChange findChanged(CubePos oldPos, CubePos newPos, int oldHorizonalView, int oldVerticalView,
+        int newHorizontalView, int newVerticalView) {
         HashSet<CubePos> visCubesOld = new HashSet<>();
         forAllVisibleCubes(oldPos, oldHorizonalView, oldVerticalView, visCubesOld::add);
 
@@ -109,7 +110,8 @@ public class CuboidalCubeSelector implements CubeSelector {
     }
 
     @Override
-    public boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance, int x, int y, int z) {
+    public boolean contains(CubePos playerPos, int horizontalViewDistance, int verticalViewDistance, int x, int y,
+        int z) {
         return Math.abs(playerPos.getX() - x) <= horizontalViewDistance
             && Math.abs(playerPos.getY() - y) <= verticalViewDistance
             && Math.abs(playerPos.getZ() - z) <= horizontalViewDistance;

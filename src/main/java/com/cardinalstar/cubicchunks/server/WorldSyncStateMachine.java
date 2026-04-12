@@ -23,6 +23,7 @@ import com.cardinalstar.cubicchunks.util.BooleanArray2D;
 import com.cardinalstar.cubicchunks.util.ChunkMap;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 
 public class WorldSyncStateMachine {
@@ -32,6 +33,7 @@ public class WorldSyncStateMachine {
     private final WatchingPlayer player;
 
     private static class ColumnData {
+
         public int syncedCubeCount;
     }
 
@@ -61,7 +63,8 @@ public class WorldSyncStateMachine {
 
             if ((cube == null || !cube.isInitializedToLevel(CubeInitLevel.Lit)) && wasCubeSynced) {
                 if (player.isWatchingCube(pos.getX(), pos.getY(), pos.getZ())) {
-                    PacketEncoderUnloadCube.createPacket(new CubePos(pos)).sendToPlayer(player.player);
+                    PacketEncoderUnloadCube.createPacket(new CubePos(pos))
+                        .sendToPlayer(player.player);
                 }
 
                 syncedCubes.remove(pos);
@@ -74,7 +77,8 @@ public class WorldSyncStateMachine {
                     syncedColumns.remove(pos.getX(), pos.getZ());
 
                     if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
-                        PacketEncoderUnloadColumn.createPacket(pos.getX(), pos.getZ()).sendToPlayer(player.player);
+                        PacketEncoderUnloadColumn.createPacket(pos.getX(), pos.getZ())
+                            .sendToPlayer(player.player);
                     }
                 }
             } else if (cube != null && cube.isInitializedToLevel(CubeInitLevel.Lit) && !wasCubeSynced) {
@@ -85,7 +89,8 @@ public class WorldSyncStateMachine {
                     syncedColumns.put(pos.getX(), pos.getZ(), columnData);
 
                     if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
-                        PacketEncoderColumn.createPacket(cube.getColumn()).sendToPlayer(player.player);
+                        PacketEncoderColumn.createPacket(cube.getColumn())
+                            .sendToPlayer(player.player);
                     }
                 }
 
@@ -102,8 +107,10 @@ public class WorldSyncStateMachine {
 
         for (var e : dirtyBlocks.fastEntryIterable()) {
             if (!syncedCubes.contains(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
-                CubicChunks.LOGGER.trace("Tried to sync {} block updates to a cube at {} which was not synced",
-                    e.getValue().size(),
+                CubicChunks.LOGGER.trace(
+                    "Tried to sync {} block updates to a cube at {} which was not synced",
+                    e.getValue()
+                        .size(),
                     new CubePos(e.getBlockX(), e.getBlockY(), e.getBlockZ()));
 
                 continue;
@@ -112,14 +119,17 @@ public class WorldSyncStateMachine {
             if (player.isWatchingCube(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
                 Cube cube = provider.getLoadedCube(e.getBlockX(), e.getBlockY(), e.getBlockZ());
 
-                PacketEncoderCubeBlockChange.createPacket(cube, e.getValue()).sendToPlayer(player.player);
+                PacketEncoderCubeBlockChange.createPacket(cube, e.getValue())
+                    .sendToPlayer(player.player);
             }
         }
 
         for (var e : dirtyHeightCols.fastEntryIterable()) {
             if (!syncedColumns.containsKey(e.getChunkX(), e.getChunkZ())) {
-                CubicChunks.LOGGER.trace("Tried to sync {} height map updates to a column at {} which was not synced",
-                    e.getValue().size(),
+                CubicChunks.LOGGER.trace(
+                    "Tried to sync {} height map updates to a column at {} which was not synced",
+                    e.getValue()
+                        .size(),
                     new ChunkCoordIntPair(e.getChunkX(), e.getChunkZ()));
 
                 continue;
@@ -128,7 +138,8 @@ public class WorldSyncStateMachine {
             if (player.isWatchingColumn(e.getChunkX(), e.getChunkZ())) {
                 Chunk column = provider.getLoadedColumn(e.getChunkX(), e.getChunkZ());
 
-                PacketEncoderHeightMapUpdate.createPacket(e.getValue(), column).sendToPlayer(player.player);
+                PacketEncoderHeightMapUpdate.createPacket(e.getValue(), column)
+                    .sendToPlayer(player.player);
             }
         }
 
@@ -158,7 +169,8 @@ public class WorldSyncStateMachine {
     }
 
     public void onHeightChanged(int x, int z) {
-        dirtyHeightCols.computeIfAbsent(x >> 4, z >> 4, (x1, z1) -> new BooleanArray2D(16, 16)).set(x & 0xF, z & 0xF);
+        dirtyHeightCols.computeIfAbsent(x >> 4, z >> 4, (x1, z1) -> new BooleanArray2D(16, 16))
+            .set(x & 0xF, z & 0xF);
     }
 
     public void onBlockChanged(int x, int y, int z) {

@@ -52,6 +52,7 @@ import com.cardinalstar.cubicchunks.visibility.CuboidalCubeSelector;
 import com.cardinalstar.cubicchunks.visibility.WorldVisibilityChange;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import lombok.Getter;
 
@@ -177,13 +178,12 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             }
         }
 
-        CubeStatusVisualizer.put(
-            cube.getCoords(), switch (newLevel) {
-                case None -> CubeStatus.None;
-                case Generated -> CubeStatus.Generated;
-                case Populated -> CubeStatus.Populated;
-                case Lit -> CubeStatus.Lit;
-            });
+        CubeStatusVisualizer.put(cube.getCoords(), switch (newLevel) {
+            case None -> CubeStatus.None;
+            case Generated -> CubeStatus.Generated;
+            case Populated -> CubeStatus.Populated;
+            case Lit -> CubeStatus.Lit;
+        });
     }
 
     @Override
@@ -248,7 +248,8 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
 
         this.players.put(player.getEntityId(), watchingPlayer);
 
-        playerArray = players.values().toArray(EMPTY_PLAYER_ARRAY);
+        playerArray = players.values()
+            .toArray(EMPTY_PLAYER_ARRAY);
 
         CuboidalCubeSelector.INSTANCE.forAllVisibleCubes(
             watchingPlayer.getManagedCubePos(),
@@ -278,7 +279,8 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             verticalViewDistance,
             this::onPlayerStoppedViewingCube);
 
-        playerArray = players.values().toArray(EMPTY_PLAYER_ARRAY);
+        playerArray = players.values()
+            .toArray(EMPTY_PLAYER_ARRAY);
 
         watchingPlayer.sync.flush();
     }
@@ -496,18 +498,12 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
         }
 
         public boolean isWatchingColumn(int x, int z) {
-            return CuboidalCubeSelector.INSTANCE.contains(
-                managedCubePos,
-                horizontalViewDistance,
-                x, z);
+            return CuboidalCubeSelector.INSTANCE.contains(managedCubePos, horizontalViewDistance, x, z);
         }
 
         public boolean isWatchingCube(int x, int y, int z) {
-            return CuboidalCubeSelector.INSTANCE.contains(
-                managedCubePos,
-                horizontalViewDistance,
-                verticalViewDistance,
-                x, y, z);
+            return CuboidalCubeSelector.INSTANCE
+                .contains(managedCubePos, horizontalViewDistance, verticalViewDistance, x, y, z);
         }
 
         void updateManagedPos() {

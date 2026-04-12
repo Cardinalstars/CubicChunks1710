@@ -109,10 +109,10 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinChunkCache_HeightLimits")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
-    MIXIN_CHUNK_METAKEY(new MixinBuilder("Mixin to implement MetaContainer on Chunk")
-        .addCommonMixins("common.MixinChunk_MetaKey")
-        .setPhase(Phase.EARLY)
-        .setApplyIf(() -> true)),
+    MIXIN_CHUNK_METAKEY(
+        new MixinBuilder("Mixin to implement MetaContainer on Chunk").addCommonMixins("common.MixinChunk_MetaKey")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
 
     // ITEM
     MIXIN_ITEM_BLOCK(

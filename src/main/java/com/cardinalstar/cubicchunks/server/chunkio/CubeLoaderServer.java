@@ -577,11 +577,27 @@ public class CubeLoaderServer implements ICubeLoader {
 
         public void onColumnLoaded() {
             if (this.column.xPosition != this.getX()) {
-                throw new IllegalStateException("Expected column to be at X=" + getX() + " but it was at X=" + this.column.xPosition + " (" + this.column + ", " + world + ")");
+                throw new IllegalStateException(
+                    "Expected column to be at X=" + getX()
+                        + " but it was at X="
+                        + this.column.xPosition
+                        + " ("
+                        + this.column
+                        + ", "
+                        + world
+                        + ")");
             }
 
             if (this.column.zPosition != this.getZ()) {
-                throw new IllegalStateException("Expected column to be at Z=" + getZ() + " but it was at Z=" + this.column.zPosition + " (" + this.column + ", " + world + ")");
+                throw new IllegalStateException(
+                    "Expected column to be at Z=" + getZ()
+                        + " but it was at Z="
+                        + this.column.zPosition
+                        + " ("
+                        + this.column
+                        + ", "
+                        + world
+                        + ")");
             }
 
             column.lastSaveTime = world.getTotalWorldTime();
@@ -808,15 +824,39 @@ public class CubeLoaderServer implements ICubeLoader {
             }
 
             if (this.cube.getX() != this.getX()) {
-                throw new IllegalStateException("Expected column to be at X=" + getX() + " but it was at X=" + this.cube.getX() + " (" + this.column + ", " + world + ")");
+                throw new IllegalStateException(
+                    "Expected column to be at X=" + getX()
+                        + " but it was at X="
+                        + this.cube.getX()
+                        + " ("
+                        + this.column
+                        + ", "
+                        + world
+                        + ")");
             }
 
             if (this.cube.getY() != this.getY()) {
-                throw new IllegalStateException("Expected column to be at Y=" + getY() + " but it was at Y=" + this.cube.getY() + " (" + this.column + ", " + world + ")");
+                throw new IllegalStateException(
+                    "Expected column to be at Y=" + getY()
+                        + " but it was at Y="
+                        + this.cube.getY()
+                        + " ("
+                        + this.column
+                        + ", "
+                        + world
+                        + ")");
             }
 
             if (this.cube.getZ() != this.getZ()) {
-                throw new IllegalStateException("Expected column to be at Z=" + getZ() + " but it was at Z=" + this.cube.getZ() + " (" + this.column + ", " + world + ")");
+                throw new IllegalStateException(
+                    "Expected column to be at Z=" + getZ()
+                        + " but it was at Z="
+                        + this.cube.getZ()
+                        + " ("
+                        + this.column
+                        + ", "
+                        + world
+                        + ")");
             }
 
             updateInitLevel();

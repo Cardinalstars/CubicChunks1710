@@ -299,7 +299,11 @@ public abstract class MixinWorldServer extends MixinWorld implements ICubicWorld
         return runningCompatibilityGenerator;
     }
 
-    @WrapOperation(method = "func_147456_g", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/chunk/Chunk;getBlockStorageArray()[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
+    @WrapOperation(
+        method = "func_147456_g",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/chunk/Chunk;getBlockStorageArray()[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private ExtendedBlockStorage[] getTickableStorages(Chunk column, Operation<ExtendedBlockStorage[]> original) {
         return ((IColumn) column).getTickableStorages();
     }

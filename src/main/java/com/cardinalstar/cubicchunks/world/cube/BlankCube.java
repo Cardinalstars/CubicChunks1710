@@ -46,7 +46,8 @@ public class BlankCube extends Cube {
             new CubePos(0, 0, 0),
             null,
             new ArrayList<>(),
-            new HashMap<>(), null);
+            new HashMap<>(),
+            null);
     }
 
     @Override
