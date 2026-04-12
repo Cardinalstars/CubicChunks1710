@@ -30,6 +30,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Blocks;
@@ -70,7 +71,6 @@ import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IMutableBlockView;
 import com.cardinalstar.cubicchunks.world.cube.blockview.SafeMutableBlockView;
 import com.cardinalstar.cubicchunks.world.cube.blockview.UniformBlockView;
-import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
 import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 
@@ -88,9 +88,6 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 @ParametersAreNonnullByDefault
 public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDelegate {
 
-    @Desugar
-    record FillerInfo(ImmutableBlockMeta filler) {}
-
     @Nonnull
     private final IChunkProvider vanilla;
     @Nonnull
@@ -98,10 +95,10 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
     @Nonnull
     private final IWorldDecorator decorator;
 
-    private final int worldHeightBlocks;
-    private final int worldHeightCubes;
+    private final int vanillaGenerationHeight;
+    private final int vanillaGenerationHeightCubes;
 
-    private FillerInfo bottom, top;
+    private FillerInfo fillerInfo;
 
     /**
      * Create a new VanillaCompatibilityGenerator
@@ -109,13 +106,16 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
      * @param vanilla The vanilla generator to mirror
      * @param world   The world in which cubes are being generated
      */
-    public VanillaWorldGenerator(IChunkProvider vanilla, World world, IWorldDecorator decorator) {
+    public VanillaWorldGenerator(IChunkProvider vanilla, World world, IWorldDecorator decorator)
+    {
+        this.fillerInfo = CubicChunksSavedData.get(world).getFillerInfo();
+
         this.vanilla = vanilla;
         this.world = world;
         this.decorator = decorator;
 
-        worldHeightBlocks = ((ICubicWorld) this.world).getMaxGenerationHeight();
-        worldHeightCubes = Coords.blockCeilToCube(worldHeightBlocks);
+        vanillaGenerationHeight = ((ICubicWorld) this.world).getMaxGenerationHeight();
+        vanillaGenerationHeightCubes = Coords.blockCeilToCube(vanillaGenerationHeight);
     }
 
     private ICubeLoader getCubeLoader() {
@@ -126,19 +126,23 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
         return ((ICubicWorldInternal.Server) world).getCubeCache();
     }
 
-    private FillerInfo getBottomFillerInfo() {
-        if (bottom != null) return bottom;
+    private ImmutableBlockMeta getBottomFillerInfo()
+    {
+        if (fillerInfo.bottomFiller != null) return fillerInfo.bottomFiller;
 
         Chunk chunk = vanilla.provideChunk(0, 0);
 
         ((IColumnInternal) chunk).setColumn(false);
 
-        bottom = analyzeBottomFiller(new ChunkBlockView(chunk));
+        fillerInfo.bottomFiller = analyzeBottomFiller(new ChunkBlockView(chunk));
 
-        return bottom;
+        CubicChunksSavedData saveData = CubicChunksSavedData.get(world);
+        saveData.setBottomFiller(fillerInfo.bottomFiller);
+
+        return fillerInfo.bottomFiller;
     }
 
-    private FillerInfo analyzeBottomFiller(IBlockView blockView) {
+    private ImmutableBlockMeta analyzeBottomFiller(IBlockView blockView) {
         Object2IntOpenHashMap<ImmutableBlockMeta> histogram = new Object2IntOpenHashMap<>();
 
         // Scan three layers for top and bottom cubes to guard against bedrock walls
@@ -165,25 +169,27 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
             })
             .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
 
-        ImmutableBlockMeta filler = bottomBlock.map(Map.Entry::getKey)
+        return bottomBlock.map(Map.Entry::getKey)
             .orElse(new BlockMeta(Blocks.air, 0));
-
-        return new FillerInfo(filler);
     }
 
-    private FillerInfo getTopFillerInfo() {
-        if (top != null) return top;
+    private ImmutableBlockMeta getTopFillerInfo()
+    {
+        if (fillerInfo.topFiller != null) return fillerInfo.topFiller;
 
         Chunk chunk = vanilla.provideChunk(0, 0);
 
         ((IColumnInternal) chunk).setColumn(false);
 
-        top = analyzeTopFiller(new ChunkBlockView(chunk));
+        fillerInfo.topFiller = analyzeTopFiller(new ChunkBlockView(chunk));
 
-        return top;
+        CubicChunksSavedData saveData = CubicChunksSavedData.get(world);
+        saveData.setTopFiller(fillerInfo.topFiller);
+
+        return fillerInfo.topFiller;
     }
 
-    private FillerInfo analyzeTopFiller(IBlockView blockView) {
+    private ImmutableBlockMeta analyzeTopFiller(IBlockView blockView) {
         Object2IntOpenHashMap<ImmutableBlockMeta> histogram = new Object2IntOpenHashMap<>();
 
         int top = blockView.getBounds()
@@ -205,10 +211,8 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                     .getBlock() != Blocks.bedrock)
             .max(Comparator.comparingInt(Object2IntMap.Entry::getIntValue));
 
-        ImmutableBlockMeta filler = topBlock.map(Map.Entry::getKey)
+        return topBlock.map(Map.Entry::getKey)
             .orElse(new BlockMeta(Blocks.air, 0));
-
-        return new FillerInfo(filler);
     }
 
     @Override
@@ -308,8 +312,8 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
             }
 
             if (cubeY < 0 || cubeY >= 16) {
-                FillerInfo fillerInfo = cubeY < 0 ? getBottomFillerInfo() : getTopFillerInfo();
-                IBlockView cubeData = new UniformBlockView(fillerInfo.filler);
+                ImmutableBlockMeta filler = cubeY < 0 ? getBottomFillerInfo() : getTopFillerInfo();
+                IBlockView cubeData = new UniformBlockView(filler);
 
                 Cube cube = new Cube(chunk, cubeY, cubeData);
 
@@ -362,7 +366,7 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                         wrapBlockArray(compatBlocks),
                         wrapByteArray(compatBlockMeta));
 
-                    view = new SafeMutableBlockView(Box.horizontalChunkSlice(0, worldHeightBlocks), view);
+                    view = new SafeMutableBlockView(Box.horizontalChunkSlice(0, vanillaGenerationHeight), view);
 
                     return Pair.of(chunk, view);
                 }
