@@ -9,14 +9,11 @@ import net.minecraft.world.chunk.Chunk;
 import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.XYZAddressable;
 import com.cardinalstar.cubicchunks.network.PacketEncoderColumn;
-import com.cardinalstar.cubicchunks.network.PacketEncoderColumn.PacketColumn;
 import com.cardinalstar.cubicchunks.network.PacketEncoderCubeBlockChange;
 import com.cardinalstar.cubicchunks.network.PacketEncoderCubes;
 import com.cardinalstar.cubicchunks.network.PacketEncoderHeightMapUpdate;
 import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadColumn;
-import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadColumn.PacketUnloadColumn;
 import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadCube;
-import com.cardinalstar.cubicchunks.network.PacketEncoderUnloadCube.PacketUnloadCube;
 import com.cardinalstar.cubicchunks.server.CubicPlayerManager.WatchingPlayer;
 import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
 import com.cardinalstar.cubicchunks.util.AddressTools;
@@ -63,10 +60,8 @@ public class WorldSyncStateMachine {
             boolean wasCubeSynced = syncedCubes.contains(pos);
 
             if ((cube == null || !cube.isInitializedToLevel(CubeInitLevel.Lit)) && wasCubeSynced) {
-                PacketUnloadCube packet = PacketEncoderUnloadCube.createPacket(new CubePos(pos));
-
                 if (player.isWatchingCube(pos.getX(), pos.getY(), pos.getZ())) {
-                    packet.sendToPlayer(player.player);
+                    PacketEncoderUnloadCube.createPacket(new CubePos(pos)).sendToPlayer(player.player);
                 }
 
                 syncedCubes.remove(pos);
@@ -78,10 +73,8 @@ public class WorldSyncStateMachine {
                 if (columnData.syncedCubeCount <= 0) {
                     syncedColumns.remove(pos.getX(), pos.getZ());
 
-                    PacketUnloadColumn packet2 = PacketEncoderUnloadColumn.createPacket(pos.getX(), pos.getZ());
-
                     if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
-                        packet2.sendToPlayer(player.player);
+                        PacketEncoderUnloadColumn.createPacket(pos.getX(), pos.getZ()).sendToPlayer(player.player);
                     }
                 }
             } else if (cube != null && cube.isInitializedToLevel(CubeInitLevel.Lit) && !wasCubeSynced) {
@@ -91,10 +84,8 @@ public class WorldSyncStateMachine {
                     columnData = new ColumnData();
                     syncedColumns.put(pos.getX(), pos.getZ(), columnData);
 
-                    PacketColumn packet = PacketEncoderColumn.createPacket(cube.getColumn());
-
                     if (player.isWatchingColumn(pos.getX(), pos.getZ())) {
-                        packet.sendToPlayer(player.player);
+                        PacketEncoderColumn.createPacket(cube.getColumn()).sendToPlayer(player.player);
                     }
                 }
 
@@ -118,12 +109,10 @@ public class WorldSyncStateMachine {
                 continue;
             }
 
-            Cube cube = provider.getLoadedCube(e.getBlockX(), e.getBlockY(), e.getBlockZ());
-
-            var packet = PacketEncoderCubeBlockChange.createPacket(cube, e.getValue());
-
             if (player.isWatchingCube(e.getBlockX(), e.getBlockY(), e.getBlockZ())) {
-                packet.sendToPlayer(player.player);
+                Cube cube = provider.getLoadedCube(e.getBlockX(), e.getBlockY(), e.getBlockZ());
+
+                PacketEncoderCubeBlockChange.createPacket(cube, e.getValue()).sendToPlayer(player.player);
             }
         }
 
@@ -136,12 +125,10 @@ public class WorldSyncStateMachine {
                 continue;
             }
 
-            Chunk column = provider.getLoadedColumn(e.getChunkX(), e.getChunkZ());
-
-            var packet = PacketEncoderHeightMapUpdate.createPacket(e.getValue(), column);
-
             if (player.isWatchingColumn(e.getChunkX(), e.getChunkZ())) {
-                packet.sendToPlayer(player.player);
+                Chunk column = provider.getLoadedColumn(e.getChunkX(), e.getChunkZ());
+
+                PacketEncoderHeightMapUpdate.createPacket(e.getValue(), column).sendToPlayer(player.player);
             }
         }
 
