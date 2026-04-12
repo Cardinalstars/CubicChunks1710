@@ -53,7 +53,7 @@ public class CubeLoaderServer implements ICubeLoader {
     private final List<Cube> pendingCubeLoads = new ArrayList<>();
     private final List<Chunk> pendingColumnLoads = new ArrayList<>();
 
-    private Array3D<Cube> cache;
+    private volatile Array3D<Cube> cache;
     @Setter
     private long now;
 
@@ -133,17 +133,20 @@ public class CubeLoaderServer implements ICubeLoader {
         return success ? column : null;
     }
 
-    private Cube lastCube;
+    private volatile Cube lastCube;
 
     @Override
     public Cube getLoadedCube(int x, int y, int z) {
-        if (cache != null) {
-            Cube cube = cache.get(x, y, z);
+        Array3D<Cube> cubeCache = cache;
+        if (cubeCache != null) {
+            Cube cube = cubeCache.get(x, y, z);
 
             if (cube != null) return cube;
         } else {
-            if (lastCube != null && lastCube.getX() == x && lastCube.getY() == y && lastCube.getZ() == z) {
-                return lastCube;
+            Cube cube = lastCube;
+
+            if (cube != null && cube.getX() == x && cube.getY() == y && cube.getZ() == z) {
+                return cube;
             }
         }
 
@@ -151,10 +154,10 @@ public class CubeLoaderServer implements ICubeLoader {
 
         Cube cube = info == null ? null : info.cube;
 
-        if (cache == null) {
+        if (cubeCache == null) {
             lastCube = cube;
         } else {
-            cache.set(x, y, z, cube);
+            cubeCache.set(x, y, z, cube);
         }
 
         return cube;
