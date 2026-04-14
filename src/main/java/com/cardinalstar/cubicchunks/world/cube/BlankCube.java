@@ -23,7 +23,6 @@ package com.cardinalstar.cubicchunks.world.cube;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -48,7 +47,6 @@ public class BlankCube extends Cube {
             null,
             new ArrayList<>(),
             new HashMap<>(),
-            new ConcurrentLinkedQueue<>(),
             null);
     }
 

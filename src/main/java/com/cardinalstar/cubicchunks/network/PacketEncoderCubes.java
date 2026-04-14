@@ -147,7 +147,7 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
         }
 
         ByteBuf buf = Unpooled.wrappedBuffer(packet.data);
-        WorldEncoder.decodeCube(new CCPacketBuffer(buf), cubes);
+        WorldEncoder.decodeCube(new CCPacketBuffer(buf), cubes, world);
 
         for (Cube cube : cubes) {
             if (cube != null) {

@@ -58,7 +58,6 @@ import com.cardinalstar.cubicchunks.server.chunkio.CubeInitLevel;
 import com.cardinalstar.cubicchunks.server.chunkio.ICubeLoader;
 import com.cardinalstar.cubicchunks.server.chunkio.IPreloadFailureDelegate;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
-import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
@@ -99,7 +98,6 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
     private final IWorldDecorator decorator;
 
     private final int worldHeightBlocks;
-    private final int worldHeightCubes;
 
     private FillerInfo bottom, top;
 
@@ -115,7 +113,6 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
         this.decorator = decorator;
 
         worldHeightBlocks = ((ICubicWorld) this.world).getMaxGenerationHeight();
-        worldHeightCubes = Coords.blockCeilToCube(worldHeightBlocks);
     }
 
     private ICubeLoader getCubeLoader() {
@@ -346,8 +343,8 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                 .doCompatibilityGeneration()) {
                 Chunk chunk = vanilla.provideChunk(cubeX, cubeZ);
 
-                Block[] compatBlocks = ((IColumnInternal) chunk).getCompatGenerationBlockArray();
-                byte[] compatBlockMeta = ((IColumnInternal) chunk).getCompatGenerationByteArray();
+                Block[] compatBlocks = ((IColumnInternal) chunk).takeCompatGenerationBlockArray();
+                byte[] compatBlockMeta = ((IColumnInternal) chunk).takeCompatGenerationByteArray();
 
                 if (compatBlocks == null || compatBlockMeta == null) {
                     CubicChunks.LOGGER.error("Optimized compatibility generation failed, disabling...");

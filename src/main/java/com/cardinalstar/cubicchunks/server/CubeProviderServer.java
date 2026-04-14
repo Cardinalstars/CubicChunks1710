@@ -24,14 +24,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.function.BooleanSupplier;
 
 import javax.annotation.Detainted;
 import javax.annotation.Nonnull;
@@ -110,6 +107,9 @@ public class CubeProviderServer extends ChunkProviderServer
 
     private static final int MAX_NS_SPENT_LOADING = 10_000_000;
 
+    private int loadedColumns, loadedCubes;
+    private long lastTickEnd = 0, loadTimeAccumulator;
+
     private final ListMultimap<ChunkCoordIntPair, Runnable> pendingAsyncChunkLoads = MultimapBuilder.hashKeys()
         .arrayListValues()
         .build();
@@ -166,6 +166,8 @@ public class CubeProviderServer extends ChunkProviderServer
                 .forEach(Runnable::run);
 
             callbacks.forEach(c -> c.onColumnLoaded(column));
+
+            loadedColumns++;
         }
 
         @Override
@@ -180,6 +182,7 @@ public class CubeProviderServer extends ChunkProviderServer
         @Override
         public void onCubeLoaded(Cube cube) {
             callbacks.forEach(c -> c.onCubeLoaded(cube));
+            loadedCubes++;
         }
 
         @Override
@@ -297,26 +300,14 @@ public class CubeProviderServer extends ChunkProviderServer
     }
 
     public void registerCallback(CubeLoaderCallback callback) {
-        if (callback != null) this.callbacks.add(callback);
+        this.callbacks.add(callback);
     }
 
     public void removeCallback(CubeLoaderCallback callback) {
-        if (callback != null) this.callbacks.remove(callback);
+        this.callbacks.remove(callback);
     }
 
     public void tick() {
-        long start = System.currentTimeMillis();
-        Random rand = this.worldObj.rand;
-        BooleanSupplier tickFaster = () -> System.currentTimeMillis() - start > 40;
-
-        profiler.startSection("Tick cubes");
-
-        for (Cube cube : getTickableCubes()) {
-            cube.tickCubeServer(tickFaster, rand);
-        }
-
-        profiler.endSection();
-
         getCubeLoader().setNow(worldObj.getTotalWorldTime());
 
         doEagerLoading();
@@ -390,14 +381,37 @@ public class CubeProviderServer extends ChunkProviderServer
             }
         }
 
-        long delta = System.nanoTime() - start;
+        long end = System.nanoTime();
+        long delta = end - start;
+
+        loadTimeAccumulator += delta;
+
+        if ((loadedColumns > 0 || loadedCubes > 0) && lastTickEnd > 0 && (end - lastTickEnd) > 10e9) {
+            double colPerSecPrecise = loadedColumns / (double) loadTimeAccumulator;
+            double colPerSecReal = loadedColumns / (double) (end - lastTickEnd);
+
+            double cubePerSecPrecise = loadedCubes / (double) loadTimeAccumulator;
+            double cubePerSecReal = loadedCubes / (double) (end - lastTickEnd);
+
+            CubicChunks.LOGGER.info(
+                "Columns per second: {} (precise: {}). Cubes per second: {} (precise: {}).",
+                String.format("%,.2f", colPerSecReal * 1e9),
+                String.format("%,.2f", colPerSecPrecise * 1e9),
+                String.format("%,.2f", cubePerSecReal * 1e9),
+                String.format("%,.2f", cubePerSecPrecise * 1e9));
+
+            loadedColumns = 0;
+            loadedCubes = 0;
+            lastTickEnd = end;
+            loadTimeAccumulator = 0;
+        }
 
         if (delta > MAX_NS_SPENT_LOADING * 2) {
             CubicChunks.LOGGER.warn("Spent {} ms loading the world this tick", delta / 1e6);
         }
 
         if (processed > 0) {
-            CubicChunks.LOGGER.info(
+            CubicChunks.LOGGER.trace(
                 "Processed {} eager load requests this tick ({} -> {} columns)",
                 processed,
                 startCols,
@@ -405,14 +419,6 @@ public class CubeProviderServer extends ChunkProviderServer
         }
 
         profiler.endSection();
-    }
-
-    public Collection<Chunk> getTickableChunks() {
-        return ((CubicPlayerManager) worldServer.getPlayerManager()).getColumns();
-    }
-
-    public Collection<Cube> getTickableCubes() {
-        return ((CubicPlayerManager) worldServer.getPlayerManager()).getCubes();
     }
 
     @Override

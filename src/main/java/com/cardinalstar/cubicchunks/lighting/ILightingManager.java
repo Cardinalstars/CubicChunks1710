@@ -40,7 +40,7 @@ public interface ILightingManager {
 
     void updateLightBetween(Chunk column, int localX, int y1, int y2, int localZ);
 
-    default void onSendCubes(Iterable<? extends ICube> cubes) {
+    default void onSendCubes() {
         processUpdates();
     }
 

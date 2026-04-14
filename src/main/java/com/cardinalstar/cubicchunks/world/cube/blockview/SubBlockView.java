@@ -33,7 +33,8 @@ public class SubBlockView implements IBlockView {
         return blockView.getBlockMetadata(x + box.getX1(), y + box.getY1(), z + box.getZ1());
     }
 
-    public Box getBox() {
+    @Override
+    public Box getBounds() {
         if (effectiveBox == null) {
             effectiveBox = new Box(
                 0,

@@ -46,8 +46,7 @@ public class CubeMap implements Iterable<Cube> {
     @Nonnull
     private final List<Cube> cubes = new ArrayList<>();
 
-    @Nonnull
-    private ExtendedBlockStorage[] toBlockTick = new ExtendedBlockStorage[0];
+    private ExtendedBlockStorage[] tickableEBSes = new ExtendedBlockStorage[0];
 
     /**
      * Removes the cube at {@code cubeY}
@@ -145,46 +144,54 @@ public class CubeMap implements Iterable<Cube> {
         return cubes.isEmpty();
     }
 
+    private <T> T getSafe(@Nullable T[] array, int index) {
+        if (array == null) return null;
+
+        if (index < 0 || index >= array.length) return null;
+
+        return array[index];
+    }
+
     /**
      * @return An array of EBSs from cubes that need ticking
      */
-    public ExtendedBlockStorage[] getStoragesToTick() {
-        if (!isToTickValid()) {
-            int count = 0;
-            for (Cube cube : cubes) {
-                if (cube.getStorage() != null && cube.getTickets()
-                    .shouldTick()) {
-                    count++;
-                }
-            }
+    public ExtendedBlockStorage[] getTickableStorages() {
+        int count = 0;
 
-            toBlockTick = new ExtendedBlockStorage[count];
+        boolean needsUpdate = false;
+
+        for (int i = 0, cubesSize = cubes.size(); i < cubesSize; i++) {
+            Cube cube = cubes.get(i);
+
+            if (cube.shouldTick()) {
+                if (!needsUpdate) {
+                    ExtendedBlockStorage existing = getSafe(tickableEBSes, count);
+
+                    if (existing != cube.getStorage()) {
+                        needsUpdate = true;
+                    }
+                }
+
+                count++;
+            }
+        }
+
+        if (!needsUpdate) return tickableEBSes;
+
+        tickableEBSes = new ExtendedBlockStorage[count];
+
+        if (count > 0) {
             count = 0;
-            for (Cube cube : cubes) {
-                if (cube.getStorage() != null && cube.getTickets()
-                    .shouldTick()) {
-                    toBlockTick[count++] = cube.getStorage();
+            for (int i = 0, cubesSize = cubes.size(); i < cubesSize; i++) {
+                Cube cube = cubes.get(i);
+
+                if (cube.shouldTick()) {
+                    tickableEBSes[count++] = cube.getStorage();
                 }
             }
         }
 
-        return toBlockTick;
-    }
-
-    private boolean isToTickValid() {
-        int index = 0;
-        for (Cube cube : cubes) {
-            if (cube.getStorage() != null && cube.getTickets()
-                .shouldTick()) {
-                if (index >= toBlockTick.length) {
-                    return false;
-                }
-                if (toBlockTick[index++] != cube.getStorage()) {
-                    return false;
-                }
-            }
-        }
-        return index == toBlockTick.length; // did we check everything there was in toBlockTick?
+        return tickableEBSes;
     }
 
     /**

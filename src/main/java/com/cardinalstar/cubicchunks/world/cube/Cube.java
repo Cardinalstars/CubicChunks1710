@@ -32,10 +32,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BooleanSupplier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -52,6 +49,7 @@ import net.minecraft.util.ReportedException;
 import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
@@ -68,6 +66,7 @@ import com.cardinalstar.cubicchunks.api.MetaKey;
 import com.cardinalstar.cubicchunks.event.events.CubeEvent;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.network.CCPacketBuffer;
+import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
 import com.cardinalstar.cubicchunks.util.AddressTools;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
@@ -81,7 +80,7 @@ import com.cardinalstar.cubicchunks.world.core.ICubicTicketInternal;
 import com.cardinalstar.cubicchunks.world.cube.blockview.IBlockView;
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
+import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 
 /**
  * A cube is our extension of minecraft's chunk system to three dimensions. Each cube encloses a cubic area in the world
@@ -89,9 +88,6 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
  */
 @ParametersAreNonnullByDefault
 public class Cube implements ICube {
-
-    @Nullable
-    protected static final ExtendedBlockStorage NULL_STORAGE = null;
 
     /**
      * A 16x16x16 mapping of the block biome array.
@@ -153,18 +149,12 @@ public class Cube implements ICube {
      * Entities in this cube
      */
     @Nonnull
-    public List<Entity> entities;
+    public final List<Entity> entities;
     /**
      * The position of tile entities in this cube, and their corresponding tile entity
      */
     @Nonnull
-    public Map<net.minecraft.world.ChunkPosition, net.minecraft.tileentity.TileEntity> cubeTileEntityMap;
-
-    /**
-     * The positions of tile entities queued for creation
-     */
-    @Nonnull
-    private final ConcurrentLinkedQueue<BlockPos> tileEntityPosQueue;
+    public Map<ChunkPosition, TileEntity> cubeTileEntityMap;
 
     private final ICubeLightTrackingInfo cubeLightData;
 
@@ -174,13 +164,6 @@ public class Cube implements ICube {
     private boolean isCubeLoaded;
 
     /**
-     * Contains the current Linear Congruential Generator seed for block updates. Used with an A value of 3 and a C
-     * value of 0x3c6ef35f, producing a highly planar series of values ill-suited for choosing random blocks in a
-     * 16x16x16 field.
-     */
-    protected int updateLCG = (new Random()).nextInt();
-
-    /**
      * True only if all the blocks have been added to server height map. Always true clientside.
      */
     private boolean isSurfaceTracked = false;
@@ -188,14 +171,13 @@ public class Cube implements ICube {
 
     /**
      * This is used as an optimization to avoid putting all the cubes to tick in a set (which turns out to be very slow
-     * because of huge amount of
-     * cubes), or iterating over all loaded cubes, which can also be very expensive in case of very big render distance,
-     * where not many cubes are
-     * actually ticked, but hundreds of thousands of them can be loaded.
+     * because of huge amount of cubes), or iterating over all loaded cubes, which can also be very expensive in case of
+     * very big render distance, where not many cubes are actually ticked, but hundreds of thousands of them can be
+     * loaded.
      * <p>
      * Instead, cubes for players are added into a simple arraylist, and forced cubes are iterated separately, and
-     * double-ticking is avoided by
-     * checking this lastTicked field instead of deduplication by putting them all into a Set.
+     * double-ticking is avoided by checking this lastTicked field instead of deduplication by putting them all into a
+     * Set.
      */
     private long lastTicked = Long.MIN_VALUE;
 
@@ -213,17 +195,16 @@ public class Cube implements ICube {
         this.column = column;
         this.coords = new CubePos(column.xPosition, cubeY, column.zPosition);
 
-        this.tickets = new TicketList(this); // TODO
+        this.tickets = new TicketList(this);
 
-        this.entities = new ArrayList<Entity>();
+        this.entities = new ArrayList<>();
 
         this.cubeTileEntityMap = new HashMap<>();
-        this.tileEntityPosQueue = new ConcurrentLinkedQueue<>();
 
         this.cubeLightData = ((ICubicWorldInternal) world).getLightingManager()
             .createLightData(this);
 
-        this.storage = NULL_STORAGE;
+        this.storage = null;
     }
 
     /**
@@ -286,20 +267,17 @@ public class Cube implements ICube {
     /**
      * Constructor to be used from subclasses to provide all field values
      *
-     * @param tickets            cube ticket list
-     * @param world              the world instance
-     * @param column             the column this cube belongs to
-     * @param coords             position of this cube
-     * @param storage            block storage
-     * @param entities           entity container
-     * @param tileEntityMap      tile entity storage
-     * @param tileEntityPosQueue queue for updating tile entities
-     * @param cubeLightData      cube light tracking data
+     * @param tickets       cube ticket list
+     * @param world         the world instance
+     * @param column        the column this cube belongs to
+     * @param coords        position of this cube
+     * @param storage       block storage
+     * @param entities      entity container
+     * @param tileEntityMap tile entity storage
+     * @param cubeLightData cube light tracking data
      */
     protected Cube(TicketList tickets, World world, Chunk column, CubePos coords, ExtendedBlockStorage storage,
-        List<Entity> entities,
-        Map<net.minecraft.world.ChunkPosition, net.minecraft.tileentity.TileEntity> tileEntityMap,
-        ConcurrentLinkedQueue<BlockPos> tileEntityPosQueue, ICubeLightTrackingInfo cubeLightData) {
+        List<Entity> entities, Map<ChunkPosition, TileEntity> tileEntityMap, ICubeLightTrackingInfo cubeLightData) {
         this.tickets = tickets;
         this.world = world;
         this.column = column;
@@ -307,7 +285,6 @@ public class Cube implements ICube {
         this.storage = storage;
         this.entities = entities;
         this.cubeTileEntityMap = tileEntityMap;
-        this.tileEntityPosQueue = tileEntityPosQueue;
         this.cubeLightData = cubeLightData;
     }
 
@@ -443,43 +420,6 @@ public class Cube implements ICube {
         }
     }
 
-    /**
-     * Update light and tile entities of cube
-     *
-     * @param tryToTickFaster Whether costly calculations should be skipped in order to catch up with ticks
-     */
-    public void tickCubeCommon(BooleanSupplier tryToTickFaster) {
-        this.ticked = true;
-        while (!this.tileEntityPosQueue.isEmpty()) {
-            BlockPos blockpos = this.tileEntityPosQueue.poll();
-            int x = blockpos.getX();
-            int y = blockpos.getY();
-            int z = blockpos.getZ();
-            Block block = this.getBlock(x, y, z);
-            int meta = this.getBlockMetadata(x, y, z);
-
-            if (this.getTileEntityUnsafe(x, y, z) == null && block.hasTileEntity(meta)) {
-                TileEntity tileentity = this.getBlockTileEntityInChunk(x, y, z);
-                this.world.setTileEntity(x, y, z, tileentity);
-                this.world.markBlockRangeForRenderUpdate(x, y, z, x, y, z);
-            }
-        }
-    }
-
-    /**
-     * Tick this cube on server side. Block tick updates launched here.
-     *
-     * @param tryToTickFaster - returns true when running out of reserved tick time
-     * @param rand            - World specific Random
-     */
-    public void tickCubeServer(BooleanSupplier tryToTickFaster, Random rand) {
-        if (!isFullyPopulated()) {
-            return;
-        }
-
-        tickCubeCommon(tryToTickFaster);
-    }
-
     @Override
     public @NotNull BiomeGenBase getBiome(int biomeX, int biomeY, int biomeZ) {
         BiomeGenBase biome = biomes3d == null ? null : biomes3d.get(biomeX, biomeY, biomeZ);
@@ -577,6 +517,18 @@ public class Cube implements ICube {
     @Nullable
     public ExtendedBlockStorage getStorage() {
         return this.storage;
+    }
+
+    @Override
+    public boolean shouldTick() {
+        if (this.storage == null) return false;
+        if (!this.storage.getNeedsRandomTick()) return false;
+
+        if (world instanceof WorldServer server) {
+            if (((CubicPlayerManager) server.getPlayerManager()).isCubeWatched(this)) return true;
+        }
+
+        return getTickets().shouldTick();
     }
 
     @Nullable
@@ -755,6 +707,7 @@ public class Cube implements ICube {
     }
 
     // TODO Check that is this is updated correctly in the CubeProviderServer
+
     /**
      * Mark this cube as saved to disk
      */
@@ -891,7 +844,7 @@ public class Cube implements ICube {
         return forcedLoadReasons;
     }
 
-    private final Object2ObjectArrayMap<MetaKey<?>, Object> meta = new Object2ObjectArrayMap<>();
+    private final Reference2ReferenceArrayMap<MetaKey<?>, Object> meta = new Reference2ReferenceArrayMap<>();
 
     @Override
     public <T> T getMeta(MetaKey<T> key) {
@@ -902,6 +855,19 @@ public class Cube implements ICube {
     @Override
     public <T> void setMeta(MetaKey<T> key, T value) {
         meta.put(key, value);
+    }
+
+    @Override
+    public String toString() {
+        return "Cube{" + "object id="
+            + System.identityHashCode(this)
+            + ", coords="
+            + coords
+            + ", isCubeLoaded="
+            + isCubeLoaded
+            + ", populationStatus="
+            + Integer.toBinaryString(populationStatus)
+            + '}';
     }
 
     public interface ICubeLightTrackingInfo {

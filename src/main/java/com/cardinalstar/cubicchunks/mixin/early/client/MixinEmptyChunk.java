@@ -28,6 +28,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.EmptyChunk;
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
@@ -70,6 +71,10 @@ public abstract class MixinEmptyChunk extends MixinChunk_Column {
 
     public Collection<ICube> chunk$getLoadedCubes() {
         return Collections.emptySet();
+    }
+
+    public ExtendedBlockStorage[] chunk$getTickableStorages() {
+        return new ExtendedBlockStorage[0];
     }
 
     public Iterable<ICube> chunk$getLoadedCubes(int startY, int endY) {

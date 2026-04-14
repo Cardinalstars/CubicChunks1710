@@ -4,9 +4,6 @@ import static com.gtnewhorizon.gtnhlib.util.CoordinatePacker.pack;
 
 import java.util.Iterator;
 
-import org.joml.Vector3i;
-import org.joml.Vector3ic;
-
 import com.cardinalstar.cubicchunks.api.XYZAddressable;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -39,10 +36,30 @@ public class BlockPosSet extends LongOpenHashSet {
         return add(xyz.getX(), xyz.getY(), xyz.getZ());
     }
 
-    public Iterator<Vector3ic> fastIterator() {
+    public Iterator<XYZAddressable> fastIterator() {
         LongIterator iter = super.iterator();
 
-        Vector3i v = new Vector3i();
+        class MutableXYZ implements XYZAddressable {
+
+            public int x, y, z;
+
+            @Override
+            public int getX() {
+                return x;
+            }
+
+            @Override
+            public int getY() {
+                return y;
+            }
+
+            @Override
+            public int getZ() {
+                return z;
+            }
+        }
+
+        MutableXYZ pos = new MutableXYZ();
 
         return new Iterator<>() {
 
@@ -52,19 +69,19 @@ public class BlockPosSet extends LongOpenHashSet {
             }
 
             @Override
-            public Vector3ic next() {
+            public XYZAddressable next() {
                 long l = iter.nextLong();
 
-                v.x = Coords.x(l);
-                v.y = Coords.y(l);
-                v.z = Coords.z(l);
+                pos.x = Coords.x(l);
+                pos.y = Coords.y(l);
+                pos.z = Coords.z(l);
 
-                return v;
+                return pos;
             }
         };
     }
 
-    public Iterable<Vector3ic> fastEntryIterable() {
+    public Iterable<XYZAddressable> fastEntryIterable() {
         return this::fastIterator;
     }
 }

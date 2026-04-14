@@ -20,8 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import static com.cardinalstar.cubicchunks.util.Coords.blockToCube;
-
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -48,7 +46,6 @@ import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
-import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.llamalad7.mixinextras.expression.Definition;
 import com.llamalad7.mixinextras.expression.Expression;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -73,13 +70,7 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     public WorldProvider provider;
 
     @Shadow
-    public abstract Chunk getChunkFromBlockCoords(int x, int z);
-
-    @Shadow
     public abstract Block getBlock(int x, int y, int z);
-
-    @Shadow
-    public abstract boolean blockExists(int x, int y, int z);
 
     @Shadow
     protected abstract boolean chunkExists(int x, int z);
@@ -102,6 +93,22 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
 
     @ModifyConstant(method = "blockExists", constant = @Constant(intValue = 256, ordinal = 0))
     private int blockExists_heightLimits_max(int original) {
+        return getMaxHeight();
+    }
+
+    // getBlock
+    @ModifyConstant(
+        method = "getBlock",
+        constant = @Constant(
+            expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO,
+            intValue = 0,
+            ordinal = 0))
+    private int getBlock_heightLimits_min(int original) {
+        return getMinHeight();
+    }
+
+    @ModifyConstant(method = "getBlock", constant = @Constant(intValue = 256, ordinal = 0))
+    private int getBlock_heightLimits_max(int original) {
         return getMaxHeight();
     }
 
@@ -400,22 +407,6 @@ public abstract class MixinWorld_HeightLimit implements ICubicWorld {
     }
 
     // NOTE: This may break some things
-
-    /**
-     * @param x   block x position
-     * @param y   block y position
-     * @param z   block z position
-     * @param cbi callback info
-     *
-     * @author Barteks2x
-     * @reason CubicChunks needs to check if cube is loaded instead of chunk
-     */
-    @Inject(method = "blockExists(III)Z", cancellable = true, at = @At(value = "HEAD"))
-    private void isBlockLoaded(int x, int y, int z, CallbackInfoReturnable<Boolean> cbi) {
-        ICube cube = this.getCubeCache()
-            .getLoadedCube(blockToCube(x), blockToCube(y), blockToCube(z));
-        cbi.setReturnValue(cube != null && !(cube instanceof BlankCube));
-    }
 
     @Redirect(
         method = "updateEntityWithOptionalForce",

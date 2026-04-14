@@ -186,6 +186,9 @@ public interface ICube extends XYZAddressable, MetaContainer {
     @Nullable
     ExtendedBlockStorage getStorage();
 
+    /// Returns true when this cube's [ExtendedBlockStorage] needs to be ticked.
+    boolean shouldTick();
+
     /**
      * Retrieve a map of positions to their respective tile entities
      *

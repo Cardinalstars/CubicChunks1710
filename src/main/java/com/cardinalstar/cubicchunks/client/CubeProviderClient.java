@@ -33,7 +33,6 @@ import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
-import com.cardinalstar.cubicchunks.CubicChunks;
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.XYZMap;
 import com.cardinalstar.cubicchunks.event.events.CubeEvent;
@@ -119,15 +118,6 @@ public class CubeProviderClient extends ChunkProviderClient implements ICubeProv
 
     @Override
     public boolean unloadQueuedChunks() {
-        long i = System.currentTimeMillis();
-        for (Cube cube : cubeMap) {
-            cube.tickCubeCommon(() -> System.currentTimeMillis() - i > 5L);
-        }
-
-        if (System.currentTimeMillis() - i > 100L) {
-            CubicChunks.LOGGER.info("Warning: Clientside chunk ticking took {} ms", System.currentTimeMillis() - i);
-        }
-
         return false;
     }
 

@@ -34,7 +34,6 @@ import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
@@ -309,6 +308,32 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     }
 
     @Override
+    public boolean testForCubes(int minBlockX, int minBlockY, int minBlockZ, int maxBlockX, int maxBlockY,
+        int maxBlockZ, Predicate<ICube> test) {
+        // convert block bounds to chunk bounds
+        int minCubeX = minBlockX >> 4;
+        int minCubeY = minBlockY >> 4;
+        int minCubeZ = minBlockZ >> 4;
+        int maxCubeX = maxBlockX >> 4;
+        int maxCubeY = maxBlockY >> 4;
+        int maxCubeZ = maxBlockZ >> 4;
+
+        for (int cubeX = minCubeX; cubeX <= maxCubeX; cubeX++) {
+            for (int cubeY = minCubeY; cubeY <= maxCubeY; cubeY++) {
+                for (int cubeZ = minCubeZ; cubeZ <= maxCubeZ; cubeZ++) {
+                    Cube cube = this.getCubeCache()
+                        .getLoadedCube(cubeX, cubeY, cubeZ);
+                    if (!test.test(cube)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    @Override
     public boolean testForCubes(CubePos start, CubePos end, Predicate<? super ICube> cubeAllowed) {
         // convert block bounds to chunk bounds
         int minCubeX = start.getX();
@@ -433,34 +458,7 @@ public abstract class MixinWorld implements ICubicWorldInternal {
     }
 
     @Shadow
-    public abstract Block getBlock(int x, int y, int z);
-
-    @Shadow
     public List<EntityPlayer> playerEntities;
-
-    /**
-     * @param x block x position
-     * @param y block y position
-     * @param z block z position
-     * @return block at that position
-     * @author Barteks2x
-     * @reason Injection causes performance issues, overwrite for cubic chunks version
-     */
-    @Inject(method = "getBlock", at = @At("HEAD"), cancellable = true)
-    public void getBlock(int x, int y, int z, CallbackInfoReturnable<Block> cir) {
-        if (y >= getMaxHeight() || y < getMinHeight()) { // TODO: maybe avoid height check for cubic chunks world?
-            cir.setReturnValue(Blocks.air);
-            return;
-        }
-        ICube cube = ((ICubeProviderInternal) this.chunkProvider)
-            .getCube(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z));
-        if (cube == null) {
-            CubicChunks.LOGGER.info("NULL cube found at {}, {}, {}, returning Blocks.air", x, y, z);
-            cir.setReturnValue(Blocks.air);
-            return;
-        }
-        cir.setReturnValue(cube.getBlock(x, y, z));
-    }
 
     @Inject(method = "getTopSolidOrLiquidBlock", at = @At("HEAD"), cancellable = true)
     private void getTopSolidOrLiquidBlockCubicChunks(int x, int z, CallbackInfoReturnable<Integer> cir) {

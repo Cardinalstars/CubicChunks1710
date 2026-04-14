@@ -26,6 +26,8 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+
 import com.cardinalstar.cubicchunks.util.XZAddressable;
 
 @ParametersAreNonnullByDefault
@@ -86,6 +88,9 @@ public interface IColumn extends XZAddressable {
      * @return the cubes
      */
     Collection<? extends ICube> getLoadedCubes();
+
+    /// Returns an array of contained EBSes that need to be ticked.
+    ExtendedBlockStorage[] getTickableStorages();
 
     /**
      * Iterate over all loaded cubes in this column in order. If {@code startY < endY}, order is bottom to top,

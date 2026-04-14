@@ -60,6 +60,10 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinBlockMushroom")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_WORLD_GEN_LAKES(new MixinBuilder("Allowing lakes to be placed above 256 and below 0.")
+        .addCommonMixins("common.MixinWorldGenLakes")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
     MIXIN_BLOCK_LILY_PAD(
         new MixinBuilder("Allowing lilypads to stay above 256 adn below 0.").addCommonMixins("common.MixinBlockLilyPad")
             .setPhase(Phase.EARLY)
@@ -105,6 +109,10 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinChunkCache_HeightLimits")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_CHUNK_METAKEY(
+        new MixinBuilder("Mixin to implement MetaContainer on Chunk").addCommonMixins("common.MixinChunk_MetaKey")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
 
     // ITEM
     MIXIN_ITEM_BLOCK(

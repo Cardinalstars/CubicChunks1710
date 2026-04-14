@@ -25,7 +25,6 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -36,9 +35,12 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.ChunkPosition;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.cardinalstar.cubicchunks.api.IColumn;
 import com.cardinalstar.cubicchunks.api.ICube;
 import com.cardinalstar.cubicchunks.util.Coords;
+import com.google.common.collect.AbstractIterator;
 
 @ParametersAreNonnullByDefault
 public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
@@ -99,14 +101,15 @@ public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
         }
         ChunkPosition pos = (ChunkPosition) o;
         int y = Coords.blockToCube(pos.chunkPosY);
-        // when something other than CHECK is passed into Chunk.getTileEntity, then if the current TE is null
-        // it will try to create a new one. To do that it will get a block which will load the cube
-        // with the already existing TE. But the "create new TE" code will continue not knowing the TE just got loaded
-        // and will replace the newly loaded one
-        // so load the cube here to avoid problems. Other places use getCube() for consistency
-        ICube cube = column.getCube(y);
-        return cube.getTileEntityMap()
-            .get(o);
+
+        // Use getLoadedCube to avoid loading or generating cubes.
+        // You almost never want to load chunks with this method, and you definitely never want to generate chunks with
+        // this method.
+        ICube cube = column.getLoadedCube(y);
+
+        return cube == null ? null
+            : cube.getTileEntityMap()
+                .get(o);
     }
 
     @Override
@@ -142,8 +145,8 @@ public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
     }
 
     @Override
-    public Set<ChunkPosition> keySet() {
-        return new AbstractSet<ChunkPosition>() {
+    public @NotNull Set<ChunkPosition> keySet() {
+        return new AbstractSet<>() {
 
             @Override
             public int size() {
@@ -163,46 +166,26 @@ public class ColumnTileEntityMap implements Map<ChunkPosition, TileEntity> {
             @Nonnull
             @Override
             public Iterator<ChunkPosition> iterator() {
-                return new Iterator<ChunkPosition>() {
+                return new AbstractIterator<>() {
 
-                    Iterator<? extends ICube> cubes = column.getLoadedCubes()
+                    private final Iterator<? extends ICube> cubes = column.getLoadedCubes()
                         .iterator();
-                    Iterator<ChunkPosition> curIt = !cubes.hasNext() ? null
-                        : cubes.next()
-                            .getTileEntityMap()
-                            .keySet()
-                            .iterator();
-                    ChunkPosition nextVal;
+                    private Iterator<ChunkPosition> withinCube = null;
 
                     @Override
-                    public boolean hasNext() {
-                        if (nextVal != null) {
-                            return true;
-                        }
-                        if (curIt == null) {
-                            return false;
-                        }
-                        while (!curIt.hasNext() && cubes.hasNext()) {
-                            curIt = cubes.next()
+                    protected ChunkPosition computeNext() {
+                        while (withinCube == null || !withinCube.hasNext()) {
+                            if (!cubes.hasNext()) {
+                                return this.endOfData();
+                            }
+
+                            withinCube = cubes.next()
                                 .getTileEntityMap()
                                 .keySet()
                                 .iterator();
                         }
-                        if (!curIt.hasNext()) {
-                            return false;
-                        }
-                        nextVal = curIt.next();
-                        return true;
-                    }
 
-                    @Override
-                    public ChunkPosition next() {
-                        if (hasNext()) {
-                            ChunkPosition next = nextVal;
-                            nextVal = null;
-                            return next;
-                        }
-                        throw new NoSuchElementException();
+                        return withinCube.next();
                     }
                 };
             }

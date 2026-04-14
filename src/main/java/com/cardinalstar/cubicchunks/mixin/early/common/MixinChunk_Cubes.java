@@ -69,7 +69,6 @@ import com.cardinalstar.cubicchunks.api.IHeightMap;
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.Mods;
-import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.column.ColumnTileEntityMap;
 import com.cardinalstar.cubicchunks.world.column.CubeMap;
 import com.cardinalstar.cubicchunks.world.column.EmptyEBS;
@@ -81,6 +80,7 @@ import com.cardinalstar.cubicchunks.world.cube.BlankCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.llamalad7.mixinextras.expression.Definition;
 import com.llamalad7.mixinextras.expression.Expression;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
@@ -175,7 +175,7 @@ public abstract class MixinChunk_Cubes {
     @Nullable
     private ExtendedBlockStorage getEBS_CubicChunks(int index) {
         if (!isColumn) {
-            return storageArrays[blockToCube(index)];
+            return storageArrays[index];
         }
         if (cachedCube != null && cachedCube.getY() == index) {
             return cachedCube.getStorage();
@@ -191,13 +191,11 @@ public abstract class MixinChunk_Cubes {
     // setEBS is unlikely to be used extremely frequently, no caching
     @Unique
     private void setEBS_CubicChunks(int index, ExtendedBlockStorage ebs) {
-        if (!isColumn) {
-            // vanilla case, subtract minHeight for extended height support
-            storageArrays[index - blockToCube(getWorldObj().getMinHeight())] = ebs;
-            return;
-        }
         if (index >= 0 && index < 16) {
             storageArrays[index] = ebs;
+        }
+        if (!isColumn) {
+            return;
         }
         if (cachedCube != null && cachedCube.getY() == index) {
             cachedCube.setStorage(ebs);
@@ -280,7 +278,7 @@ public abstract class MixinChunk_Cubes {
             args = "array=get",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private ExtendedBlockStorage init_getStorage(ExtendedBlockStorage[] ebs, int y) {
-        return ebs[y - (this.isColumn ? 0 : blockToCube(((IMinMaxHeight) worldObj).getMinHeight()))];
+        return ebs[y];
     }
 
     @Redirect(
@@ -290,7 +288,7 @@ public abstract class MixinChunk_Cubes {
             args = "array=set",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private void init_getMaxHeight(ExtendedBlockStorage[] ebs, int y, ExtendedBlockStorage val) {
-        ebs[y - (this.isColumn ? 0 : blockToCube(((IMinMaxHeight) worldObj).getMinHeight()))] = val;
+        ebs[y] = val;
     }
 
     @ModifyConstant(
@@ -310,12 +308,16 @@ public abstract class MixinChunk_Cubes {
         this.isColumn = isColumn;
     }
 
-    public Block[] chunk_internal$getCompatGenerationBlockArray() {
-        return compatGenerationBlockArray;
+    public Block[] chunk_internal$takeCompatGenerationBlockArray() {
+        Block[] array = compatGenerationBlockArray;
+        compatGenerationBlockArray = null;
+        return array;
     }
 
-    public byte[] chunk_internal$getCompatGenerationByteArray() {
-        return compatGenerationByteArray;
+    public byte[] chunk_internal$takeCompatGenerationByteArray() {
+        byte[] array = compatGenerationByteArray;
+        compatGenerationByteArray = null;
+        return array;
     }
 
     // this method can't be saved by just redirecting EBS access
@@ -441,8 +443,8 @@ public abstract class MixinChunk_Cubes {
 
         if (isColumn && ((IColumn) this).getCube(blockToCube(localY))
             .isInitialLightingDone()) {
-            if (oldHeightValue == localY + 1) { // oldHeightValue is the previous block Y above the top block, so this
-                                                // is the "removing a block" case
+            // oldHeightValue is the previous block Y above the top block, so this is the "removing a block" case
+            if (oldHeightValue == localY + 1) {
                 getWorldObj().getLightingManager()
                     .doOnBlockSetLightUpdates(
                         (Chunk) (Object) this,
@@ -503,7 +505,8 @@ public abstract class MixinChunk_Cubes {
             args = "array=length",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private int getBlock_getMaxHeight(ExtendedBlockStorage[] ebs) {
-        return isColumn ? Integer.MAX_VALUE : (ebs.length - blockToCube(getWorldObj().getMinHeight()));
+        // Always return MAX_VALUE to no-op comparison, and rely on getBlock_getStorage to detect cube presence
+        return Integer.MAX_VALUE;
     }
 
     @Redirect(
@@ -513,7 +516,7 @@ public abstract class MixinChunk_Cubes {
             args = "array=get",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private ExtendedBlockStorage getBlock_getStorage(ExtendedBlockStorage[] ebs, int y) {
-        return isColumn ? getEBS_CubicChunks(y) : ebs[y];
+        return getEBS_CubicChunks(y);
     }
 
     // ==============================================
@@ -527,7 +530,8 @@ public abstract class MixinChunk_Cubes {
             args = "array=length",
             target = "Lnet/minecraft/world/chunk/Chunk;storageArrays:[Lnet/minecraft/world/chunk/storage/ExtendedBlockStorage;"))
     private int getBlockMetadata_getMaxHeight(ExtendedBlockStorage[] ebs) {
-        return isColumn ? Integer.MAX_VALUE : (ebs.length - blockToCube(getWorldObj().getMinHeight()));
+        // Always return MAX_VALUE to no-op comparison, and rely on getBlockMetadata_getStorage to detect cube presence
+        return Integer.MAX_VALUE;
     }
 
     @Redirect(
@@ -660,17 +664,18 @@ public abstract class MixinChunk_Cubes {
     // getLightFor
     // ==============================================
 
-    @Inject(method = "getSavedLightValue", at = @At("HEAD"), cancellable = true)
-    private void replacedGetSavedLightValueForCC(EnumSkyBlock type, int x, int y, int z,
-        CallbackInfoReturnable<Integer> cir) {
+    @WrapMethod(method = "getSavedLightValue")
+    private int replacedGetSavedLightValueForCC(EnumSkyBlock type, int x, int y, int z, Operation<Integer> original) {
         if (!isColumn) {
-            return;
+            return original.call(type, x, y, z);
         }
+
         if (((ICubicWorldInternal) worldObj).getLightingManager() != null) {
             ((ICubicWorldInternal) worldObj).getLightingManager()
                 .onGetLight(type, x, y, z);
         }
-        cir.setReturnValue(((Cube) ((IColumn) this).getCube(blockToCube(y))).getCachedLightFor(type, x, y, z));
+
+        return ((Cube) ((IColumn) this).getCube(blockToCube(y))).getCachedLightFor(type, x, y, z);
     }
 
     @Nullable
