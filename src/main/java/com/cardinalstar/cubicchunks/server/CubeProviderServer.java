@@ -123,7 +123,6 @@ public class CubeProviderServer extends ChunkProviderServer
             worldServer.provider.createChunkGenerator()); // let's create the chunk generator, for now the vanilla one
                                                           // may be enough
 
-        // this.cubePrimer = new CubePrimer();
         this.worldGenerator = worldGenerator;
         this.worldServer = worldServer;
         this.profiler = worldServer.theProfiler;
@@ -562,7 +561,6 @@ public class CubeProviderServer extends ChunkProviderServer
     @Override
     public Cube getCube(int cubeX, int cubeY, int cubeZ, Requirement effort) {
         Cube cube = cubeLoader.getCube(cubeX, cubeY, cubeZ, effort);
-
         return cube == null ? emptyCube : cube;
     }
 
