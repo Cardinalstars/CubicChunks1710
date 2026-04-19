@@ -20,7 +20,6 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import com.cardinalstar.cubicchunks.server.ICubicChunksServer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
@@ -32,14 +31,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.cardinalstar.cubicchunks.mixin.api.ICubicWorldInternal;
+import com.cardinalstar.cubicchunks.server.ICubicChunksServer;
 import com.cardinalstar.cubicchunks.server.SpawnCubes;
 
 @Mixin(MinecraftServer.class)
-public class MixinMinecraftServer implements ICubicChunksServer
-{
+public class MixinMinecraftServer implements ICubicChunksServer {
+
     @Unique
     private int cubicChunks$buildMinimum;
-
 
     @Inject(method = "initialWorldChunkLoad", at = @At("HEAD"), cancellable = true)
     private void onInitialSpawnLoad(CallbackInfo ci) {
@@ -51,14 +50,12 @@ public class MixinMinecraftServer implements ICubicChunksServer
     }
 
     @Override
-    public void setBuildMinimum(int minBuildHeight)
-    {
+    public void setBuildMinimum(int minBuildHeight) {
         cubicChunks$buildMinimum = minBuildHeight;
     }
 
     @Override
-    public int getBuildMinimum()
-    {
+    public int getBuildMinimum() {
         return cubicChunks$buildMinimum;
     }
 }

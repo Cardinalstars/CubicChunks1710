@@ -6,9 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
-import com.cardinalstar.cubicchunks.world.column.EmptyColumn;
-import com.cardinalstar.cubicchunks.world.cube.BoundaryCube;
+import javax.annotation.Nonnull;
+
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.WorldServer;
@@ -32,15 +31,16 @@ import com.cardinalstar.cubicchunks.server.CubicPlayerManager;
 import com.cardinalstar.cubicchunks.util.Array3D;
 import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.util.XZAddressable;
+import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
+import com.cardinalstar.cubicchunks.world.column.EmptyColumn;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.BlankCube;
+import com.cardinalstar.cubicchunks.world.cube.BoundaryCube;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Setter;
-
-import javax.annotation.Nonnull;
 
 public class CubeLoaderServer implements ICubeLoader {
 
@@ -77,7 +77,7 @@ public class CubeLoaderServer implements ICubeLoader {
         this.generator = generator;
         this.callback = callback;
 
-        CubicChunksSavedData data =CubicChunksSavedData.get(world);
+        CubicChunksSavedData data = CubicChunksSavedData.get(world);
 
         this.minCube = data.minHeight >> 4;
         this.maxCube = (data.maxHeight - 1) >> 4;
@@ -628,8 +628,7 @@ public class CubeLoaderServer implements ICubeLoader {
         }
 
         public boolean initialize(Requirement effort) throws IOException {
-            if (pos.getY() < minCube || pos.getY() > maxCube)
-            {
+            if (pos.getY() < minCube || pos.getY() > maxCube) {
                 loadBoundaryCube();
                 return true;
             }
@@ -662,8 +661,7 @@ public class CubeLoaderServer implements ICubeLoader {
             return generate(requestedInitLevel);
         }
 
-        private void loadBoundaryCube()
-        {
+        private void loadBoundaryCube() {
             ensureColumn(Requirement.LOAD);
 
             if (this.column == null) {

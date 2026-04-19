@@ -36,7 +36,8 @@ public abstract class CubeSelector {
     public abstract void forAllVisibleFrom(CubePos cubePos, int horizontalViewDistance, int verticalViewDistance,
         Consumer<CubePos> consumer);
 
-    /// Find the difference in current position given view distances and the old position in terms of what cubes need to be removed
+    /// Find the difference in current position given view distances and the old position in terms of what cubes need to
+    /// be removed
     /// or added
     public abstract void findChanged(CubePos oldAddress, CubePos newAddress, int horizontalViewDistance,
         int verticalViewDistance, Set<CubePos> cubesToRemove, Set<CubePos> cubesToLoad,

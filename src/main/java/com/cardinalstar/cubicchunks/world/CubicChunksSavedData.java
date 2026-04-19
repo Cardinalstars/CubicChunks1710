@@ -20,16 +20,16 @@
  */
 package com.cardinalstar.cubicchunks.world;
 
-import com.cardinalstar.cubicchunks.CubicChunksConfig;
-import com.cardinalstar.cubicchunks.worldgen.FillerInfo;
-import com.cardinalstar.cubicchunks.worldgen.HeightInfo;
-import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
-import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSavedData;
 
+import com.cardinalstar.cubicchunks.CubicChunksConfig;
+import com.cardinalstar.cubicchunks.worldgen.FillerInfo;
+import com.cardinalstar.cubicchunks.worldgen.HeightInfo;
+import com.gtnewhorizon.gtnhlib.util.data.BlockMeta;
+import com.gtnewhorizon.gtnhlib.util.data.ImmutableBlockMeta;
 
 public class CubicChunksSavedData extends WorldSavedData {
 
@@ -45,20 +45,16 @@ public class CubicChunksSavedData extends WorldSavedData {
         this("cubicChunksData");
 
         HeightInfo heightInfo = CubicChunksConfig.configuredDimensionalHeightMap.get(dimensionId);
-        if (heightInfo != null)
-        {
+        if (heightInfo != null) {
             this.minHeight = heightInfo.minHeight;
             this.maxHeight = heightInfo.maxHeight;
-        }
-        else
-        {
+        } else {
             this.minHeight = CubicChunksConfig.defaultMinHeight;
             this.maxHeight = CubicChunksConfig.defaultMaxHeight;
         }
 
         this.fillerInfo = CubicChunksConfig.configuredDimensionalFillerMap.get(dimensionId);
-        if (this.fillerInfo == null)
-        {
+        if (this.fillerInfo == null) {
             fillerInfo = new FillerInfo();
         }
     }
@@ -76,13 +72,11 @@ public class CubicChunksSavedData extends WorldSavedData {
         return data;
     }
 
-    public FillerInfo getFillerInfo()
-    {
+    public FillerInfo getFillerInfo() {
         return fillerInfo;
     }
 
-    public void setBottomFiller(ImmutableBlockMeta block)
-    {
+    public void setBottomFiller(ImmutableBlockMeta block) {
         fillerInfo.bottomFiller = block;
         this.markDirty();
 
@@ -90,8 +84,7 @@ public class CubicChunksSavedData extends WorldSavedData {
         world.perWorldStorage.saveAllData();
     }
 
-    public void setTopFiller(ImmutableBlockMeta block)
-    {
+    public void setTopFiller(ImmutableBlockMeta block) {
         fillerInfo.topFiller = block;
         this.markDirty();
 
@@ -100,28 +93,24 @@ public class CubicChunksSavedData extends WorldSavedData {
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound nbt)
-    {
+    public void readFromNBT(NBTTagCompound nbt) {
         // set 4 least significant bits to zero to ensure they are always multiples of 16
         minHeight = nbt.getInteger("minHeight") & ~0xF;
         maxHeight = nbt.getInteger("maxHeight") & ~0xF;
 
-        if (fillerInfo == null)
-        {
+        if (fillerInfo == null) {
             fillerInfo = new FillerInfo();
         }
 
         NBTTagCompound fillerCompound = nbt.getCompoundTag("fillerBlocks");
 
-        if (fillerCompound.hasKey("topId"))
-        {
+        if (fillerCompound.hasKey("topId")) {
             int topBlock = fillerCompound.getInteger("topId");
             short topMeta = fillerCompound.getShort("topMeta");
             fillerInfo.topFiller = new BlockMeta(Block.getBlockById(topBlock), topMeta);
         }
 
-        if (fillerCompound.hasKey("bottomId"))
-        {
+        if (fillerCompound.hasKey("bottomId")) {
             int bottomBlock = fillerCompound.getInteger("bottomId");
             short bottomMeta = fillerCompound.getShort("bottomMeta");
             fillerInfo.bottomFiller = new BlockMeta(Block.getBlockById(bottomBlock), bottomMeta);
@@ -136,14 +125,12 @@ public class CubicChunksSavedData extends WorldSavedData {
 
         NBTTagCompound filler = new NBTTagCompound();
 
-        if (fillerInfo.bottomFiller != null)
-        {
+        if (fillerInfo.bottomFiller != null) {
             filler.setInteger("bottomId", Block.getIdFromBlock(fillerInfo.bottomFiller.getBlock()));
             filler.setShort("bottomMeta", (short) fillerInfo.bottomFiller.getBlockMeta());
         }
 
-        if (fillerInfo.topFiller != null)
-        {
+        if (fillerInfo.topFiller != null) {
             filler.setInteger("topId", Block.getIdFromBlock(fillerInfo.topFiller.getBlock()));
             filler.setShort("topMeta", (short) fillerInfo.topFiller.getBlockMeta());
         }
