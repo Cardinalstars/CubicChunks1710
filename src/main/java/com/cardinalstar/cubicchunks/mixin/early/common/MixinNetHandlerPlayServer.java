@@ -40,7 +40,7 @@ public class MixinNetHandlerPlayServer {
                                         @Local(type = WorldServer.class) WorldServer server)
     {
         if (y < ((IMinMaxHeight)server).getMinHeight() + 1 && (side == 0 || y < ((IMinMaxHeight)server).getMinHeight())) {
-            ChatComponentTranslation chatcomponenttranslation = new ChatComponentTranslation("build.tooLow", ((IMinMaxHeight) server).getMinHeight());
+            ChatComponentTranslation chatcomponenttranslation = new ChatComponentTranslation("cubicchunks.build.too.low", ((IMinMaxHeight) server).getMinHeight());
             chatcomponenttranslation.getChatStyle().setColor(EnumChatFormatting.RED);
             this.playerEntity.playerNetServerHandler.sendPacket(new S02PacketChat(chatcomponenttranslation));
             return false;
