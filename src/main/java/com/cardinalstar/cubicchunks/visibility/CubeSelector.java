@@ -32,13 +32,17 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 @ParametersAreNonnullByDefault
 public abstract class CubeSelector {
 
+    /// For all cube positions visible from an input cubePos and view distances give it to a consumer
     public abstract void forAllVisibleFrom(CubePos cubePos, int horizontalViewDistance, int verticalViewDistance,
         Consumer<CubePos> consumer);
 
+    /// Find the difference in current position given view distances and the old position in terms of what cubes need to be removed
+    /// or added
     public abstract void findChanged(CubePos oldAddress, CubePos newAddress, int horizontalViewDistance,
         int verticalViewDistance, Set<CubePos> cubesToRemove, Set<CubePos> cubesToLoad,
         Set<ChunkCoordIntPair> columnsToRemove, Set<ChunkCoordIntPair> columnsToLoad);
 
+    /// Find what cubes need to be removed given a view distance decrease
     public abstract void findAllUnloadedOnViewDistanceDecrease(CubePos playerAddress, int oldHorizontalViewDistance,
         int newHorizontalViewDistance, int oldVerticalViewDistance, int newVerticalViewDistance,
         Set<CubePos> cubesToUnload, Set<ChunkCoordIntPair> columnsToUnload);

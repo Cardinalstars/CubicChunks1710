@@ -139,7 +139,6 @@ public class PacketEncoderCubes extends CCPacketEncoder<PacketEncoderCubes.Packe
 
         for (CubePos pos : packet.cubePos) {
             Cube cube = cubeCache.loadCube(pos); // new cube
-            // isEmpty actually checks if the column is a BlankColumn
             if (cube == null) {
                 CubicChunks.LOGGER.error("Out of order cube received! No column for cube at {} exists!", pos);
             }

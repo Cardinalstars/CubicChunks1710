@@ -38,6 +38,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.profiler.Profiler;
@@ -123,7 +124,6 @@ public class CubeProviderServer extends ChunkProviderServer
             worldServer.provider.createChunkGenerator()); // let's create the chunk generator, for now the vanilla one
                                                           // may be enough
 
-        // this.cubePrimer = new CubePrimer();
         this.worldGenerator = worldGenerator;
         this.worldServer = worldServer;
         this.profiler = worldServer.theProfiler;
@@ -363,8 +363,7 @@ public class CubeProviderServer extends ChunkProviderServer
 
                 cubeLoader.pauseLoadCalls();
 
-                Cube cube = cubeLoader
-                    .getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
+                Cube cube = cubeLoader.getCube(request.pos.getX(), request.pos.getY(), request.pos.getZ(), request.effort);
 
                 cubeLoader.unpauseLoadCalls();
 
@@ -536,7 +535,8 @@ public class CubeProviderServer extends ChunkProviderServer
         }
     }
 
-    public EagerCubeLoadRequest loadCubeEagerly(int x, int y, int z, Requirement effort) {
+    public EagerCubeLoadRequest loadCubeEagerly(int x, int y, int z, Requirement effort)
+    {
         CubePos pos = new CubePos(x, y, z);
 
         ChunkCoordIntPair coord = new ChunkCoordIntPair(x, z);
@@ -560,20 +560,22 @@ public class CubeProviderServer extends ChunkProviderServer
 
     @Nullable
     @Override
-    public Cube getCube(int cubeX, int cubeY, int cubeZ, Requirement effort) {
+    public Cube getCube(int cubeX, int cubeY, int cubeZ, Requirement effort)
+    {
         Cube cube = cubeLoader.getCube(cubeX, cubeY, cubeZ, effort);
-
         return cube == null ? emptyCube : cube;
     }
 
     @Override
-    public boolean cubeExists(int cubeX, int cubeY, int cubeZ) {
+    public boolean cubeExists(int cubeX, int cubeY, int cubeZ)
+    {
         return cubeLoader.cubeExists(cubeX, cubeY, cubeZ);
     }
 
     @Nullable
     @Override
-    public Chunk getColumn(int columnX, int columnZ, Requirement effort) {
+    public Chunk getColumn(int columnX, int columnZ, Requirement effort)
+    {
         return cubeLoader.getColumn(columnX, columnZ, effort);
     }
 

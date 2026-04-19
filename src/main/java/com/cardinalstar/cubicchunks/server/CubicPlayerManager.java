@@ -33,6 +33,7 @@ import java.util.Set;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.Packet;
 import net.minecraft.server.management.PlayerManager;
@@ -126,8 +127,8 @@ public class CubicPlayerManager extends PlayerManager implements CubeLoaderCallb
             ((ICubicPlayerList) worldServer.func_73046_m()
                 .getConfigurationManager()).getVerticalViewDistance());
 
-        provider = ((Server) worldServer).getCubeCache();
-        provider.registerCallback(this);
+        this.provider = ((Server) worldServer).getCubeCache();
+        this.provider.registerCallback(this);
     }
 
     public Collection<Chunk> getColumns() {
