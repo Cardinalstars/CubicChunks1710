@@ -30,7 +30,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
-import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
 import net.minecraft.block.Block;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Blocks;
@@ -61,6 +60,7 @@ import com.cardinalstar.cubicchunks.server.chunkio.IPreloadFailureDelegate;
 import com.cardinalstar.cubicchunks.util.CompatHandler;
 import com.cardinalstar.cubicchunks.util.Coords;
 import com.cardinalstar.cubicchunks.util.CubePos;
+import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
@@ -106,9 +106,9 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
      * @param vanilla The vanilla generator to mirror
      * @param world   The world in which cubes are being generated
      */
-    public VanillaWorldGenerator(IChunkProvider vanilla, World world, IWorldDecorator decorator)
-    {
-        this.fillerInfo = CubicChunksSavedData.get(world).getFillerInfo();
+    public VanillaWorldGenerator(IChunkProvider vanilla, World world, IWorldDecorator decorator) {
+        this.fillerInfo = CubicChunksSavedData.get(world)
+            .getFillerInfo();
 
         this.vanilla = vanilla;
         this.world = world;
@@ -126,8 +126,7 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
         return ((ICubicWorldInternal.Server) world).getCubeCache();
     }
 
-    private ImmutableBlockMeta getBottomFillerInfo()
-    {
+    private ImmutableBlockMeta getBottomFillerInfo() {
         if (fillerInfo.bottomFiller != null) return fillerInfo.bottomFiller;
 
         Chunk chunk = vanilla.provideChunk(0, 0);
@@ -173,8 +172,7 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
             .orElse(new BlockMeta(Blocks.air, 0));
     }
 
-    private ImmutableBlockMeta getTopFillerInfo()
-    {
+    private ImmutableBlockMeta getTopFillerInfo() {
         if (fillerInfo.topFiller != null) return fillerInfo.topFiller;
 
         Chunk chunk = vanilla.provideChunk(0, 0);

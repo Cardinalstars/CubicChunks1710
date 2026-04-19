@@ -104,8 +104,7 @@ public class CuboidalCubeSelector extends CubeSelector {
                         currentY,
                         currentZ,
                         horizontalViewDistance,
-                        verticalViewDistance))
-                    {
+                        verticalViewDistance)) {
                         cubesToLoad.add(new CubePos(currentX, currentY, currentZ));
                     }
                     if (!this.isPointWithinCubeVolume(
@@ -116,8 +115,7 @@ public class CuboidalCubeSelector extends CubeSelector {
                         currentY - dy,
                         currentZ - dz,
                         horizontalViewDistance,
-                        verticalViewDistance))
-                    {
+                        verticalViewDistance)) {
                         cubesToRemove.add(new CubePos(currentX - dx, currentY - dy, currentZ - dz));
                     }
                 }
