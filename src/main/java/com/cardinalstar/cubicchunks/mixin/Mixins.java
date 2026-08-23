@@ -78,6 +78,8 @@ public enum Mixins implements IMixins {
         .setApplyIf(() -> true)),
     MIXIN_C08_HEIGHT_LIMITS(new MixinBuilder("Changing packet C08 to read and write full integer Y values.")
         .addCommonMixins("common.MixinC08PacketPlayerBlockPlacement")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
     MIXIN_S07PACKET_RESPAWN(new MixinBuilder("Giving respawn packets info to initialize cubicWorlds for clients.")
         .addCommonMixins("common.vanillaclient.MixinS07PacketRespawn")
         .setPhase(Phase.EARLY)
