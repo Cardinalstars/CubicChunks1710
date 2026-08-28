@@ -20,37 +20,53 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
+import java.util.ArrayDeque;
+
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
 /**
- * Caps the depth of the synchronous neighbour-notify cascade that overflows the
- * stack during cubic world generation (issue #61).
+ * Flattens the synchronous neighbour-notify cascade that overflows the stack
+ * during cubic world generation (issue #61).
  *
- * <p>Vanilla block updates propagate support-dependency chains (snow, reeds,
- * leaves, cacti, ...) through {@code markAndNotifyBlock} -&gt;
- * {@code notifyBlockOfNeighborChange} -&gt; {@code onNeighborBlockChange} -&gt;
- * {@code setBlockToAir} -&gt; {@code markAndNotifyBlock} ..., recursively. Vanilla
- * keeps that chain shallow with hard height bounds; a cubic world removes those
- * bounds, so a large patch of support-dependent blocks losing support at once
- * (e.g. GTNH's {@code BFSLeafDecay} clearing a canopy) can recurse deep enough to
- * overflow the (small) thread stack.
+ * <p>Vanilla propagates support-dependency chains (snow, reeds, leaves, cacti,
+ * falling blocks, ...) through {@code setBlockToAir -> markAndNotifyBlock ->
+ * notifyBlockOfNeighborChange -> onNeighborBlockChange -> ...} as a synchronous
+ * recursion. Vanilla keeps that chain shallow via the hard height bounds; a
+ * cubic world removes those bounds, so a large patch of support-dependent
+ * blocks losing support at once can recurse until the stack overflows.
  *
- * <p>This mixin parks neighbour notifies past a depth cap in a thread-local FIFO
- * instead of dropping them, and drains the FIFO iteratively when the outermost
- * frame returns. Notify semantics are preserved (no floating snow, no missed
- * updates); only the recursion is flattened.
+ * <p>This mixin wraps the actual {@code onNeighborBlockChange} call: while the
+ * depth is under the cap it runs normally, and past the cap the coordinate is
+ * parked in a thread-local FIFO instead. The outermost frame drains the FIFO
+ * iteratively, so notify semantics are preserved (no floating snow, no dropped
+ * updates) — only the recursion is flattened.
+ *
+ * <p>Depth accounting lives in a {@code try/finally} so it can never leak, and
+ * a separate "draining" flag keeps the drain iterative (nested drains only
+ * enqueue and let the already-running drain pick the entries up), which is what
+ * keeps redstone/mechanical blocks working: they only ever see the normal,
+ * synchronous path unless a genuinely pathological cascade is in progress.
+ *
+ * <p>Known limitation: for very tall vertical chains (e.g. a reed stack taller
+ * than the depth cap), the cascade is flattened in batches and the remainder
+ * falls back to vanilla random ticks over a few seconds. This does not affect
+ * vanilla-sized features (reeds are capped at 3 blocks) and only trades a stack
+ * overflow for a short delay in that extreme case.
  */
 @Mixin(World.class)
 public class MixinWorld_NeighborNotify {
+
+    private static final Logger LOGGER = LogManager.getLogger("CubicChunks.MixinWorld_NeighborNotify");
 
     @Unique
     private static final int CC_MAX_NOTIFY_DEPTH = 64;
@@ -59,50 +75,55 @@ public class MixinWorld_NeighborNotify {
     private static final ThreadLocal<int[]> cc$notifyDepth = ThreadLocal.withInitial(() -> new int[1]);
 
     @Unique
-    private static final ThreadLocal<LongArrayFIFOQueue> cc$pendingNotifies = ThreadLocal.withInitial(LongArrayFIFOQueue::new);
+    private static final ThreadLocal<ArrayDeque<int[]>> cc$pendingNotifies = ThreadLocal.withInitial(ArrayDeque::new);
 
     @Unique
-    private static long cc$key(int x, int y, int z) {
-        return ((long) x & 0xFFFFFFL) << 40 | ((long) z & 0xFFFFFFL) << 16 | (y & 0xFFFFL);
-    }
+    private static final ThreadLocal<boolean[]> cc$draining = ThreadLocal.withInitial(() -> new boolean[1]);
 
-    @Unique
-    private static int cc$x(long key) {
-        return (int) (key >> 40 & 0xFFFFFFL) << 24 >> 24;
-    }
-
-    @Unique
-    private static int cc$z(long key) {
-        return (int) (key >> 16 & 0xFFFFFFL) << 24 >> 24;
-    }
-
-    @Unique
-    private static int cc$y(long key) {
-        return (short) (key & 0xFFFFL);
-    }
-
-    @Inject(method = "notifyBlockOfNeighborChange", at = @At("HEAD"), cancellable = true)
-    private void cc$capNotifyDepthHead(int x, int y, int z, Block neighbor, CallbackInfo ci) {
+    @WrapOperation(
+        method = "notifyBlockOfNeighborChange",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;onNeighborBlockChange(Lnet/minecraft/world/World;IIILnet/minecraft/block/Block;)V"))
+    private void cc$guardNeighborNotify(
+        Block block, World world, int x, int y, int z, Block neighbor, Operation<Void> original) {
         int[] depth = cc$notifyDepth.get();
         depth[0]++;
-        if (depth[0] > CC_MAX_NOTIFY_DEPTH) {
-            // Too deep: park this neighbour notify and skip this frame. The
-            // RETURN handler still runs and balances the depth counter.
-            cc$pendingNotifies.get().enqueue(cc$key(x, y, z));
-            ci.cancel();
+        try {
+            if (depth[0] <= CC_MAX_NOTIFY_DEPTH) {
+                original.call(block, world, x, y, z, neighbor);
+            } else {
+                cc$pendingNotifies.get().addLast(new int[] { x, y, z });
+            }
+        } finally {
+            depth[0]--;
+            if (depth[0] == 0 && !cc$draining.get()[0]) {
+                cc$draining.get()[0] = true;
+                try {
+                    cc$drain((World) (Object) this, neighbor);
+                } finally {
+                    cc$draining.get()[0] = false;
+                }
+            }
         }
     }
 
-    @Inject(method = "notifyBlockOfNeighborChange", at = @At("RETURN"))
-    private void cc$capNotifyDepthReturn(int x, int y, int z, Block neighbor, CallbackInfo ci) {
-        int[] depth = cc$notifyDepth.get();
-        depth[0]--;
-        if (depth[0] == 0) {
-            // Outermost frame: drain the parked notifies iteratively (no recursion).
-            LongArrayFIFOQueue pending = cc$pendingNotifies.get();
-            while (pending.size() > 0) {
-                long key = pending.dequeueLong();
-                ((World) (Object) this).notifyBlockOfNeighborChange(cc$x(key), cc$y(key), cc$z(key), neighbor);
+    @Unique
+    private void cc$drain(World world, Block neighbor) {
+        ArrayDeque<int[]> pending = cc$pendingNotifies.get();
+        while (!pending.isEmpty()) {
+            int[] pos = pending.pollFirst();
+            int px = pos[0];
+            int py = pos[1];
+            int pz = pos[2];
+            Block block = world.getBlock(px, py, pz);
+            if (block == null) {
+                continue;
+            }
+            try {
+                block.onNeighborBlockChange(world, px, py, pz, neighbor);
+            } catch (Throwable t) {
+                // Never let a single bad neighbour abort the iterative drain, but
+                // keep it visible for debugging instead of failing silently.
+                LOGGER.warn("Failed to notify neighbour at ({}, {}, {})", px, py, pz, t);
             }
         }
     }
