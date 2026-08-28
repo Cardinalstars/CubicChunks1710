@@ -51,6 +51,15 @@ public enum Mixins implements IMixins {
         .addCommonMixins("common.MixinBlockFalling")
         .setPhase(Phase.EARLY)
         .setApplyIf(() -> true)),
+    MIXIN_BLOCK_SNOW(new MixinBuilder("Preventing infinite snow-removal recursion at cube borders (issue #61).")
+        .addCommonMixins("common.MixinBlockSnow")
+        .setPhase(Phase.EARLY)
+        .setApplyIf(() -> true)),
+    MIXIN_WORLD_NEIGHBOR_NOTIFY(
+        new MixinBuilder("Flattening the neighbour-notify cascade to prevent support-dependency stack overflow (issue #61).")
+            .addCommonMixins("common.MixinWorld_NeighborNotify")
+            .setPhase(Phase.EARLY)
+            .setApplyIf(() -> true)),
     MIXIN_WORLD_GEN_BIG_MUSHROOM(
         new MixinBuilder("Allowing big mushrooms to generate and be grown above 256 and below 0.")
             .addCommonMixins("common.MixinWorldGenBigMushroom")

@@ -62,6 +62,7 @@ import com.cardinalstar.cubicchunks.util.CubePos;
 import com.cardinalstar.cubicchunks.world.CubicChunksSavedData;
 import com.cardinalstar.cubicchunks.world.ICubicWorld;
 import com.cardinalstar.cubicchunks.world.api.ICubeProviderServer.Requirement;
+import com.cardinalstar.cubicchunks.world.api.IMinMaxHeight;
 import com.cardinalstar.cubicchunks.world.core.IColumnInternal;
 import com.cardinalstar.cubicchunks.world.cube.Cube;
 import com.cardinalstar.cubicchunks.world.cube.blockview.ChunkBlockView;
@@ -455,11 +456,33 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                 int blockZ = minBlockZ + dz;
                 int precipitationY = world.getPrecipitationHeight(blockX, blockZ);
 
-                if (world.func_147478_e(blockX, precipitationY, blockZ, true)) {
+                // Only place snow when the support block below actually lives in a
+                // loaded (non-blank) cube. A neighbouring population tile can grow
+                // leaves into this column *after* this snow pass, but at this point
+                // the support must be real; otherwise the layer is placed on a
+                // ghost cube and later self-removes through BlockSnow's neighbour
+                // chain, which can recurse without bound at cube borders (#61).
+                if (world.func_147478_e(blockX, precipitationY, blockZ, true)
+                    && precipitationY > ((IMinMaxHeight) world).getMinHeight()
+                    && isSupportCubeLoaded(blockX, precipitationY - 1, blockZ)) {
                     world.setBlock(blockX, precipitationY, blockZ, Blocks.snow_layer, 0, 2);
                 }
             }
         }
+    }
+
+    /**
+     * Whether the cube containing the given block coordinate is already generated
+     * (has a real storage, not a {@link com.cardinalstar.cubicchunks.world.cube.BlankCube}).
+     */
+    private boolean isSupportCubeLoaded(int blockX, int blockY, int blockZ) {
+        ICubeLoader loader = getCubeLoader();
+        ICube cube = loader.getCube(
+            Coords.blockToCube(blockX),
+            Coords.blockToCube(blockY),
+            Coords.blockToCube(blockZ),
+            Requirement.GENERATE);
+        return cube != null && cube.getStorage() != null;
     }
 
     private void populateChunk(ICubeLoader loader, int columnX, int columnZ) {
