@@ -455,7 +455,14 @@ public class VanillaWorldGenerator implements IWorldGenerator, IPreloadFailureDe
                 int blockZ = minBlockZ + dz;
                 int precipitationY = world.getPrecipitationHeight(blockX, blockZ);
 
-                if (world.func_147478_e(blockX, precipitationY, blockZ, true)) {
+                // Only place snow where the biome can snow AND the layer is actually
+                // valid at this spot. BlockSnow.canPlaceBlockAt returns false on ice,
+                // packed ice, and without a solid/leaf support; placing it there
+                // creates an invalid layer that self-removes on the next neighbour
+                // notify and cascades across the whole frozen surface until the
+                // stack overflows (#61).
+                if (world.func_147478_e(blockX, precipitationY, blockZ, true)
+                    && Blocks.snow_layer.canPlaceBlockAt(world, blockX, precipitationY, blockZ)) {
                     world.setBlock(blockX, precipitationY, blockZ, Blocks.snow_layer, 0, 2);
                 }
             }
